@@ -19,7 +19,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny
+          images: ghcr.io/juldebar/tunaatlas_pie_map_shiny
           flavor: latest=true
           tags: |
             type=ref,event=branch

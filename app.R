@@ -12,8 +12,6 @@ wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
 
-
-
 target_species <- dbGetQuery(con, "SELECT DISTINCT(species) FROM fact_tables.i6i7i8 ORDER BY species;")
 target_year <- dbGetQuery(con, "SELECT DISTINCT(year) FROM fact_tables.i6i7i8 ORDER BY year;")
 target_flag <- dbGetQuery(con, "SELECT DISTINCT(country) FROM fact_tables.i6i7i8 ORDER BY country;")

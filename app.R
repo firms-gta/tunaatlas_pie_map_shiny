@@ -11,10 +11,6 @@ global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 wkt <- reactiveVal(global_wkt) 
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
-# data <- reactiveVal() 
-# data_i11 <- reactiveVal() 
-# data_pie_map<- reactiveVal() 
-# centroid <- reactiveVal() 
 
 
 

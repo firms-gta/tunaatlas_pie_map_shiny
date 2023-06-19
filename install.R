@@ -1,4 +1,4 @@
-package <- jsonlite::read_json('./srv/smt-shiny/package.json')
+package <- jsonlite::read_json('./srv/tunaatlas_pie_map_shiny/package.json')
 invisible(lapply(package$dependencies, function(pkg){
   from <- 'cran'
   pkg_installer <- remotes::install_version

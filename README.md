@@ -34,7 +34,7 @@ docker run --name tuna_atlas_i11 -p 3839:3838 firms-gta/tunaatlas_pie_map_shiny
 
 And then point your browser to http://localhost:3839
 
-Note: In case of having an existing SMT app running on docker, and in order to update the docker app, it will be required to stop and remove the container prior to run the above commands to pull & run the app:
+Note: In case of having an existing tunaatlas_indicators_pie_map_shiny app running on docker, and in order to update the docker app, it will be required to stop and remove the container prior to run the above commands to pull & run the app:
 
 ```
 docker container stop tuna_atlas_i11

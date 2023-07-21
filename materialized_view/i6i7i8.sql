@@ -22,7 +22,7 @@ LEFT JOIN fishing_fleet.fishing_fleet_mapping ON fishing_fleet_mapping.fishing_f
 LEFT JOIN fishing_fleet.fishing_fleet_labels fishing_fleetgroup_label ON fishing_fleetgroup_label.id_fishing_fleet = fishing_fleet_mapping.fishing_fleet_mapping_id_to 
 LEFT JOIN area.area USING (id_area)
 LEFT JOIN area.cwp_grid ON area.cwp_grid.code = area.codesource_area
-WHERE fact.id_metadata = 101 AND cwp_grid.gridtype = '5deg_x_5deg'
+WHERE fact.identifier = "global_catch_firms_level0_" AND cwp_grid.gridtype = '5deg_x_5deg'
 GROUP BY fact.id_area, area.codesource_area, "time".year, species_labels.codesource_species, fishing_fleet_labels.codesource_fishing_fleet,cwp_grid.geom;
 
 -- Refresh the materialized view

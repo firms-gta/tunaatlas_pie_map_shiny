@@ -31,7 +31,7 @@ RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r
 # RUN install2.r --error --skipinstalled --ncpus -1 remotes
 # RUN R -e "install.packages(c('jsonlite','yaml'), repos='https://cran.r-project.org/')"
 # clone app
-RUN git -C /root/ clone https://github.com/firms-gta/tunaatlas_pie_map_shiny.git && echo "OK!"
+RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny && echo "OK!"
 RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
 # install R app package dependencies
 RUN R -e "source('./srv/tunaatlas_pie_map_shiny/install.R')"

@@ -1,14 +1,22 @@
 
-# renv::init()
+# renv::init(force = TRUE)
 # renv::restore()
+# 
+# if (!requireNamespace("here", quietly = TRUE)) {
+#   install.packages("here")
+# }
+# 
+# library(here)
+# setwd(here())  # Set the working directory to the root of the project
+
 packages <- jsonlite::read_json("package.json")
-
-
+# 
+# 
 for (package_info in packages$dependencies) {
   pkg <- package_info$package
   package_version <- package_info$version
   package_repos <- package_info$repos
-  
+
   # Install and load the package (if not already installed)
   if (!require(pkg, character.only = TRUE)) {
     install.packages(pkg, version = package_version, repos = package_repos)
@@ -16,7 +24,7 @@ for (package_info in packages$dependencies) {
   }
 }
 
-# # Load packages
+# Load packages
 # invisible(lapply(packages$dependencies, function(pkg) {
 #   browser()
 #   if (!requireNamespace(pkg$package, quietly = TRUE)) {
@@ -37,6 +45,9 @@ for (package_info in packages$dependencies) {
 #   }
 # }))
 # 
-# 
-# 
-# 
+
+
+
+
+install.packages("htmltools")
+require(htmltools)

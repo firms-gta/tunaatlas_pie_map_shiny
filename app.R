@@ -12,7 +12,7 @@
 #     require(pkg, character.only = TRUE)
 #   }
 # }
-# renv::activate()
+renv::activate()
 
 ####################################################################################################################################################################################################################################
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")

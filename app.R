@@ -1,13 +1,47 @@
+# packages <- jsonlite::read_json("package.json")
+# # 
+# # 
+# for (package_info in packages$dependencies) {
+#   pkg <- package_info$package
+#   package_version <- package_info$version
+#   package_repos <- package_info$repos
+#   
+#   # Install and load the package (if not already installed)
+#   if (!require(pkg, character.only = TRUE)) {
+#     install.packages(pkg, version = package_version, repos = package_repos)
+#     require(pkg, character.only = TRUE)
+#   }
+# }
+# renv::activate()
+
 ####################################################################################################################################################################################################################################
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spdf.R")
 ####################################################################################################################################################################################################################################
-DRV=RPostgres::Postgres()
-con <- dbConnect(drv=DRV, dbname="tunaatlas_sandbox_local", user="tunaatlas_inv", password="fle087", host="localhost")
+dotenv::load_dot_env(".env")
+
+
+# Créer la chaîne de connexion en utilisant les variables d'environnement
+db_host <- Sys.getenv("DB_HOST")
+db_port <- as.integer(Sys.getenv("DB_PORT"))
+db_name <- Sys.getenv("DB_NAME")
+db_user <- Sys.getenv("DB_USER_READONLY")
+db_password <- Sys.getenv("DB_PASSWORD")
+
+# Établir la connexion à la base de données
+con <- dbConnect(RPostgreSQL::PostgreSQL(),
+                 host = db_host,
+                 port = db_port,
+                 dbname = db_name,
+                 user = db_user,
+                 password = db_password)
+
+
 ####################################################################################################################################################################################################################################
 
 global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
+require(shiny)
 wkt <- reactiveVal(global_wkt) 
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 

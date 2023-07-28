@@ -52,6 +52,8 @@ RUN R -e "renv::repair()"
 # Restore package dependencies using renv
 RUN R -e "renv::restore()"
 
+COPY .env /root/tunaatlas_pie_map_shiny
+
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 

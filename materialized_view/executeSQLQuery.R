@@ -1,4 +1,6 @@
-executeSQLQuery <- function(queryFile) {
+executeSQLQuery <- function(con, queryFile) {
+  require(DBI)
+  require(RSQLite)
   # Read the SQL query from the file
   query <- readLines(queryFile)
   
@@ -7,10 +9,6 @@ executeSQLQuery <- function(queryFile) {
   
   # Establish a database connection
   # Replace the connection details with your own
-  con <- DBI::dbConnect(
-    drv = RSQLite::SQLite(),
-    dbname = "path_to_your_database.db"
-  )
   
   # Execute the SQL query
   result <- DBI::dbGetQuery(con, query)

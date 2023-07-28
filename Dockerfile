@@ -34,8 +34,8 @@ RUN /rocker_scripts/install_geospatial.sh
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r-project.org/')"
 
-# Set the working directory to /root
-WORKDIR /root
+RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git && echo "OK!"
+RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
 
 # Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny
 ADD . /root/tunaatlas_pie_map_shiny

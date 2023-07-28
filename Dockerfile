@@ -1,8 +1,10 @@
-FROM rocker/r-ver:4.2.2
+# Use the rocker/r-ver:4.2.2 image as the base
+FROM rocker/r-ver:4.3.1
 
+# Maintainer information
 MAINTAINER Julien Barde "julien.barde@ird.fr"
 
-# system libraries of general use
+# Install system libraries of general use
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
@@ -15,33 +17,47 @@ RUN apt-get update && apt-get install -y \
     libgeos-dev \
     libgdal-dev \
     libv8-dev \
-	  libsodium-dev \
+    libsodium-dev \
     libsecret-1-dev \
     git
-    
+
+# Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y
+
+# Install cmake
 RUN apt-get update && apt-get -y install cmake
 
-#geospatial
+# Install additional geospatial libraries
 RUN /rocker_scripts/install_geospatial.sh
 
-# install R core package dependencies
+# Install R core package dependencies
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r-project.org/')"
-# RUN install2.r --error --skipinstalled --ncpus -1 remotes
-# RUN R -e "install.packages(c('jsonlite','yaml'), repos='https://cran.r-project.org/')"
-# clone app
-RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny && echo "OK!"
-RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
-# install R app package dependencies
-RUN R -e "source('./srv/tunaatlas_pie_map_shiny/install.R')"
 
-#etc dirs (for config)
-RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
+# Set the working directory to /root
+WORKDIR /root
 
+# Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny
+ADD . /root/tunaatlas_pie_map_shiny
+
+# Install renv package
+RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+
+# Set the working directory to /root/tunaatlas_pie_map_shiny
+WORKDIR /root/tunaatlas_pie_map_shiny
+
+# Attempt to repair broken symlinks and missing packages
+RUN R -e "renv::repair()"
+
+# Restore package dependencies using renv
+RUN R -e "renv::restore()"
+
+# Expose port 3838 for the Shiny app
 EXPOSE 3838
 
-CMD ["R", "-e shiny::runApp('/srv/tunaatlas_pie_map_shiny',port=3838,host='0.0.0.0')"]
+# Define the entry point to run the Shiny app
+CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
 
+# Update and install curl (if needed)
 RUN apt-get -y update
 RUN apt-get install -y curl

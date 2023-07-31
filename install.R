@@ -1,4 +1,10 @@
 
+# Get the list of package names available in the first library path
+package_names <- list.files(.libPaths()[1])
+
+# Load all packages available in the first library path
+lapply(package_names, library, character.only = TRUE)
+
 # renv::init(force = TRUE)
 # renv::restore()
 # 
@@ -10,8 +16,8 @@
 # setwd(here())  # Set the working directory to the root of the project
 
 packages <- jsonlite::read_json("package.json")
-# 
-# 
+#
+#
 for (package_info in packages$dependencies) {
   pkg <- package_info$package
   package_version <- package_info$version
@@ -47,7 +53,19 @@ for (package_info in packages$dependencies) {
 # 
 
 
-
-
-install.packages("htmltools")
-require(htmltools)
+# # Activate the renv environment (if not already activated)
+# if (!"renv" %in% names(sessionInfo()$otherPkgs)) {
+#   renv::activate()
+# }
+# 
+# # Automatically load all packages from the renv.lock file
+# renv::hydrate(prompt = FALSE)
+# 
+# # Attempt to repair broken symlinks and missing packages
+# renv::repair()
+# 
+# # Restore package dependencies using renv
+# renv::restore()
+# 
+# install.packages("htmltools")
+# require(htmltools)

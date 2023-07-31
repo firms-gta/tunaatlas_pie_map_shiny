@@ -12,15 +12,16 @@
 #     require(pkg, character.only = TRUE)
 #   }
 # }
-renv::activate()
+source('install.R')
 
+library(ncdf4)
 ####################################################################################################################################################################################################################################
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spdf.R")
 ####################################################################################################################################################################################################################################
 dotenv::load_dot_env(".env")
-
+require(dygraphs)
 
 # Créer la chaîne de connexion en utilisant les variables d'environnement
 db_host <- Sys.getenv("DB_HOST")
@@ -30,7 +31,7 @@ db_user <- Sys.getenv("DB_USER_READONLY")
 db_password <- Sys.getenv("DB_PASSWORD")
 
 # Établir la connexion à la base de données
-con <- dbConnect(RPostgreSQL::PostgreSQL(),
+con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(),
                  host = db_host,
                  port = db_port,
                  dbname = db_name,
@@ -42,6 +43,9 @@ con <- dbConnect(RPostgreSQL::PostgreSQL(),
 
 global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 require(shiny)
+require(DBI)
+require(plotly)
+require(leaflet.minicharts)
 wkt <- reactiveVal(global_wkt) 
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
@@ -52,8 +56,8 @@ target_flag <- dbGetQuery(con, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i
 
 default_species <- 'YFT'
 default_year <- '2010'
-default_flag <- unique(target_flag)
-default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-1)
+default_flag <- 'EUFRA'
+# default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-1)
 
 # sql_query <- reactiveVal(paste0("SELECT   geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt FROM public.i6i7i8
 #            WHERE  species IN ('",paste0(default_species,collapse="','"),"')
@@ -135,6 +139,10 @@ ui <- fluidPage(
                                           choices = target_species$species,
                                           selected= default_species
                                         ),
+                                        actionButton(
+                                          inputId = "submit",
+                                          label = "Submit"
+                                        ),
                                         selectInput(
                                           inputId = "year",
                                           label = "Year",
@@ -148,10 +156,6 @@ ui <- fluidPage(
                                           choices = target_flag$fishing_fleet,
                                           multiple = TRUE,
                                           selected= default_flag
-                                        ),
-                                        actionButton(
-                                          inputId = "submit",
-                                          label = "Submit"
                                         ),
                                         actionButton("resetWkt", "Reset WKT to global"),
                                         # plotOutput(outputId = "plot_species",width="300")
@@ -335,23 +339,28 @@ server <- function(input, output, session) {
   
   # AND year IN ('",paste0(input$year,collapse="','"),"');")
   
-  sql_query <- eventReactive(input$submit, {
-    if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
-    query <- glue::glue_sql(
-      "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
-      WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
-      AND species IN ({species_name*})
-      AND fishing_fleet IN ({fishing_fleet_name*})
-      AND year IN ({year_name*})
+  # sql_query <- eventReactive(input$submit, {
+  #   if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+  #   query <- glue::glue_sql(
+  #     "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
+  #     WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
+  #     AND species IN ({species_name*})
+  #     AND fishing_fleet IN ({fishing_fleet_name*})
+  #     AND year IN ({year_name*})
+  #     GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
+  #     ORDER BY species,fishing_fleet DESC",
+  #     wkt = wkt(),
+  #     species_name = input$species,
+  #     fishing_fleet_name = input$fishing_fleet,
+  #     year_name = year_name,
+  #     .con = con)
+  # },
+  # ignoreNULL = FALSE)
+  sql_query = eventReactive(input$submit, {
+  query <- "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
       GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
-      ORDER BY species,fishing_fleet DESC",
-      wkt = wkt(),
-      species_name = input$species,
-      fishing_fleet_name = input$fishing_fleet,
-      year_name = year_name,
-      .con = con)
-  },
-  ignoreNULL = FALSE)
+      ORDER BY species,fishing_fleet DESC"
+  }, ignoreNULL = FALSE)
   
   sql_query_species_pie <- eventReactive(input$submit, {
     if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
@@ -370,11 +379,11 @@ server <- function(input, output, session) {
   },
   ignoreNULL = FALSE)
   
-  
-  sql_query_metadata <- eventReactive(input$submit, {
-    paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom") 
-  },
-  ignoreNULL = FALSE)
+  sql_query_metadata<- NULL
+  # sql_query_metadata <- eventReactive(input$submit, {
+  #   paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom") 
+  # },
+  # ignoreNULL = FALSE)
   
   
   data <- eventReactive(input$submit, {
@@ -393,11 +402,11 @@ server <- function(input, output, session) {
   
   data_pie_map <- reactive({
     # st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(SELECT geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText(('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'),4326)) AND species IN ('YFT') AND fishing_fleet IN ('EUESP', 'EUFRA', 'JPN', 'TWN') AND year IN ('2010') GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year ORDER BY species,fishing_fleet DESC) AS foo GROUP BY species, fishing_fleet, geom"))
-    st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom"))  %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet)))))
+    st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom"))  %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  dplyr::mutate(total = rowSums(select(., all_of(input$fishing_fleet))))
   })
   
   data_pie_map_species <- reactive({
-    st_read(con, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query_species_pie(),") AS foo GROUP BY species, geom"))  %>% spread(species, measurement_value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(target_species$species)))))
+    st_read(con, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query_species_pie(),") AS foo GROUP BY species, geom"))  %>% spread(species, measurement_value, fill=0)  %>% dplyr::mutate(total = rowSums(select(., all_of(target_species$species))))
   })
   
   data_time_serie <- reactive({
@@ -616,7 +625,7 @@ server <- function(input, output, session) {
   
   
   output$plot_species<- renderPlotly({ 
-    # output$plot_species<- renderPlot({ 
+    # output$plot_species<- renderPlotly({ 
     df_i2 = st_read(con, query = paste0("SELECT species, count(species), sum(measurement_value) FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('",wkt(),"',4326)) GROUP BY species ORDER BY count;")) # %>% filter (count>mean(count))
     
     # https://www.tenderisthebyte.com/blog/2019/04/25/rotating-axis-labels-in-r/
@@ -760,7 +769,7 @@ server <- function(input, output, session) {
   
   
   output$pie_map_i11 <- renderPlotly({
-    # output$pie_map_i11 <- renderPlot({
+    # output$pie_map_i11 <- renderPlotly({
     
     # df_i11_map <- data_i11() %>% group_by(fishing_fleet) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) # %>% top_n(3)
     # metadata_i11 <- data() %>% group_by(fishing_fleet) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) # %>% top_n(3)
@@ -796,7 +805,7 @@ server <- function(input, output, session) {
   
   
   output$plot1_streamgraph <- renderDygraph({
-    # output$plot1_streamgraph <- renderPlot({
+    # output$plot1_streamgraph <- renderPlotly({
     
     # df_i1 = st_read(con, query = sql_query_metadata_plot1()) %>% group_by(species,year) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) %>% filter (measurement_value>mean(measurement_value)) # %>% top_n(3)
     # df_i1 = data() %>% group_by(species,year) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value))  %>% filter (measurement_value>mean(measurement_value)) # %>% top_n(3)

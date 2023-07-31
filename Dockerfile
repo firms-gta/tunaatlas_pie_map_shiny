@@ -43,6 +43,7 @@ WORKDIR /root
 # ADD . /root/tunaatlas_pie_map_shiny
 # clone app
 RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny && echo "OK!"
+# Create a symbolic link to the cloned repository
 RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
 
 # Install renv package
@@ -51,7 +52,8 @@ RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 # Set the working directory to /root/tunaatlas_pie_map_shiny
 WORKDIR /root/tunaatlas_pie_map_shiny
 
-RUN test -e .env && cp .env /root/tunaatlas_pie_map_shiny || true
+# Copy the .env file from the current directory to the working directory in the Docker image
+RUN set -e && test -e .env && cp .env /root/tunaatlas_pie_map_shiny || true
 
 RUN Rscript -e 'install.packages("renv")'
 RUN Rscript -e 'renv::activate()'

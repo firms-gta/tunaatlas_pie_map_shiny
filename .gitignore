@@ -3,5 +3,4 @@
 .RData
 .Ruserdata
 .env
-install.R
 package.json

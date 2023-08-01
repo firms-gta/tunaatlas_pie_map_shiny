@@ -140,10 +140,6 @@ ui <- fluidPage(
                                           choices = target_species$species,
                                           selected= default_species
                                         ),
-                                        actionButton(
-                                          inputId = "submit",
-                                          label = "Submit"
-                                        ),
                                         selectInput(
                                           inputId = "year",
                                           label = "Year",
@@ -157,6 +153,10 @@ ui <- fluidPage(
                                           choices = target_flag$fishing_fleet,
                                           multiple = TRUE,
                                           selected= default_flag
+                                        ),
+                                        actionButton(
+                                          inputId = "submit",
+                                          label = "Submit"
                                         ),
                                         actionButton("resetWkt", "Reset WKT to global"),
                                         # plotOutput(outputId = "plot_species",width="300")

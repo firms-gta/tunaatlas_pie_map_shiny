@@ -15,21 +15,21 @@ lapply(package_names, library, character.only = TRUE)
 # library(here)
 # setwd(here())  # Set the working directory to the root of the project
 
-packages <- jsonlite::read_json("package.json")
-#
-#
-for (package_info in packages$dependencies) {
-  pkg <- package_info$package
-  package_version <- package_info$version
-  package_repos <- package_info$repos
-
-  # Install and load the package (if not already installed)
-  if (!require(pkg, character.only = TRUE)) {
-    install.packages(pkg, version = package_version, repos = package_repos)
-    require(pkg, character.only = TRUE)
-  }
-}
-
+# packages <- jsonlite::read_json("package.json")
+# #
+# #
+# for (package_info in packages$dependencies) {
+#   pkg <- package_info$package
+#   package_version <- package_info$version
+#   package_repos <- package_info$repos
+# 
+#   # Install and load the package (if not already installed)
+#   if (!require(pkg, character.only = TRUE)) {
+#     install.packages(pkg, version = package_version, repos = package_repos)
+#     require(pkg, character.only = TRUE)
+#   }
+# }
+# 
 # Load packages
 # invisible(lapply(packages$dependencies, function(pkg) {
 #   browser()

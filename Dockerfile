@@ -52,8 +52,6 @@ RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 # Set the working directory to /root/tunaatlas_pie_map_shiny
 WORKDIR /root/tunaatlas_pie_map_shiny
 
-# Copy the .env file from the current directory to the working directory in the Docker image
-RUN set -e && test -e .env && cp .env /root/tunaatlas_pie_map_shiny || true
 
 RUN Rscript -e 'install.packages("renv")'
 RUN Rscript -e 'renv::activate()'

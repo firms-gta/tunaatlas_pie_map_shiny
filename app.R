@@ -14,7 +14,7 @@
 # }
 source('install.R')
 
-library(ncdf4)
+
 ####################################################################################################################################################################################################################################
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
@@ -22,6 +22,11 @@ source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spd
 ####################################################################################################################################################################################################################################
 dotenv::load_dot_env(".env")
 require(dygraphs)
+require(shiny)
+require(DBI)
+require(plotly)
+require(leaflet.minicharts)
+require(ncdf4)
 
 # Créer la chaîne de connexion en utilisant les variables d'environnement
 db_host <- Sys.getenv("DB_HOST")
@@ -42,10 +47,6 @@ con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(),
 ####################################################################################################################################################################################################################################
 
 global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
-require(shiny)
-require(DBI)
-require(plotly)
-require(leaflet.minicharts)
 wkt <- reactiveVal(global_wkt) 
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
@@ -402,12 +403,15 @@ server <- function(input, output, session) {
   
   data_pie_map <- reactive({
     # st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(SELECT geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText(('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'),4326)) AND species IN ('YFT') AND fishing_fleet IN ('EUESP', 'EUFRA', 'JPN', 'TWN') AND year IN ('2010') GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year ORDER BY species,fishing_fleet DESC) AS foo GROUP BY species, fishing_fleet, geom"))
-    st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom"))  %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  dplyr::mutate(total = rowSums(select(., all_of(input$fishing_fleet))))
+    st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom")) %>% 
+      spread(fishing_fleet, measurement_value, fill = 0) %>%
+      dplyr::mutate(total = rowSums(across(any_of(input$fishing_fleet))))
   })
   
   data_pie_map_species <- reactive({
-    st_read(con, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query_species_pie(),") AS foo GROUP BY species, geom"))  %>% spread(species, measurement_value, fill=0)  %>% dplyr::mutate(total = rowSums(select(., all_of(target_species$species))))
-  })
+    st_read(con, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query_species_pie(),") AS foo GROUP BY species, geom"))  %>% 
+      spread(species, measurement_value, fill=0)  %>%  
+      dplyr::mutate(total = rowSums(across(any_of(as.vector(target_species$species)))))  })
   
   data_time_serie <- reactive({
     st_read(con, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, year")) 

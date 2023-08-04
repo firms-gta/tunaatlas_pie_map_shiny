@@ -358,9 +358,21 @@ server <- function(input, output, session) {
   # },
   # ignoreNULL = FALSE)
   sql_query = eventReactive(input$submit, {
-  query <- "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
+    if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+    
+    query <- glue::glue_sql(
+  "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
+  ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
+      WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
+      AND fishing_fleet IN ({fishing_fleet_name*})
+      AND year IN ({year_name*})
       GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
-      ORDER BY species,fishing_fleet DESC"
+      ORDER BY species,fishing_fleet DESC", 
+      wkt = wkt(),
+      species_name = input$species,
+      fishing_fleet_name = input$fishing_fleet,
+      year_name = year_name,
+      .con = con)
   }, ignoreNULL = FALSE)
   
   sql_query_species_pie <- eventReactive(input$submit, {

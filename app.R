@@ -20,7 +20,7 @@ source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtl
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spdf.R")
 ####################################################################################################################################################################################################################################
-try(dotenv::load_dot_env(".env"))
+dotenv::load_dot_env("connection_tunaatlas_inv.txt")
 require(dygraphs)
 require(shiny)
 require(DBI)

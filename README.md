@@ -55,7 +55,11 @@ And then point your browser to http://localhost:3839
 
 As well it can be runned using the command 
 
+```
+docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest
+
 docker run -p 3838:3838 -v path_to_txt/connection_tunaatlas_inv.txt:/root/tunaatlas_pie_map_shiny/connection_tunaatlas_inv.txt ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest
+```
 
 in a terminal pointing to a .txt that need to contains the following informations:
 

@@ -1,17 +1,3 @@
-# packages <- jsonlite::read_json("package.json")
-# # 
-# # 
-# for (package_info in packages$dependencies) {
-#   pkg <- package_info$package
-#   package_version <- package_info$version
-#   package_repos <- package_info$repos
-#   
-#   # Install and load the package (if not already installed)
-#   if (!require(pkg, character.only = TRUE)) {
-#     install.packages(pkg, version = package_version, repos = package_repos)
-#     require(pkg, character.only = TRUE)
-#   }
-# }
 source('install.R')
 
 
@@ -59,7 +45,6 @@ target_flag <- dbGetQuery(con, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i
 default_species <- 'YFT'
 default_year <- '2010'
 default_flag <- 'EUFRA'
-# default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-1)
 
 # sql_query <- reactiveVal(paste0("SELECT   geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt FROM public.i6i7i8
 #            WHERE  species IN ('",paste0(default_species,collapse="','"),"')
@@ -80,7 +65,6 @@ palette3_all <- unlist(mapply(brewer.pal,
                               palette3_info$maxcolors,
                               rownames(palette3_info)))
 set.seed(2643598)  
-# palette3 <- sample(palette3_all, nrow(unique(df_i11_map$fishing_fleet)), replace=TRUE)
 palette3 <- sample(palette3_all, nrow(target_flag), replace=TRUE)
 names(palette3) = target_flag$fishing_fleet
 palette3
@@ -93,29 +77,6 @@ set.seed(2643598)
 # palette3 <- sample(palette3_all, nrow(unique(df_i11_map$fishing_fleet)), replace=TRUE)
 palette_species <- sample(palette3_species, nrow(target_species), replace=TRUE)
 names(palette_species) = target_species$species
-
-
-# print(palette3)
-# class(palette3)
-# palette3[names(palette3) != c('AGO','ALB')]
-
-
-# palette3[-(1:10)]
-
-# palette3_named = setNames(object = scales::hue_pal()(palette3), nm = target_flag)
-# print(palette3_named)
-
-# paldark <- colorFactor(
-#   palette = 'Dark2',
-#   domain = target_flag$fishing_fleet
-# )
-# print(paldark)
-
-# # If you want to set your own colors manually:
-# pal <- colorFactor(
-#   palette = c('red', 'blue', 'green', 'purple', 'orange'),
-#   domain = df$type
-# )
 
 ####################################################################################################################################################################################################################################
 
@@ -366,6 +327,7 @@ server <- function(input, output, session) {
   ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
       WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
       AND fishing_fleet IN ({fishing_fleet_name*})
+      AND species IN ({species_name*})
       AND year IN ({year_name*})
       GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
       ORDER BY species,fishing_fleet DESC", 
@@ -576,7 +538,7 @@ server <- function(input, output, session) {
     # https://r-spatial.github.io/sf/articles/sf5.html
     # https://rstudio.github.io/leaflet/showhide.html
     mymap <- leaflet() %>% 
-      addProviderTiles("Esri.OceanBasemap") %>% 
+      addProviderTiles("Esri.NatGeoWorldMap") %>% 
       # setView(lng = lon_centroid, lat =lat_centroid, zoom = 3
       # ) %>%
       clearBounds() %>%
@@ -701,7 +663,7 @@ server <- function(input, output, session) {
     map_i11 <-  leaflet() %>%  
       # map_i11 <-  leaflet(options = leafletOptions(zoomSnap=0.25)) %>%  
       # setView(lng = lon_centroid, lat = lat_centroid, zoom = 3) %>% 
-      addProviderTiles("Esri.OceanBasemap", group = "background") %>%
+      addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
       clearBounds() %>% 
       addDrawToolbar(
         targetGroup = "draw",
@@ -744,7 +706,7 @@ server <- function(input, output, session) {
   #   req(input$map_i11_zoom)
   #   if(zoom()!=new_zoom & !is.null(input$map_i11_zoom)){
   #     zoom(new_zoom)
-  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.OceanBasemap", group = "background") %>%  clearBounds() %>%
+  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%  clearBounds() %>%
   #     map_i11_proxy = leafletProxy("map_i11") %>% clearMinicharts() %>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>% 
   #       addMinicharts(lng = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "X"],
   #                     lat = st_coordinates(st_centroid( data_pie_map(), crs = 4326))[, "Y"],
@@ -768,7 +730,7 @@ server <- function(input, output, session) {
       zoom(new_zoom)
       lat_centroid <-input$map_i11_center[2]
       lon_centroid <- input$map_i11_center[1]
-      #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.OceanBasemap", group = "background") %>%  clearBounds() %>%
+      #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%  clearBounds() %>%
       map_i11_proxy = leafletProxy("map_i11") %>% clearMinicharts() %>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>% 
         addMinicharts(lng = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "X"],
                       lat = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "Y"],
@@ -893,7 +855,7 @@ server <- function(input, output, session) {
     la_palette_species = palette_species[names(palette_species) %in% colnames(dplyr::select(toto,-total))]
     
     data_pie_map_species <-  leaflet() %>%  
-      addProviderTiles("Esri.OceanBasemap", group = "background") %>%
+      addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
       clearBounds() %>% 
       addDrawToolbar(
         targetGroup = "draw",
@@ -931,7 +893,7 @@ server <- function(input, output, session) {
   #     zoom(new_zoom)
   #     lat_centroid <-input$map_i11_center[2]
   #     lon_centroid <- input$map_i11_center[1]
-  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.OceanBasemap", group = "background") %>%  clearBounds() %>%
+  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%  clearBounds() %>%
   #     map_i11_proxy = leafletProxy("map_i11") %>% clearMinicharts() %>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>% 
   #       addMinicharts(lng = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "X"],
   #                     lat = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "Y"],

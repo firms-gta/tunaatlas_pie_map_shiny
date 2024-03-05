@@ -1,10 +1,36 @@
+source('install.R')
+
+
 ####################################################################################################################################################################################################################################
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spdf.R")
 ####################################################################################################################################################################################################################################
-DRV=RPostgres::Postgres()
-con <- dbConnect(drv=DRV, dbname="geoflow", user="tunaatlas_inv", password="fle087", host="localhost")
+try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
+
+require(dygraphs)
+require(shiny)
+require(DBI)
+require(plotly)
+require(leaflet.minicharts)
+require(ncdf4)
+
+# Créer la chaîne de connexion en utilisant les variables d'environnement
+db_host <- Sys.getenv("DB_HOST")
+db_port <- as.integer(Sys.getenv("DB_PORT"))
+db_name <- Sys.getenv("DB_NAME")
+db_user <- Sys.getenv("DB_USER_READONLY")
+db_password <- Sys.getenv("DB_PASSWORD")
+
+# Établir la connexion à la base de données
+con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(),
+                 host = db_host,
+                 port = db_port,
+                 dbname = db_name,
+                 user = db_user,
+                 password = db_password)
+
+
 ####################################################################################################################################################################################################################################
 
 global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
@@ -12,27 +38,24 @@ wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
 
-target_species <- dbGetQuery(con, "SELECT DISTINCT(species) FROM fact_tables.i6i7i8 ORDER BY species;")
-target_year <- dbGetQuery(con, "SELECT DISTINCT(year) FROM fact_tables.i6i7i8 ORDER BY year;")
-target_flag <- dbGetQuery(con, "SELECT DISTINCT(country) FROM fact_tables.i6i7i8 ORDER BY country;")
+target_species <- dbGetQuery(con, "SELECT DISTINCT(species) FROM public.i6i7i8 ORDER BY species;")
+target_year <- dbGetQuery(con, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER BY year;")
+target_flag <- dbGetQuery(con, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;")
 
 default_species <- 'YFT'
 default_year <- '2010'
-default_flag <- c('EUESP','EUFRA','TWN','JPN')
+default_flag <- 'EUFRA'
 
-# default_flag <- unique(target_flag)
-# default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-1)
-
-# sql_query <- reactiveVal(paste0("SELECT   geom, species, country, SUM(value) as value, ST_asText(geom) AS geom_wkt FROM fact_tables.i6i7i8
+# sql_query <- reactiveVal(paste0("SELECT   geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt FROM public.i6i7i8
 #            WHERE  species IN ('",paste0(default_species,collapse="','"),"')
-#                       AND country IN ('",paste0(default_flag,collapse="','"),"')
+#                       AND fishing_fleet IN ('",paste0(default_flag,collapse="','"),"')
 #                       AND year IN ('",paste0(default_year,collapse="','"),"')
-#            GROUP BY species, country,geom_wkt, geom
-#            ORDER BY species,country DESC
+#            GROUP BY species, fishing_fleet,geom_wkt, geom
+#            ORDER BY species,fishing_fleet DESC
 #            ;"))
 
 
-filters_combinations <- dbGetQuery(con, "SELECT species, year, country FROM  fact_tables.i6i7i8 GROUP BY species, year, country;")
+filters_combinations <- dbGetQuery(con, "SELECT species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY species, year, fishing_fleet;")
 
 
 # https://www.rapidtables.com/convert/color/hex-to-rgb.html
@@ -42,9 +65,8 @@ palette3_all <- unlist(mapply(brewer.pal,
                               palette3_info$maxcolors,
                               rownames(palette3_info)))
 set.seed(2643598)  
-# palette3 <- sample(palette3_all, nrow(unique(df_i11_map$country)), replace=TRUE)
 palette3 <- sample(palette3_all, nrow(target_flag), replace=TRUE)
-names(palette3) = target_flag$country
+names(palette3) = target_flag$fishing_fleet
 palette3
 
 palette3_speciesinfo <- brewer.pal.info[brewer.pal.info$category == "qual", ]  
@@ -52,32 +74,9 @@ palette3_species <- unlist(mapply(brewer.pal,
                                   palette3_speciesinfo$maxcolors,
                                   rownames(palette3_speciesinfo)))
 set.seed(2643598)  
-# palette3 <- sample(palette3_all, nrow(unique(df_i11_map$country)), replace=TRUE)
+# palette3 <- sample(palette3_all, nrow(unique(df_i11_map$fishing_fleet)), replace=TRUE)
 palette_species <- sample(palette3_species, nrow(target_species), replace=TRUE)
 names(palette_species) = target_species$species
-
-
-# print(palette3)
-# class(palette3)
-# palette3[names(palette3) != c('AGO','ALB')]
-
-
-# palette3[-(1:10)]
-
-# palette3_named = setNames(object = scales::hue_pal()(palette3), nm = target_flag)
-# print(palette3_named)
-
-# paldark <- colorFactor(
-#   palette = 'Dark2',
-#   domain = target_flag$country
-# )
-# print(paldark)
-
-# # If you want to set your own colors manually:
-# pal <- colorFactor(
-#   palette = c('red', 'blue', 'green', 'purple', 'orange'),
-#   domain = df$type
-# )
 
 ####################################################################################################################################################################################################################################
 
@@ -111,9 +110,9 @@ ui <- fluidPage(
                                           selected= default_year
                                         ),
                                         selectInput(
-                                          inputId = "country",
-                                          label = "Country",
-                                          choices = target_flag$country,
+                                          inputId = "fishing_fleet",
+                                          label = "Fishing_fleet",
+                                          choices = target_flag$fishing_fleet,
                                           multiple = TRUE,
                                           selected= default_flag
                                         ),
@@ -125,7 +124,7 @@ ui <- fluidPage(
                                         # plotOutput(outputId = "plot_species",width="300")
                                         tags$br(),
                                         tags$br(),
-                                        plotlyOutput(outputId = "plot_species",width="100%")
+                                        plotOutput(outputId = "plot_species",width="100%")
                                         
                                         # actionButton("resetWkt", "Reset WKT to global"),
                                         # plotOutput(outputId = "plot_species")
@@ -151,10 +150,10 @@ ui <- fluidPage(
                                         # plotOutput("plot1_streamgraph", height=200, width="100%"),
                                         # dygraphOutput("plot1_streamgraph", height=400, width="100%"),
                                         tags$br(),
-                                        plotlyOutput("pie_map_i11", width="100%"),
+                                        plotOutput("pie_map_i11", width="100%"),
                                         tags$br(),
                                         # h6(textOutput("sars_clean_date_reactive"), align = "right"),
-                                        # h6(textOutput("sars_reactive_country_count"), align = "right"),
+                                        # h6(textOutput("sars_reactive_fishing_fleet_count"), align = "right"),
                                         # plotOutput("sars_epi_curve", height="130px", width="100%"),
                                         # plotOutput("sars_cumulative_plot", height="130px", width="100%"),
                                         sliderInput(inputId="yearInterval", "Select period of interest :",
@@ -243,7 +242,7 @@ ui <- fluidPage(
                                             "Funding : BlueCloud ",
                                             a(href="https://www.documentation.ird.fr/hor/fdi:010012425",
                                               "IRD Tuna Atlas (Alain Fontenau)"),
-                                            a(href="https://github.com/juldebar/IRDTunaAtlas/wiki/Indicator-I11-:-Catches-by-country",
+                                            a(href="https://github.com/juldebar/IRDTunaAtlas/wiki/Indicator-I11-:-Catches-by-fishing_fleet",
                                               "IRD Indicator 11"),
                                             a(href="https://www.documentation.ird.fr/hor/fdi:010012425",
                                               "IRD Tuna Atlas (Alain Fontenau)"),
@@ -277,7 +276,7 @@ ui <- fluidPage(
                                  #            tags$br(),tags$br(),tags$h4("Sources"),
                                  #            tags$b("FIRMS / tuna RFMOs: "), tags$a(href="https://www", "IOTC page,")," with additional information from the ",tags$a(href="https://www", "FIRMS page."),
                                  #            " In previous versions of this site (up to 17th March 2020), updates were based solely on the WHO's situation reports.",tags$br(),
-                                 #            tags$b("Country mapping coordinates: "), tags$a(href="https://github.com/martynafford/natural-earth-geojson", "Martyn Afford's Github repository"),
+                                 #            tags$b("Fishing_fleet mapping coordinates: "), tags$a(href="https://github.com/martynafford/natural-earth-geojson", "Martyn Afford's Github repository"),
                                  #            
                                  #            tags$br(),tags$br(),tags$h4("Authors"),
                                  #            "Dr XXX BB, IRD",tags$br(),
@@ -303,51 +302,69 @@ server <- function(input, output, session) {
   
   # AND year IN ('",paste0(input$year,collapse="','"),"');")
   
-  sql_query <- eventReactive(input$submit, {
+  # sql_query <- eventReactive(input$submit, {
+  #   if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+  #   query <- glue::glue_sql(
+  #     "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
+  #     WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
+  #     AND species IN ({species_name*})
+  #     AND fishing_fleet IN ({fishing_fleet_name*})
+  #     AND year IN ({year_name*})
+  #     GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
+  #     ORDER BY species,fishing_fleet DESC",
+  #     wkt = wkt(),
+  #     species_name = input$species,
+  #     fishing_fleet_name = input$fishing_fleet,
+  #     year_name = year_name,
+  #     .con = con)
+  # },
+  # ignoreNULL = FALSE)
+  sql_query = eventReactive(input$submit, {
     if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+    
     query <- glue::glue_sql(
-      "SELECT   geom_id, geom, species, country, SUM(value) as value, ST_asText(geom) AS geom_wkt, year FROM fact_tables.i6i7i8
+  "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
+  ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
       WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
+      AND fishing_fleet IN ({fishing_fleet_name*})
       AND species IN ({species_name*})
-      AND country IN ({country_name*})
       AND year IN ({year_name*})
-      GROUP BY species, country,geom_id, geom_wkt, geom , year
-      ORDER BY species,country DESC",
+      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
+      ORDER BY species,fishing_fleet DESC", 
       wkt = wkt(),
       species_name = input$species,
-      country_name = input$country,
+      fishing_fleet_name = input$fishing_fleet,
       year_name = year_name,
       .con = con)
-  },
-  ignoreNULL = FALSE)
+  }, ignoreNULL = FALSE)
   
   sql_query_species_pie <- eventReactive(input$submit, {
     if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
     query <- glue::glue_sql(
-      "SELECT   geom_id, geom, species, SUM(value) as value, ST_asText(geom) AS geom_wkt FROM fact_tables.i6i7i8
+      "SELECT   geom_id, geom, species, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt FROM public.i6i7i8
       WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
-      AND country IN ({country_name*})
+      AND fishing_fleet IN ({fishing_fleet_name*})
       AND year IN ({year_name*})
       GROUP BY species, geom_id, geom_wkt, geom
-      ORDER BY value DESC",
+      ORDER BY measurement_value DESC",
       wkt = wkt(),
       species_name = input$species,
-      country_name = input$country,
+      fishing_fleet_name = input$fishing_fleet,
       year_name = year_name,
       .con = con)
   },
   ignoreNULL = FALSE)
   
-  
-  sql_query_metadata <- eventReactive(input$submit, {
-    paste0("SELECT species, country, geom, sum(value) AS value FROM(",sql_query(),") AS foo GROUP BY species, country, geom") 
-  },
-  ignoreNULL = FALSE)
+  sql_query_metadata<- NULL
+  # sql_query_metadata <- eventReactive(input$submit, {
+  #   paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom") 
+  # },
+  # ignoreNULL = FALSE)
   
   
   data <- eventReactive(input$submit, {
     # req(input$species)
-    # req(input$country)
+    # req(input$fishing_fleet)
     # req(input$year)
     outp <- st_read(con, query = sql_query())
     outp
@@ -356,24 +373,27 @@ server <- function(input, output, session) {
   
   
   metadata <- reactive({
-    st_read(con, query = paste0("SELECT species, geom, sum(value) AS value FROM(",sql_query(),") AS foo GROUP BY species, geom")) 
+    st_read(con, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, geom")) 
   })  
   
   data_pie_map <- reactive({
-    # st_read(con, query = paste0("SELECT species, country, geom, sum(value) AS value FROM(SELECT geom_id, geom, species, country, SUM(value) as value, ST_asText(geom) AS geom_wkt, year FROM fact_tables.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText(('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'),4326)) AND species IN ('YFT') AND country IN ('EUESP', 'EUFRA', 'JPN', 'TWN') AND year IN ('2010') GROUP BY species, country,geom_id, geom_wkt, geom , year ORDER BY species,country DESC) AS foo GROUP BY species, country, geom"))
-    st_read(con, query = paste0("SELECT species, country, geom, sum(value) AS value FROM(",sql_query(),") AS foo GROUP BY species, country, geom"))  %>% spread(country, value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$country)))))
+    # st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(SELECT geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText(('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'),4326)) AND species IN ('YFT') AND fishing_fleet IN ('EUESP', 'EUFRA', 'JPN', 'TWN') AND year IN ('2010') GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year ORDER BY species,fishing_fleet DESC) AS foo GROUP BY species, fishing_fleet, geom"))
+    st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom")) %>% 
+      spread(fishing_fleet, measurement_value, fill = 0) %>%
+      dplyr::mutate(total = rowSums(across(any_of(input$fishing_fleet))))
   })
   
   data_pie_map_species <- reactive({
-    st_read(con, query = paste0("SELECT species, geom, sum(value) AS value FROM(",sql_query_species_pie(),") AS foo GROUP BY species, geom"))  %>% spread(species, value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(target_species$species)))))
-  })
+    st_read(con, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query_species_pie(),") AS foo GROUP BY species, geom"))  %>% 
+      spread(species, measurement_value, fill=0)  %>%  
+      dplyr::mutate(total = rowSums(across(any_of(as.vector(target_species$species)))))  })
   
   data_time_serie <- reactive({
-    st_read(con, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(value) AS value FROM(",sql_query(),") AS foo GROUP BY species, year")) 
+    st_read(con, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, year")) 
   })
   
-  data_pie_chart_country <- reactive({
-    st_read(con, query = paste0("SELECT country, sum(value) AS value FROM(",sql_query(),") AS foo GROUP BY country ORDER BY country"))
+  data_pie_chart_fishing_fleet <- reactive({
+    st_read(con, query = paste0("SELECT fishing_fleet, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY fishing_fleet ORDER BY fishing_fleet"))
   })
   
   
@@ -407,25 +427,25 @@ server <- function(input, output, session) {
   
   # observeEvent(data(), {
   #   # metadata(st_read(con, query = sql_query_metadata()))
-  #   metadata(data()  %>% group_by(species,geom_wkt) %>% summarise(value = sum(value)))
+  #   metadata(data()  %>% group_by(species,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)))
   # },
   # ignoreInit = FALSE)
   # 
   # observeEvent(data(), {
-  #   data_i11(data(data() %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$country)))))))
+  #   data_i11(data(data() %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet)))))))
   # },
   # ignoreInit = FALSE)
   
   
   # data_i11 <- eventReactive(input$submit, {
-  #   # data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value, fill=0)  %>% 
-  #   #   mutate(total = rowSums(across(any_of(as.vector(input$country)))))
-  #   data()  %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$country))))) %>% filter (total>mean(total))
-  #   # data() %>% spread(country, value, fill=0)  %>% mutate(total = rowSums(across(any_of(as.vector(input$country)))))
-  #   # st_read(con, query = "SELECT ogc_fid, geom_id, geom, year, species, country, value, count,ST_asText(geom) AS geom_wkt FROM fact_tables.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('SKJ') AND country IN ('EU.ESP','JPN','TWN') AND year IN ('2014')") %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value)  %>%
+  #   # data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value, fill=0)  %>% 
+  #   #   mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet)))))
+  #   data()  %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet))))) %>% filter (total>mean(total))
+  #   # data() %>% spread(fishing_fleet, measurement_value, fill=0)  %>% mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet)))))
+  #   # st_read(con, query = "SELECT ogc_fid, geom_id, geom, year, species, fishing_fleet, measurement_value, count,ST_asText(geom) AS geom_wkt FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('SKJ') AND fishing_fleet IN ('EU.ESP','JPN','TWN') AND year IN ('2014')") %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value)  %>%
   #   #   replace(is.na(.), 0) %>% mutate(total = rowSums(across(all_of(c("JPN","TWN"))))) %>% class()
   #     # mutate(total = rowSums(across(all_of(c("JPN","TWN")))))
-  #      # rowwise()  %>% mutate(sumrow = as_data_frame(.)[,-c(1:3)])     replace(is.na(.), 0) %>%    all_of(input$country)))    mutate(sum = rowSums(across(where(is.numeric)))))
+  #      # rowwise()  %>% mutate(sumrow = as_data_frame(.)[,-c(1:3)])     replace(is.na(.), 0) %>%    all_of(input$fishing_fleet)))    mutate(sum = rowSums(across(where(is.numeric)))))
   # },
   # ignoreNULL = FALSE)
   
@@ -434,8 +454,8 @@ server <- function(input, output, session) {
   
   
   # metadata_i11 <- eventReactive(input$submit, {
-  #   # data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(country) %>% summarise(value = sum(value))  %>% arrange(desc(value)) # %>% top_n(3)
-  #   data() %>% group_by(country) %>% summarise(value = sum(value))  %>% arrange(desc(value)) # %>% top_n(3)
+  #   # data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(fishing_fleet) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) # %>% top_n(3)
+  #   data() %>% group_by(fishing_fleet) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) # %>% top_n(3)
   #   
   # },
   # ignoreNULL = FALSE)
@@ -449,14 +469,14 @@ server <- function(input, output, session) {
   
   
   change <- reactive({
-    unlist(strsplit(paste(c(input$species,input$year,input$country),collapse="|"),"|",fixed=TRUE))
+    unlist(strsplit(paste(c(input$species,input$year,input$fishing_fleet),collapse="|"),"|",fixed=TRUE))
   })
   
   
   observeEvent(input$species,{
     temp <- filters_combinations %>% filter(species %in% change()[1])
     updateSelectInput(session,"year",choices = unique(temp$year),selected=c(seq(min(temp$year):max(temp$year))+min(temp$year)-1))
-    updateSelectInput(session,"country",choices = unique(temp$country),selected=unique(temp$country))
+    updateSelectInput(session,"fishing_fleet",choices = unique(temp$fishing_fleet),selected=unique(temp$fishing_fleet))
     
   },
   ignoreInit = TRUE)
@@ -479,15 +499,15 @@ server <- function(input, output, session) {
   
   output$DT <- renderDT({
     data()  %>% st_drop_geometry()
-    # dplyr::select(species,country,value,geom_wkt)
+    # dplyr::select(species,fishing_fleet,measurement_value,geom_wkt)
     # dplyr::select(-c(geom))
     # as_data_frame(toto)[-c(1:3,ncol(as_data_frame(toto)))]
   }) 
   
   
   output$DTi11 <- renderDT({
-    # this <- data() %>% group_by(country) %>% summarise(value = sum(value))  %>% arrange(desc(value))
-    # toto <- st_read(con, query = "SELECT geom_id, geom, species, country, SUM(value) as value, ST_asText(geom) AS geom_wkt, year FROM fact_tables.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('YFT') AND country IN ('EUESP','EUFRA','JPN','TWN') AND year IN ('2010','2011') GROUP BY species, country,geom_id, geom_wkt, geom , year ORDER BY species,country DESC") %>% group_by(species,country,geom_id) %>% summarise(value = sum(value))  %>% spread(country, value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$country)))))
+    # this <- data() %>% group_by(fishing_fleet) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value))
+    # toto <- st_read(con, query = "SELECT geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('YFT') AND fishing_fleet IN ('EUESP','EUFRA','JPN','TWN') AND year IN ('2010','2011') GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year ORDER BY species,fishing_fleet DESC") %>% group_by(species,fishing_fleet,geom_id) %>% summarise(measurement_value = sum(measurement_value))  %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet)))))
     
     data_pie_map_species()  %>% st_drop_geometry()
     
@@ -498,38 +518,38 @@ server <- function(input, output, session) {
   output$mymap <- renderLeaflet({
     
     
-    # df <-st_read(con, query = "SELECT geom, year, species, country, value, ST_asText(geom) AS geom_wkt, ST_area(geom) AS area FROM fact_tables.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('SKJ') AND country IN ('EUESP','JPN','TWN') AND year IN ('2014') ORDER BY area DESC LIMIT 500;") %>% group_by(species,geom_wkt) %>% summarise(value = sum(value))
-    # df <- metadata() %>% group_by(species,geom_wkt,area) %>% summarise(value = sum(value)) # %>% mutate(area=sf::st_area(st_as_sfc(geom_wkt)))  %>% filter(area>25)
+    # df <-st_read(con, query = "SELECT geom, year, species, fishing_fleet, measurement_value, ST_asText(geom) AS geom_wkt, ST_area(geom) AS area FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('SKJ') AND fishing_fleet IN ('EUESP','JPN','TWN') AND year IN ('2014') ORDER BY area DESC LIMIT 500;") %>% group_by(species,geom_wkt) %>% summarise(measurement_value = sum(measurement_value))
+    # df <- metadata() %>% group_by(species,geom_wkt,area) %>% summarise(measurement_value = sum(measurement_value)) # %>% mutate(area=sf::st_area(st_as_sfc(geom_wkt)))  %>% filter(area>25)
     # df <- metadata() 
-    # df <- data()  %>% group_by(species,geom_id) %>% summarise(value = sum(value))
+    # df <- data()  %>% group_by(species,geom_id) %>% summarise(measurement_value = sum(measurement_value))
     df <- metadata()
-    # df <- st_read(con, query = query) %>% group_by(country,year,species,geom_wkt) %>% summarise(value = sum(value))  # %>% filter(species %in% input$species_i6i7i8)
+    # df <- st_read(con, query = query) %>% group_by(fishing_fleet,year,species,geom_wkt) %>% summarise(measurement_value = sum(measurement_value))  # %>% filter(species %in% input$species_i6i7i8)
     
     lat_centroid <- st_coordinates(centroid())[2]
     lon_centroid <- st_coordinates(centroid())[1]
     
     # brewer.pal(7, "OrRd")
-    # pal <- colorNumeric(palette = "YlGnBu",domain = df$value)
+    # pal <- colorNumeric(palette = "YlGnBu",domain = df$measurement_value)
     # pal_fun <- colorQuantile("YlOrRd", NULL, n = 10)
-    # qpal <- colorQuantile("RdYlBu",df$value, n = 10)
-    qpal <- colorQuantile(rev(viridis::viridis(10)),df$value, n=10)
+    # qpal <- colorQuantile("RdYlBu",df$measurement_value, n = 10)
+    qpal <- colorQuantile(rev(viridis::viridis(10)),df$measurement_value, n=10)
     # qpal <- brewer.pal(n = 20, name = "RdBu")
     
     # https://r-spatial.github.io/sf/articles/sf5.html
     # https://rstudio.github.io/leaflet/showhide.html
     mymap <- leaflet() %>% 
-      addProviderTiles("Esri.OceanBasemap") %>% 
+      addProviderTiles("Esri.NatGeoWorldMap") %>% 
       # setView(lng = lon_centroid, lat =lat_centroid, zoom = 3
       # ) %>%
       clearBounds() %>%
       addPolygons(data = df,
-                  label = ~value,
-                  popup = ~paste0("Total catches for ",species," species in this square of the grid: ", round(value), " ton(t) et des brouettes"),
+                  label = ~measurement_value,
+                  popup = ~paste0("Total catches for ",species," species in this square of the grid: ", round(measurement_value), " ton(t) et des brouettes"),
                   # popup = ~paste0("Captures de",species,": ", area, " tonnes(t) et des brouettes"),
-                  # fillColor = ~pal_fun(value),
+                  # fillColor = ~pal_fun(measurement_value),
                   # fillColor = brewer.pal(n = 20, name = "RdBu"),
-                  fillColor = ~qpal(value),
-                  # color = ~pal(value)
+                  fillColor = ~qpal(measurement_value),
+                  # color = ~pal(measurement_value)
                   fill = TRUE,
                   fillOpacity = 0.8,
                   smoothFactor = 0.5) %>% 
@@ -543,7 +563,7 @@ server <- function(input, output, session) {
         overlayGroups = c("draw"),
         options = layersControlOptions(collapsed = FALSE)
       )  %>% 
-      leaflet::addLegend("bottomright", pal = qpal, values = df$value,
+      leaflet::addLegend("bottomright", pal = qpal, values = df$measurement_value,
                          title = "Total catch per cell for selected criteria",
                          labFormat = labelFormat(prefix = "MT "),
                          opacity = 1
@@ -584,8 +604,8 @@ server <- function(input, output, session) {
   
   
   output$plot_species<- renderPlotly({ 
-    # output$plot_species<- renderPlot({ 
-    df_i2 = st_read(con, query = paste0("SELECT species, count(species), sum(value) FROM fact_tables.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('",wkt(),"',4326)) GROUP BY species ORDER BY count;")) # %>% filter (count>mean(count))
+    # output$plot_species<- renderPlotly({ 
+    df_i2 = st_read(con, query = paste0("SELECT species, count(species), sum(measurement_value) FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('",wkt(),"',4326)) GROUP BY species ORDER BY count;")) # %>% filter (count>mean(count))
     
     # https://www.tenderisthebyte.com/blog/2019/04/25/rotating-axis-labels-in-r/
     # barplot(as.vector(as.integer(df_i2$count)),names.arg=df_i2$species, xlab="species",ylab="count",las = 2, cex.names = 1)
@@ -606,35 +626,35 @@ server <- function(input, output, session) {
   
   # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
   output$map_i11 <- renderLeaflet({
-    # toto <- data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value, fill=0)  %>%
-    # toto <- data() %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$country))))) #  %>% filter (total>mean(total))
+    # toto <- data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value, fill=0)  %>%
+    # toto <- data() %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet))))) #  %>% filter (total>mean(total))
     
     
     # test_data$grp = sapply(st_equals(test_data), max)
-    # toto <- data() %>% group_by(species,country,geom_id) %>% summarise(value = sum(value)) %>% spread(country, value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$country)))))
+    # toto <- data() %>% group_by(species,fishing_fleet,geom_id) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value, fill=0)  %>%  mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet)))))
     toto <- data_pie_map()
     
-    # toto <- st_read(con, query = "SELECT geom, species, country, SUM(value) as value, ST_asText(geom) AS geom_wkt, ST_area(geom) AS area FROM fact_tables.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('SKJ') AND country IN ('OMN','NAM','BRA','AGO','CPV','USA','JPN','MEX','BRB','EUPRT','UNK','ECU','SHN','MYS','MAR','COL','MDV') AND year IN ('2013','2014','2015','2016','2017','2018','2019') GROUP BY area,species, country,geom_wkt, geom ORDER BY area,species,country DESC ;")  %>% 
-    #   spread(country, value, fill=0)  %>% mutate(total = sum(across(any_of(c('OMN','NAM','BRA','AGO','CPV','USA','JPN','MEX','BRB','EUPRT','UNK','ECU','SHN','MYS','MAR','COL','MDV')))))  %>% filter (total>mean(total))
-    # %>% spread(country, value, fill=0)  %>% mutate(total = rowSums(across(any_of(as.vector(input$country)))))   %>% filter (total>mean(total))
-    # toto <- df %>%  group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value, fill=0)  %>% mutate(total = rowSums(across(any_of(default_flag))))
-    # toto <- data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value) 
-    # toto <- df %>% group_by(species,country,geom_wkt) %>% summarise(value = sum(value)) %>% spread(country, value) 
+    # toto <- st_read(con, query = "SELECT geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, ST_area(geom) AS area FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))',4326)) AND species IN ('SKJ') AND fishing_fleet IN ('OMN','NAM','BRA','AGO','CPV','USA','JPN','MEX','BRB','EUPRT','UNK','ECU','SHN','MYS','MAR','COL','MDV') AND year IN ('2013','2014','2015','2016','2017','2018','2019') GROUP BY area,species, fishing_fleet,geom_wkt, geom ORDER BY area,species,fishing_fleet DESC ;")  %>% 
+    #   spread(fishing_fleet, measurement_value, fill=0)  %>% mutate(total = sum(across(any_of(c('OMN','NAM','BRA','AGO','CPV','USA','JPN','MEX','BRB','EUPRT','UNK','ECU','SHN','MYS','MAR','COL','MDV')))))  %>% filter (total>mean(total))
+    # %>% spread(fishing_fleet, measurement_value, fill=0)  %>% mutate(total = rowSums(across(any_of(as.vector(input$fishing_fleet)))))   %>% filter (total>mean(total))
+    # toto <- df %>%  group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value, fill=0)  %>% mutate(total = rowSums(across(any_of(default_flag))))
+    # toto <- data() %>% filter (year <= max(input$yearInterval) & year>=min(input$yearInterval)) %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value) 
+    # toto <- df %>% group_by(species,fishing_fleet,geom_wkt) %>% summarise(measurement_value = sum(measurement_value)) %>% spread(fishing_fleet, measurement_value) 
     
     # centroid <-  st_convex_hull(st_union(toto)) %>%  st_centroid()
     lat_centroid <- st_coordinates(centroid())[2]
     lon_centroid <- st_coordinates(centroid())[1]
     
     # colors2 <- c("#3093e5","#3000e5", "#fcba50"," #dd0e34", "#4e9c1e")
-    # qpal <- colorQuantile(rev(viridis::viridis(length(unique(toto$country)))),unique(toto$country), n=length(unique(toto$country)))
+    # qpal <- colorQuantile(rev(viridis::viridis(length(unique(toto$fishing_fleet)))),unique(toto$fishing_fleet), n=length(unique(toto$fishing_fleet)))
     # pal_fun <- brewer.pal(n = 30, name = "Dark2")
     
     # qpal <- colorQuantile(rev(viridis::viridis(10)),toto$total, n=10)
     # factpal <- colorFactor(topo.colors(ncol(dplyr::select(toto,-c(species,total)))),colnames(dplyr::select(toto,-c(species,total))))
     la_palette = palette3[names(palette3) %in% colnames(dplyr::select(toto,-c(species,total)))]
     
-    # pal_fun <- colorQuantile("YlOrRd", NULL, n = length(unique(input$country)))
-    # cocolor<-factor(toto$Species, levels=as.vector(input$country), labels=rainbow_hcl(length(as.vector(input$country))))
+    # pal_fun <- colorQuantile("YlOrRd", NULL, n = length(unique(input$fishing_fleet)))
+    # cocolor<-factor(toto$Species, levels=as.vector(input$fishing_fleet), labels=rainbow_hcl(length(as.vector(input$fishing_fleet))))
     
     
     # new_zoom <- input$map_i11_zoom
@@ -643,7 +663,7 @@ server <- function(input, output, session) {
     map_i11 <-  leaflet() %>%  
       # map_i11 <-  leaflet(options = leafletOptions(zoomSnap=0.25)) %>%  
       # setView(lng = lon_centroid, lat = lat_centroid, zoom = 3) %>% 
-      addProviderTiles("Esri.OceanBasemap", group = "background") %>%
+      addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
       clearBounds() %>% 
       addDrawToolbar(
         targetGroup = "draw",
@@ -686,7 +706,7 @@ server <- function(input, output, session) {
   #   req(input$map_i11_zoom)
   #   if(zoom()!=new_zoom & !is.null(input$map_i11_zoom)){
   #     zoom(new_zoom)
-  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.OceanBasemap", group = "background") %>%  clearBounds() %>%
+  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%  clearBounds() %>%
   #     map_i11_proxy = leafletProxy("map_i11") %>% clearMinicharts() %>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>% 
   #       addMinicharts(lng = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "X"],
   #                     lat = st_coordinates(st_centroid( data_pie_map(), crs = 4326))[, "Y"],
@@ -710,7 +730,7 @@ server <- function(input, output, session) {
       zoom(new_zoom)
       lat_centroid <-input$map_i11_center[2]
       lon_centroid <- input$map_i11_center[1]
-      #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.OceanBasemap", group = "background") %>%  clearBounds() %>%
+      #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%  clearBounds() %>%
       map_i11_proxy = leafletProxy("map_i11") %>% clearMinicharts() %>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>% 
         addMinicharts(lng = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "X"],
                       lat = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "Y"],
@@ -728,19 +748,19 @@ server <- function(input, output, session) {
   
   
   output$pie_map_i11 <- renderPlotly({
-    # output$pie_map_i11 <- renderPlot({
+    # output$pie_map_i11 <- renderPlotly({
     
-    # df_i11_map <- data_i11() %>% group_by(country) %>% summarise(value = sum(value))  %>% arrange(desc(value)) # %>% top_n(3)
-    # metadata_i11 <- data() %>% group_by(country) %>% summarise(value = sum(value))  %>% arrange(desc(value)) # %>% top_n(3)
-    metadata_i11 <- data_pie_chart_country() 
+    # df_i11_map <- data_i11() %>% group_by(fishing_fleet) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) # %>% top_n(3)
+    # metadata_i11 <- data() %>% group_by(fishing_fleet) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) # %>% top_n(3)
+    metadata_i11 <- data_pie_chart_fishing_fleet() 
     # df_i11_map <- as_data_frame(metadata_i11())  # %>% top_n(3)
     df_i11_map <- as_tibble(metadata_i11)  # %>% top_n(3)
     
-    la_palette = palette3[names(palette3) %in% unique(df_i11_map$country)]
+    la_palette = palette3[names(palette3) %in% unique(df_i11_map$fishing_fleet)]
     
     
     # # # Basic piechart
-    # i11_map <-   ggplot(df_i11_map, aes(x="", y=value, fill=country)) +
+    # i11_map <-   ggplot(df_i11_map, aes(x="", y=measurement_value, fill=fishing_fleet)) +
     #   geom_bar(stat="identity", width=1) +
     #   coord_polar("y", start=0) + 
     # scale_fill_manual(values = la_palette)
@@ -750,10 +770,10 @@ server <- function(input, output, session) {
     
     
     
-    fig <- plot_ly(df_i11_map, labels = ~country, values = ~value, type = 'pie',
+    fig <- plot_ly(df_i11_map, labels = ~fishing_fleet, values = ~measurement_value, type = 'pie',
                    marker = list(colors = la_palette, line = list(color = '#FFFFFF', width = 1), sort = FALSE),
                    showlegend = TRUE)
-    fig <- fig %>% layout(title = 'Tuna catches by country for selected species, area and period of time',
+    fig <- fig %>% layout(title = 'Tuna catches by fishing_fleet for selected species, area and period of time',
                           xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
                           yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
     
@@ -764,18 +784,18 @@ server <- function(input, output, session) {
   
   
   output$plot1_streamgraph <- renderDygraph({
-    # output$plot1_streamgraph <- renderPlot({
+    # output$plot1_streamgraph <- renderPlotly({
     
-    # df_i1 = st_read(con, query = sql_query_metadata_plot1()) %>% group_by(species,year) %>% summarise(value = sum(value))  %>% arrange(desc(value)) %>% filter (value>mean(value)) # %>% top_n(3)
-    # df_i1 = data() %>% group_by(species,year) %>% summarise(value = sum(value))  %>% arrange(desc(value))  %>% filter (value>mean(value)) # %>% top_n(3)
-    df_i1 = data_time_serie() # %>%  arrange(desc(value))  %>% filter (value>mean(value)) # %>% top_n(3)
-    # df_i1 = st_read(con, query = paste0("SELECT species, year, count(species), sum(value) AS value FROM fact_tables.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('",wkt(),"',4326)) GROUP BY species,year ORDER BY count;")) %>% filter (count>mean(count))
+    # df_i1 = st_read(con, query = sql_query_metadata_plot1()) %>% group_by(species,year) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value)) %>% filter (measurement_value>mean(measurement_value)) # %>% top_n(3)
+    # df_i1 = data() %>% group_by(species,year) %>% summarise(measurement_value = sum(measurement_value))  %>% arrange(desc(measurement_value))  %>% filter (measurement_value>mean(measurement_value)) # %>% top_n(3)
+    df_i1 = data_time_serie() # %>%  arrange(desc(measurement_value))  %>% filter (measurement_value>mean(measurement_value)) # %>% top_n(3)
+    # df_i1 = st_read(con, query = paste0("SELECT species, year, count(species), sum(measurement_value) AS measurement_value FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('",wkt(),"',4326)) GROUP BY species,year ORDER BY count;")) %>% filter (count>mean(count))
     
-    # value=as.vector(as.integer(df_i1$value))
-    # g1 = ggplot(df_i1, aes(x = year, y = value, colour = species)) + geom_line() + geom_point(size = 1, alpha = 0.8) +
+    # measurement_value=as.vector(as.integer(df_i1$measurement_value))
+    # g1 = ggplot(df_i1, aes(x = year, y = measurement_value, colour = species)) + geom_line() + geom_point(size = 1, alpha = 0.8) +
     #   # geom_bar(position="stack", stat="identity") +
     #   ylab("Catches in Tons") + xlab("Date") + theme_bw() +
-    #   scale_colour_manual(values=c(value)) +
+    #   scale_colour_manual(values=c(measurement_value)) +
     #   # scale_y_continuous(labels = function(l) {trans = l / 1000; paste0(trans, "kT")}) +
     #   theme(legend.title = element_blank(), legend.position = "", plot.title = element_text(size=10),
     #         plot.margin = margin(5, 12, 5, 5))
@@ -785,7 +805,7 @@ server <- function(input, output, session) {
     # create time series object
     df_i1 <- as_tibble(df_i1)  # %>% top_n(3)
     
-    tuna_catches_timeSeries <- xts(x = df_i1$value, order.by = df_i1$year)
+    tuna_catches_timeSeries <- xts(x = df_i1$measurement_value, order.by = df_i1$year)
     
     # create the area chart
     g1 <- dygraph(tuna_catches_timeSeries) %>% dyOptions( fillGraph=TRUE )
@@ -807,9 +827,9 @@ server <- function(input, output, session) {
     
     i11 <- Atlas_i11_CatchesByCountry(df=df_i11_filtered,
                                       geomIdAttributeName="geom_id",
-                                      countryAttributeName="country",
+                                      countryAttributeName="fishing_fleet",
                                       speciesAttributeName="species",
-                                      valueAttributeName="value",
+                                      valueAttributeName="measurement_value",
                                       withSparql=FALSE)
     
     i11
@@ -835,7 +855,7 @@ server <- function(input, output, session) {
     la_palette_species = palette_species[names(palette_species) %in% colnames(dplyr::select(toto,-total))]
     
     data_pie_map_species <-  leaflet() %>%  
-      addProviderTiles("Esri.OceanBasemap", group = "background") %>%
+      addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
       clearBounds() %>% 
       addDrawToolbar(
         targetGroup = "draw",
@@ -873,7 +893,7 @@ server <- function(input, output, session) {
   #     zoom(new_zoom)
   #     lat_centroid <-input$map_i11_center[2]
   #     lon_centroid <- input$map_i11_center[1]
-  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.OceanBasemap", group = "background") %>%  clearBounds() %>%
+  #     #%>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>%  addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%  clearBounds() %>%
   #     map_i11_proxy = leafletProxy("map_i11") %>% clearMinicharts() %>% setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom()) %>% 
   #       addMinicharts(lng = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "X"],
   #                     lat = st_coordinates(st_centroid(data_pie_map(), crs = 4326))[, "Y"],

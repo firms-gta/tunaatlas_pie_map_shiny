@@ -2,7 +2,8 @@
 FROM rocker/r-ver:4.3.1
 
 # Maintainer information
-MAINTAINER Julien Barde "julien.barde@ird.fr"
+LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
+
 
 # Install system libraries of general use
 RUN apt-get update && apt-get install -y \
@@ -36,39 +37,23 @@ RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r-project.org/')"
 
 # Set the working directory to /root
-
 WORKDIR /root
 
-# Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny
-# ADD . /root/tunaatlas_pie_map_shiny
-# clone app
-RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny && echo "OK!"
-# Create a symbolic link to the cloned repository
-RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
-
 # Install renv package
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+COPY renv.lock .
+RUN Rscript -e 'install.packages("renv", repos="https://cran.r-project.org/")' \
+   && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()' 
 
-# Set the working directory to /root/tunaatlas_pie_map_shiny
-WORKDIR /root/tunaatlas_pie_map_shiny
+# Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny and Create a symbolic link to the cloned repository
 
-
-RUN Rscript -e 'install.packages("renv")'
-RUN Rscript -e 'renv::activate()'
-RUN Rscript -e 'renv::repair()'
-RUN Rscript -e 'renv::restore()'
-
+RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny \
+    && ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
-
 
 #etc dirs (for config)
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
-
-# Update and install curl (if needed)
-RUN apt-get -y update
-RUN apt-get install -y curl

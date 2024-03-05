@@ -29,7 +29,7 @@ install.packages(c('shiny', ), repos='https://cloud.r-project.org/')
 ```
 docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
 
-docker run --name tuna_atlas_i11 -p 3839:3838 firms-gta/tunaatlas_pie_map_shiny
+docker run --name tuna_atlas_i11 -p 3839:3838 ghcr.io/firms-gta/tunaatlas_pie_map_shiny
 ```
 
 And then point your browser to http://localhost:3839

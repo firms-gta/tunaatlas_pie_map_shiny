@@ -42,9 +42,9 @@ target_species <- dbGetQuery(con, "SELECT DISTINCT(species) FROM public.i6i7i8 O
 target_year <- dbGetQuery(con, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER BY year;")
 target_flag <- dbGetQuery(con, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;")
 
-default_species <- 'YFT'
-default_year <- '2010'
-default_flag <- 'EUFRA'
+default_species <- ifelse('MZZ' %in%target_species, "MZZ", target_species[[1]][1])
+default_year <- target_year[nrow(target_year),]
+default_flag <- ifelse('UNK' %in%target_flag, "UNK", target_flag[[1]][1])
 
 # sql_query <- reactiveVal(paste0("SELECT   geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt FROM public.i6i7i8
 #            WHERE  species IN ('",paste0(default_species,collapse="','"),"')

@@ -120,12 +120,11 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected = default_species$species
                                           ),
-                                        selectInput(
-                                          inputId = "year",
-                                          label = "Year",
-                                          choices = target_year$year,
-                                          multiple = TRUE,
-                                          selected= default_year
+                                        sliderInput(inputId="yearInterval", "Select period of interest :",
+                                                    min = min(target_year),
+                                                    max = max(target_year),
+                                                    value = c(min(target_year),max(target_year)),
+                                                    round = TRUE, step=1
                                         ),
                                         selectInput(
                                           inputId = "fishing_fleet",

@@ -120,10 +120,10 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected = default_species$species
                                           ),
-                                        sliderInput(inputId="yearInterval", "Select period of interest :",
-                                                    min = min(target_year),
-                                                    max = max(target_year),
-                                                    value = c(min(target_year),max(target_year)),
+                                        sliderInput(inputId="yearInterval1", "Select period of interest :",
+                                                    min = min(target_year$year),
+                                                    max = max(target_year$year),
+                                                    value = c(min(target_year$year),max(target_year$year)),
                                                     round = TRUE, step=1
                                         ),
                                         selectInput(
@@ -149,13 +149,16 @@ ui <- fluidPage(
                                         
                           ),
                           absolutePanel(id = "logo", class = "card", bottom = 15, left = 60, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
-                                        tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='89',width='108')))
+                                        tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='89',width='108'))),
+                          
+                          absolutePanel(id = "controls", class = "panel panel-default", bottom =  "2%", left = "10%", width = "80%", fixed=TRUE, draggable = FALSE, height = "auto",
+                                        dygraphOutput("plot1_streamgraph", height="400", width="80%")
+                          )
                       )
              ),
              tabPanel("Interactive Indicator 11",
                       div(class="outer",
                           tags$head(includeCSS("https://raw.githubusercontent.com/eparker12/nCoV_tracker/master/styles.css")),
-                          # leafletOutput('map_i11', width = "60%", height = 1500),
                           leafletOutput("map_i11", width="100%", height="100%"),
                           
                           
@@ -196,10 +199,10 @@ ui <- fluidPage(
                           
                           absolutePanel(id = "logo", class = "card", bottom = 15, left = 60, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='178',width='216'))),
-                          
                           absolutePanel(id = "controls", class = "panel panel-default", bottom =  "2%", left = "10%", width = "80%", fixed=TRUE, draggable = FALSE, height = "auto",
                                         dygraphOutput("plot1_streamgraph", height="400", width="80%")
                           )
+                          
                       )
              ),
              tabPanel("Interactive Indicator 11 for species",
@@ -208,9 +211,11 @@ ui <- fluidPage(
                           leafletOutput("pie_map_species", width="100%", height="100%"),
 
                           absolutePanel(id = "logo", class = "card", bottom = 15, left = 60, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
-                                        tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='178',width='216')))
+                                        tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='178',width='216'))),
+                          absolutePanel(id = "controls", class = "panel panel-default", bottom =  "2%", left = "10%", width = "80%", fixed=TRUE, draggable = FALSE, height = "auto",
+                                        dygraphOutput("plot1_streamgraph", height="400", width="80%")
                           )
-             ),
+             )),
              tabPanel("ggplot Indicator 11",
                       imageOutput("plot11", height = 1200)
              ),
@@ -313,14 +318,14 @@ server <- function(input, output, session) {
   
   
   sql_query_metadata_plot1 <- eventReactive(input$submit, {
-    paste0("Your zom is Zoom",zoom(),"   ;")
+    paste0("Your zoom is ",zoom(),"   ;")
   },
   ignoreNULL = FALSE)
   
-  # AND year IN ('",paste0(input$year,collapse="','"),"');")
+  # AND year IN ('",paste0(input$yearInterval1,collapse="','"),"');")
   
   # sql_query <- eventReactive(input$submit, {
-  #   if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+  #   if(is.null(input$yearInterval1)){year_name=target_year$year}else{year_name=input$yearInterval1}
   #   query <- glue::glue_sql(
   #     "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
   #     WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
@@ -337,52 +342,58 @@ server <- function(input, output, session) {
   # },
   # ignoreNULL = FALSE)
   sql_query = eventReactive(input$submit, {
-    if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+    if(is.null(input$yearInterval1)){year_name=target_year$year}else{year_name=input$yearInterval1}
     
     query <- glue::glue_sql(
-  "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
+      "SELECT geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
   ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
-      WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
-      AND fishing_fleet IN ({fishing_fleet_name*})
-      AND species IN ({species_name*})
-      AND year IN ({year_name*})
-      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
-      ORDER BY species,fishing_fleet DESC", 
+  WHERE ST_Within(geom, ST_GeomFromText(({wkt*}), 4326))
+  AND fishing_fleet IN ({fishing_fleet_name*})
+  AND species IN ({species_name*})
+  AND year BETWEEN {start_year} AND {end_year}
+  AND gridtype IN ({gridtype_name*})
+  GROUP BY species, fishing_fleet, geom_id, geom_wkt, geom, year
+  ORDER BY species, fishing_fleet DESC", 
       wkt = wkt(),
       species_name = input$species,
+      gridtype_name = input$gridtype,
       fishing_fleet_name = input$fishing_fleet,
-      year_name = year_name,
+      start_year = input$yearInterval1[1],
+      end_year = input$yearInterval1[2],
       .con = con)
+    
   }, ignoreNULL = FALSE)
   
   sql_query_species_pie <- eventReactive(input$submit, {
-    if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+    if(is.null(input$yearInterval)){year_name=target_year$year}else{year_name=input$yearInterval}
     query <- glue::glue_sql(
       "SELECT   geom_id, geom, species, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt FROM public.i6i7i8
       WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
       AND fishing_fleet IN ({fishing_fleet_name*})
-      AND year IN ({year_name*})
+      AND year BETWEEN {start_year} AND {end_year}
+      AND gridtype IN ({gridtype_name*})
       GROUP BY species, geom_id, geom_wkt, geom
       ORDER BY measurement_value DESC",
       wkt = wkt(),
       species_name = input$species,
       fishing_fleet_name = input$fishing_fleet,
-      year_name = year_name,
+      gridtype_name = input$gridtype,
+      start_year = input$yearInterval1[1],
+      end_year = input$yearInterval1[2],
       .con = con)
   },
   ignoreNULL = FALSE)
   
-  sql_query_metadata<- NULL
-  # sql_query_metadata <- eventReactive(input$submit, {
-  #   paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom") 
-  # },
-  # ignoreNULL = FALSE)
+  sql_query_metadata <- eventReactive(input$submit, {
+    paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom")
+  },
+  ignoreNULL = FALSE)
   
   
   data <- eventReactive(input$submit, {
     # req(input$species)
     # req(input$fishing_fleet)
-    # req(input$year)
+    # req(input$yearInterval1)
     outp <- st_read(con, query = sql_query())
     outp
   },
@@ -394,7 +405,6 @@ server <- function(input, output, session) {
   })  
   
   data_pie_map <- reactive({
-    # st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(SELECT geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText(('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'),4326)) AND species IN ('YFT') AND fishing_fleet IN ('EUESP', 'EUFRA', 'JPN', 'TWN') AND year IN ('2010') GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year ORDER BY species,fishing_fleet DESC) AS foo GROUP BY species, fishing_fleet, geom"))
     st_read(con, query = paste0("SELECT species, fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, fishing_fleet, geom")) %>% 
       spread(fishing_fleet, measurement_value, fill = 0) %>%
       dplyr::mutate(total = rowSums(across(any_of(input$fishing_fleet))))
@@ -406,8 +416,13 @@ server <- function(input, output, session) {
       dplyr::mutate(total = rowSums(across(any_of(as.vector(target_species$species)))))  })
   
   data_time_serie <- reactive({
-    st_read(con, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, year")) 
+    st_read(con, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY year")) 
   })
+  
+  data_time_serie_species <- reactive({
+    st_read(con, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY year, species")) 
+  })
+  
   
   data_pie_chart_fishing_fleet <- reactive({
     st_read(con, query = paste0("SELECT fishing_fleet, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY fishing_fleet ORDER BY fishing_fleet"))
@@ -486,7 +501,7 @@ server <- function(input, output, session) {
   
   
   change <- reactive({
-    unlist(strsplit(paste(c(input$species,input$year,input$fishing_fleet),collapse="|"),"|",fixed=TRUE))
+    unlist(strsplit(paste(c(input$species,input$yearInterval,input$fishing_fleet),collapse="|"),"|",fixed=TRUE))
   })
   
   
@@ -706,7 +721,7 @@ server <- function(input, output, session) {
                     legend = TRUE, legendPosition = "bottomright") %>% 
       addPolygons(data = toto,
                   label = ~total,
-                  popup = ~paste0("Captures de",species,": ", round(total), " tonnes(t) et des brouettes"),
+                  popup = ~paste0("Captures de",species,": ", round(total), " tonnes (t) et des brouettes"),
                   group = "grid",
                   # fillColor = ~qpal(total),
                   # fill = TRUE,
@@ -827,7 +842,7 @@ server <- function(input, output, session) {
     g1 <- dygraph(tuna_catches_timeSeries) %>% dyOptions( fillGraph=TRUE )
     
     # create a basic interactive element
-    # g1 <- dygraph(discharge_timeSeries)  %>% dyRangeSelector()
+    g1 <- dygraph(tuna_catches_timeSeries)  %>% dyRangeSelector()
     
     g1
     
@@ -835,6 +850,30 @@ server <- function(input, output, session) {
     
     # 
   })
+  
+  output$plot_species_streamgraph <- renderDygraph({
+    # Assuming `data_time_serie()` returns a data frame with columns: 'species', 'year', and 'measurement_value'
+    df_i1 <- data_time_serie()
+    
+    # Convert to tibble for nicer printing and manipulation
+    df_i1 <- as_tibble(df_i1)
+    
+    # Pivot data from long to wide format
+    df_wide <- pivot_wider(df_i1, names_from = species, values_from = measurement_value, values_fill = list(measurement_value = 0))
+    
+    # Convert 'year' to Date type assuming 'year' is just a year number
+    df_wide$year <- as.Date(paste0(df_wide$year, "-01-01"))
+    
+    # Convert to xts for plotting with dygraphs
+    # Exclude the 'year' column for the data, and use it as the order.by parameter
+    tuna_catches_xts <- xts(x = select(df_wide, -year), order.by = df_wide$year)
+    
+    # Create the dygraph
+    dygraph(tuna_catches_xts) %>%
+      dyOptions(fillGraph = TRUE) %>%
+      dyRangeSelector()
+  })
+  
   
   
   output$plot11 <- renderImage({

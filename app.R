@@ -38,13 +38,17 @@ wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
 
+target_dataset <- dbGetQuery(con, "SELECT DISTINCT(dataset) FROM public.i6i7i8 ORDER BY dataset;")
 target_species <- dbGetQuery(con, "SELECT DISTINCT(species) FROM public.i6i7i8 ORDER BY species;")
 target_year <- dbGetQuery(con, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER BY year;")
 target_flag <- dbGetQuery(con, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;")
+target_gridtype <- dbGetQuery(con, "SELECT DISTINCT(gridtype) FROM public.i6i7i8 ORDER BY gridtype;")
 
-default_species <- 'YFT'
-default_year <- '2010'
-default_flag <- 'EUFRA'
+default_dataset <-target_dataset[[1]][1]
+default_flag <- ifelse('UNK' %in%target_flag, "UNK", target_flag[[1]][1])
+default_species <- dbGetQuery(con, paste0("SELECT DISTINCT(species) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND fishing_fleet = '", default_flag, "' ORDER BY species;"))
+default_gridtype <- dbGetQuery(con, paste0("SELECT DISTINCT(gridtype) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND fishing_fleet = '", default_flag, "' ORDER BY gridtype;"))
+default_year <- dbGetQuery(con, paste0("SELECT DISTINCT(year) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND fishing_fleet = '", default_flag, "' ORDER BY year LIMIT 1;"))
 
 # sql_query <- reactiveVal(paste0("SELECT   geom, species, fishing_fleet, SUM(measurement_value) as measurement_value, ST_asText(geom) AS geom_wkt FROM public.i6i7i8
 #            WHERE  species IN ('",paste0(default_species,collapse="','"),"')
@@ -55,7 +59,7 @@ default_flag <- 'EUFRA'
 #            ;"))
 
 
-filters_combinations <- dbGetQuery(con, "SELECT species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY species, year, fishing_fleet;")
+filters_combinations <- dbGetQuery(con, "SELECT dataset, gridtype, species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY dataset, gridtype, species, year, fishing_fleet;")
 
 
 # https://www.rapidtables.com/convert/color/hex-to-rgb.html
@@ -97,11 +101,25 @@ ui <- fluidPage(
                                         h2("Select filters to customize indicators"),
                                         # imageOutput("plot11", height = 200),
                                         selectInput(
+                                          inputId = "dataset",
+                                          label = "Dataset",
+                                          choices = target_dataset$dataset,
+                                          selected= default_dataset
+                                        ),
+                                        selectInput(
+                                          inputId = "gridtype",
+                                          label = "Resolution",
+                                          choices = target_gridtype$gridtype,
+                                          multiple = TRUE,
+                                          selected= default_gridtype
+                                        ),
+                                        selectInput(
                                           inputId = "species",
                                           label = "Species",
                                           choices = target_species$species,
-                                          selected= default_species
-                                        ),
+                                          multiple = TRUE,
+                                          selected = default_species$species
+                                          ),
                                         selectInput(
                                           inputId = "year",
                                           label = "Year",
@@ -539,12 +557,11 @@ server <- function(input, output, session) {
     # https://rstudio.github.io/leaflet/showhide.html
     mymap <- leaflet() %>% 
       addProviderTiles("Esri.NatGeoWorldMap") %>% 
-      # setView(lng = lon_centroid, lat =lat_centroid, zoom = 3
-      # ) %>%
+      setView(lng = 0, lat = 0, zoom = 1) %>%
       clearBounds() %>%
       addPolygons(data = df,
                   label = ~measurement_value,
-                  popup = ~paste0("Total catches for ",species," species in this square of the grid: ", round(measurement_value), " ton(t) et des brouettes"),
+                  popup = ~paste0("Total catches for ",species," species in this square of the grid: ", round(measurement_value), " tons (t)"),
                   # popup = ~paste0("Captures de",species,": ", area, " tonnes(t) et des brouettes"),
                   # fillColor = ~pal_fun(measurement_value),
                   # fillColor = brewer.pal(n = 20, name = "RdBu"),

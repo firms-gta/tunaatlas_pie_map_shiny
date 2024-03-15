@@ -57,7 +57,7 @@ default_flag <- ifelse('UNK' %in%target_flag, "UNK", target_flag[[1]][1])
 
 filters_combinations <- dbGetQuery(con, "SELECT species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY species, year, fishing_fleet;")
 
-
+require(RColorBrewer)
 # https://www.rapidtables.com/convert/color/hex-to-rgb.html
 # https://www.r-bloggers.com/2020/03/how-to-standardize-group-colors-in-data-visualizations-in-r/
 palette3_info <- brewer.pal.info[brewer.pal.info$category == "qual", ]  

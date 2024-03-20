@@ -1,4 +1,4 @@
-interactive_ui <- function() {
+data_explorer_i11_ui <- function() {
   tabPanel("Data explorer i11",
 # hr(),
 # textOutput("sql_query"),

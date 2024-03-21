@@ -86,6 +86,45 @@
       ],
       "Hash": "1d1b6901cf9b6b1b446bc56a7d47efa4"
     },
+    "R.methodsS3": {
+      "Package": "R.methodsS3",
+      "Version": "1.8.2",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "utils"
+      ],
+      "Hash": "278c286fd6e9e75d0c2e8f731ea445c8"
+    },
+    "R.oo": {
+      "Package": "R.oo",
+      "Version": "1.26.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "R.methodsS3",
+        "methods",
+        "utils"
+      ],
+      "Hash": "4fed809e53ddb5407b3da3d0f572e591"
+    },
+    "R.utils": {
+      "Package": "R.utils",
+      "Version": "2.12.3",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "R.methodsS3",
+        "R.oo",
+        "methods",
+        "tools",
+        "utils"
+      ],
+      "Hash": "3dc2829b790254bfba21e60965787651"
+    },
     "R6": {
       "Package": "R6",
       "Version": "2.5.1",
@@ -303,6 +342,18 @@
       ],
       "Hash": "9b2191ede20fa29828139b9900922e51"
     },
+    "cellranger": {
+      "Package": "cellranger",
+      "Version": "1.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "rematch",
+        "tibble"
+      ],
+      "Hash": "f61dbaec772ccd2e17705c1e872e9e7c"
+    },
     "class": {
       "Package": "class",
       "Version": "7.3-22",
@@ -466,6 +517,30 @@
       ],
       "Hash": "b4c06e554f33344e044ccd7fdca750a9"
     },
+    "datamods": {
+      "Package": "datamods",
+      "Version": "1.4.5",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "data.table",
+        "htmltools",
+        "htmlwidgets",
+        "phosphoricons",
+        "reactable",
+        "readxl",
+        "rio",
+        "rlang",
+        "shiny",
+        "shinyWidgets",
+        "shinybusy",
+        "tibble",
+        "tools",
+        "writexl"
+      ],
+      "Hash": "98a3b3d7ea49a0d7484482a21c633ae4"
+    },
     "dichromat": {
       "Package": "dichromat",
       "Version": "2.0-0.1",
@@ -608,6 +683,22 @@
         "rlang"
       ],
       "Hash": "1e22b8cabbad1eae951a75e9f8b52378"
+    },
+    "forcats": {
+      "Package": "forcats",
+      "Version": "1.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "cli",
+        "glue",
+        "lifecycle",
+        "magrittr",
+        "rlang",
+        "tibble"
+      ],
+      "Hash": "1a0a9a3d5083d0d573c4214576f1e690"
     },
     "foreign": {
       "Package": "foreign",
@@ -771,6 +862,27 @@
         "rlang"
       ],
       "Hash": "b44addadb528a0d227794121c00572a0"
+    },
+    "haven": {
+      "Package": "haven",
+      "Version": "2.5.4",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "cli",
+        "cpp11",
+        "forcats",
+        "hms",
+        "lifecycle",
+        "methods",
+        "readr",
+        "rlang",
+        "tibble",
+        "tidyselect",
+        "vctrs"
+      ],
+      "Hash": "9171f898db9d9c4c1b2c745adc2c1ef1"
     },
     "here": {
       "Package": "here",
@@ -1375,6 +1487,17 @@
       ],
       "Hash": "68a2d681e10cf72f0afa1d84d45380e5"
     },
+    "phosphoricons": {
+      "Package": "phosphoricons",
+      "Version": "0.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "htmltools"
+      ],
+      "Hash": "9c7e25aa49773b758f0a96245577a6d9"
+    },
     "pillar": {
       "Package": "pillar",
       "Version": "1.9.0",
@@ -1605,6 +1728,31 @@
       ],
       "Hash": "337d6d70f7d6bf78df236a5a53f09db0"
     },
+    "reactR": {
+      "Package": "reactR",
+      "Version": "0.5.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "htmltools"
+      ],
+      "Hash": "c9014fd1a435b2d790dd506589cb24e5"
+    },
+    "reactable": {
+      "Package": "reactable",
+      "Version": "0.4.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "digest",
+        "htmltools",
+        "htmlwidgets",
+        "jsonlite",
+        "reactR"
+      ],
+      "Hash": "6069eb2a6597963eae0605c1875ff14c"
+    },
     "readr": {
       "Package": "readr",
       "Version": "2.1.4",
@@ -1627,6 +1775,28 @@
         "vroom"
       ],
       "Hash": "b5047343b3825f37ad9d3b5d89aa1078"
+    },
+    "readxl": {
+      "Package": "readxl",
+      "Version": "1.4.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "cellranger",
+        "cpp11",
+        "progress",
+        "tibble",
+        "utils"
+      ],
+      "Hash": "8cf9c239b96df1bbb133b74aef77ad0a"
+    },
+    "rematch": {
+      "Package": "rematch",
+      "Version": "2.0.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "cbff1b666c6fa6d21202f07e2318d4f1"
     },
     "remotes": {
       "Package": "remotes",
@@ -1662,6 +1832,29 @@
         "plyr"
       ],
       "Hash": "603d56041d7d4fa3ceb1864b3f6ee6b1"
+    },
+    "rio": {
+      "Package": "rio",
+      "Version": "1.0.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "R.utils",
+        "curl",
+        "data.table",
+        "foreign",
+        "haven",
+        "lifecycle",
+        "readxl",
+        "stats",
+        "stringi",
+        "tibble",
+        "tools",
+        "utils",
+        "writexl"
+      ],
+      "Hash": "8e63a1ebe85848713226eb395cba420b"
     },
     "rlang": {
       "Package": "rlang",
@@ -1886,6 +2079,19 @@
         "shiny"
       ],
       "Hash": "c6acc72327e63668bbc7bd258ee54132"
+    },
+    "shinybusy": {
+      "Package": "shinybusy",
+      "Version": "0.3.3",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "htmltools",
+        "htmlwidgets",
+        "jsonlite",
+        "shiny"
+      ],
+      "Hash": "7dc8feb4207741ff581422a04fc8f3ea"
     },
     "slippymath": {
       "Package": "slippymath",
@@ -2260,6 +2466,13 @@
         "R"
       ],
       "Hash": "68a7ab6ec1afb5f076172b983c069313"
+    },
+    "writexl": {
+      "Package": "writexl",
+      "Version": "1.5.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Hash": "856a075aec895ea1bea3055fa54e356c"
     },
     "xfun": {
       "Package": "xfun",

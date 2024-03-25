@@ -53,6 +53,7 @@ source(here::here('tab_panels/filterUI.R'))
 source(here::here('tab_panels/data_explorer_overview_ui.R'))
 source(here::here('tab_panels/total_catch_plot.R'))
 source(here::here('tab_panels/sidebar_ui.R'))
+source(here::here('tab_panels/mapCatchesmodules.R'))
 
 ui <- page_navbar(
   title = "Tuna Atlas: Interactive Indicator",

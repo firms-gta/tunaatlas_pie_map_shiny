@@ -1,5 +1,5 @@
 zoom_level_ui <- function() {
-  tabPanel("Zoom level",
+  nav_panel("Zoom level",
 hr(),
 textOutput("zoom")
 )

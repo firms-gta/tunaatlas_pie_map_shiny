@@ -1,5 +1,5 @@
 data_explorer_overview_ui <- function() {
-  tabPanel("Data explorer overview",
+  nav_panel("Data explorer overview",
 # hr(),
 # textOutput("sql_query"),
 hr(),

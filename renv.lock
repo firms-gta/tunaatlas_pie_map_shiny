@@ -298,6 +298,20 @@
       "Repository": "CRAN",
       "Hash": "d69a786e85775b126bddbee185ae6084"
     },
+    "bsicons": {
+      "Package": "bsicons",
+      "Version": "0.1.2",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "cli",
+        "htmltools",
+        "rlang",
+        "utils"
+      ],
+      "Hash": "d8f892fbd94d0b9b1f6d688b05b8633c"
+    },
     "bslib": {
       "Package": "bslib",
       "Version": "0.5.0",
@@ -847,6 +861,25 @@
         "utils"
       ],
       "Hash": "7d7f283939f563670a697165b2cf5560"
+    },
+    "gridlayout": {
+      "Package": "gridlayout",
+      "Version": "0.2.1",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "gridlayout",
+      "RemoteUsername": "rstudio",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "dc7d8912ae27e5393561dcc2b9bd637f3653ca09",
+      "Requirements": [
+        "R",
+        "htmltools",
+        "lifecycle",
+        "magrittr",
+        "rlang"
+      ],
+      "Hash": "0e212e863398d4587db1721dbe15b05c"
     },
     "gtable": {
       "Package": "gtable",
@@ -1914,6 +1947,13 @@
       ],
       "Hash": "1de7ab598047a87bba48434ba35d497d"
     },
+    "rstudioapi": {
+      "Package": "rstudioapi",
+      "Version": "0.15.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "5564500e25cffad9e22244ced1379887"
+    },
     "s2": {
       "Package": "s2",
       "Version": "1.1.4",
@@ -2092,6 +2132,34 @@
         "shiny"
       ],
       "Hash": "7dc8feb4207741ff581422a04fc8f3ea"
+    },
+    "shinyuieditor": {
+      "Package": "shinyuieditor",
+      "Version": "0.5.1",
+      "Source": "GitHub",
+      "Remotes": "rstudio/gridlayout, rstudio/bslib",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "shinyuieditor",
+      "RemoteUsername": "rstudio",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "16bc1c1762570f5e868b87d88667d4a27f58c961",
+      "Requirements": [
+        "DT",
+        "bsicons",
+        "callr",
+        "crayon",
+        "fs",
+        "gridlayout",
+        "httpuv",
+        "jsonlite",
+        "later",
+        "plotly",
+        "rlang",
+        "shiny",
+        "utils"
+      ],
+      "Hash": "3212377b86bfec23e1d53770b5ca895e"
     },
     "slippymath": {
       "Package": "slippymath",

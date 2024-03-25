@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.3.3",
+    "Version": "4.2.3",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -210,6 +210,18 @@
         "utils"
       ],
       "Hash": "e5c8af79df616c135b21eaeb1dc6bc5c"
+    },
+    "abind": {
+      "Package": "abind",
+      "Version": "1.4-5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "methods",
+        "utils"
+      ],
+      "Hash": "4f57884290cc75ab22f4af9e9d4ca862"
     },
     "anytime": {
       "Package": "anytime",
@@ -484,7 +496,7 @@
     },
     "crosstalk": {
       "Package": "crosstalk",
-      "Version": "1.2.0",
+      "Version": "1.2.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -493,7 +505,7 @@
         "jsonlite",
         "lazyeval"
       ],
-      "Hash": "6aa54f69598c32177e920eb3402e8293"
+      "Hash": "ab12c7b080a57475248a30f4db6298c0"
     },
     "crul": {
       "Package": "crul",
@@ -568,14 +580,14 @@
     },
     "digest": {
       "Package": "digest",
-      "Version": "0.6.33",
+      "Version": "0.6.31",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
         "utils"
       ],
-      "Hash": "b18a9cf3c003977b0cc49d5e76ebe48d"
+      "Hash": "8b708f296afd9ae69f450f9640be8990"
     },
     "dotenv": {
       "Package": "dotenv",
@@ -748,44 +760,6 @@
         "methods"
       ],
       "Hash": "15e9634c0fcd294799e9b2e929ed1b86"
-    },
-    "geojson": {
-      "Package": "geojson",
-      "Version": "0.3.4",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "jqr",
-        "jsonlite",
-        "lazyeval",
-        "magrittr",
-        "methods",
-        "protolite",
-        "sp"
-      ],
-      "Hash": "8d2107f1ebe9a75339e9fd130c07c1f6"
-    },
-    "geojsonio": {
-      "Package": "geojsonio",
-      "Version": "0.11.1",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "R",
-        "V8",
-        "crul",
-        "geojson",
-        "geojsonsf",
-        "jqr",
-        "jsonlite",
-        "lifecycle",
-        "magrittr",
-        "methods",
-        "readr",
-        "sf",
-        "sp"
-      ],
-      "Hash": "a1806c59d3ba36c322b6b8d9fea3fc77"
     },
     "geojsonsf": {
       "Package": "geojsonsf",
@@ -1252,6 +1226,20 @@
       ],
       "Hash": "0c1e9e9a79598ec5acb1820d1948dae8"
     },
+    "leafsync": {
+      "Package": "leafsync",
+      "Version": "0.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "htmltools",
+        "htmlwidgets",
+        "leaflet",
+        "methods"
+      ],
+      "Hash": "819d7169c7d39f0f952473e943375da1"
+    },
     "lifecycle": {
       "Package": "lifecycle",
       "Version": "1.0.3",
@@ -1265,17 +1253,18 @@
       ],
       "Hash": "001cecbeac1cff9301bdc3775ee46a86"
     },
-    "magick": {
-      "Package": "magick",
-      "Version": "2.7.5",
+    "lwgeom": {
+      "Package": "lwgeom",
+      "Version": "0.2-14",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
+        "R",
         "Rcpp",
-        "curl",
-        "magrittr"
+        "sf",
+        "units"
       ],
-      "Hash": "26ff8efba0dcc7b1bc8f970df1c38cc9"
+      "Hash": "f1fb7cc9fc60f3b039201174268aaad9"
     },
     "magrittr": {
       "Package": "magrittr",
@@ -1681,17 +1670,6 @@
       ],
       "Hash": "4ab2c43adb4d4699cf3690acd378d75d"
     },
-    "protolite": {
-      "Package": "protolite",
-      "Version": "2.2.0",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "Rcpp",
-        "jsonlite"
-      ],
-      "Hash": "11dc0af0deb3cbd61e41f505033cef2a"
-    },
     "proxy": {
       "Package": "proxy",
       "Version": "0.4-27",
@@ -1891,14 +1869,14 @@
     },
     "rlang": {
       "Package": "rlang",
-      "Version": "1.1.1",
+      "Version": "1.1.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
         "utils"
       ],
-      "Hash": "a85c767b55f0bf9b7ad16c6d7baee5bb"
+      "Hash": "dc079ccd156cde8647360f473c1fa718"
     },
     "rmarkdown": {
       "Package": "rmarkdown",
@@ -2035,9 +2013,9 @@
     },
     "sf": {
       "Package": "sf",
-      "Version": "1.0-8",
+      "Version": "1.0-15",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "DBI",
         "R",
@@ -2054,7 +2032,7 @@
         "units",
         "utils"
       ],
-      "Hash": "153da622b27630793858f24436bc0871"
+      "Hash": "f432b3379fb1a47046e253468b6b6b6d"
     },
     "sfheaders": {
       "Package": "sfheaders",
@@ -2137,8 +2115,8 @@
       "Package": "shinyuieditor",
       "Version": "0.5.1",
       "Source": "GitHub",
-      "Remotes": "rstudio/gridlayout, rstudio/bslib",
       "RemoteType": "github",
+      "Remotes": "rstudio/gridlayout, rstudio/bslib",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "shinyuieditor",
       "RemoteUsername": "rstudio",
@@ -2214,6 +2192,23 @@
         "utils"
       ],
       "Hash": "1229a01b4ec059e9f2396724f2ec9010"
+    },
+    "stars": {
+      "Package": "stars",
+      "Version": "0.6-4",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "abind",
+        "classInt",
+        "methods",
+        "parallel",
+        "rlang",
+        "sf",
+        "units"
+      ],
+      "Hash": "8b4284bf9fddfb481d516877a2045023"
     },
     "stringi": {
       "Package": "stringi",
@@ -2371,6 +2366,57 @@
       ],
       "Hash": "e4e357f28c2edff493936b6cb30c3d65"
     },
+    "tmap": {
+      "Package": "tmap",
+      "Version": "3.3-4",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "RColorBrewer",
+        "abind",
+        "classInt",
+        "grid",
+        "htmltools",
+        "htmlwidgets",
+        "leafem",
+        "leaflet",
+        "leafsync",
+        "methods",
+        "rlang",
+        "sf",
+        "stars",
+        "stats",
+        "tmaptools",
+        "units",
+        "utils",
+        "viridisLite",
+        "widgetframe"
+      ],
+      "Hash": "c65363bc002492caf754352499ce2386"
+    },
+    "tmaptools": {
+      "Package": "tmaptools",
+      "Version": "3.1-1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "RColorBrewer",
+        "XML",
+        "dichromat",
+        "grid",
+        "lwgeom",
+        "magrittr",
+        "methods",
+        "sf",
+        "stars",
+        "stats",
+        "units",
+        "viridisLite"
+      ],
+      "Hash": "dfcb77371df343b663d6668d2d63ac35"
+    },
     "triebeard": {
       "Package": "triebeard",
       "Version": "0.4.1",
@@ -2511,6 +2557,22 @@
         "magrittr"
       ],
       "Hash": "16858ee1aba97f902d24049d4a44ef16"
+    },
+    "widgetframe": {
+      "Package": "widgetframe",
+      "Version": "0.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "htmltools",
+        "htmlwidgets",
+        "magrittr",
+        "purrr",
+        "tools",
+        "utils"
+      ],
+      "Hash": "0ee89e6cb58182d39b30a5b506e04808"
     },
     "withr": {
       "Package": "withr",

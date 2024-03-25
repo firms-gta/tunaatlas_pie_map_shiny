@@ -27,7 +27,7 @@ geographic_catches_by_fishing_fleet_ui <- function() {
                           card_body(leafletOutput("pie_map_fishing_fleet", width="100%", height="100%"))
                         ), 
                         grid_card(area = "plot_fishing_fleet_by_time", 
-                                  card_body(dygraphOutput("plot_fishing_fleet"))
+                                  card_body(dygraphOutput("plot_fishing_fleet_by_time"))
                         )
                       )
             )

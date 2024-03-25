@@ -1,5 +1,5 @@
 
-renv::restore()
+renv::restore(exclude = c("geojsonio", "protolite", "geojson", "magick"))
 source('install.R')
 
 ####################################################################################################################################################################################################################################
@@ -89,7 +89,7 @@ zoom <- reactiveVal(1)
 target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.i6i7i8 ORDER BY dataset;")
 target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.i6i7i8 ORDER BY species;")
 target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER BY year;")
-target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;")
+target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;") %>% dplyr::filter(!is.na(fishing_fleet))
 target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.i6i7i8 ORDER BY gridtype;")
 
 default_dataset <- ifelse('global_catch_firms_level0' %in%target_dataset, "global_catch_firms_level0", target_dataset[[1]][1])
@@ -103,17 +103,6 @@ onStop(function() {
   poolClose(pool)
 })
 require(bslib)
-source("~/Documents/tunaatlas_pie_map_shiny/R/palette_species_setting.R")
-
-####################################################################################################################################################################################################################################
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/geographic_catches_ui.R')
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/geographic_catches_by_species_ui.R')
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/geographic_catches_by_fishing_fleet_ui.R')
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/ggplot_indicator_11_ui.R')
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/zoom_level_ui.R')
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/additional_info_ui.R')
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/filterUI.R')
-source('~/Documents/tunaatlas_pie_map_shiny/tab_panels/data_explorer_overview_ui.R')
 
 create_logo_panel <- function() {
   div(
@@ -123,3 +112,4 @@ create_logo_panel <- function() {
     style="text-align: start;"
   )
 }
+

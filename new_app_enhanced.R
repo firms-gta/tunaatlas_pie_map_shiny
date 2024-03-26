@@ -1,7 +1,6 @@
 source("global.R")
 
 ####################################################################################################################################################################################################################################
-# pool <- connect_to_db()
 global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
@@ -30,10 +29,8 @@ default_flag <- unique(filters_combinations$fishing_fleet)
 # default_species <- dbGetQuery(pool, paste0("SELECT DISTINCT(species) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND gridtype = '", default_gridtype, "' ORDER BY species;"))[[1]][1]
 # default_year <- dbGetQuery(pool, paste0("SELECT DISTINCT(year) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND gridtype = '", default_gridtype, "' AND species = '", default_species, "' LIMIT 1;"))
 # default_flag <- ifelse('EUFRA' %in%target_flag, "EUFRA", target_flag[[1]][1])
+variable_to_display <-c("species","fishing_fleet","measurement_value", "gear_type")           
 
-onStop(function() {
-  poolClose(pool)
-})
 require(bslib)
 require(gridlayout)
 require(here)
@@ -54,6 +51,8 @@ source(here::here('tab_panels/data_explorer_overview_ui.R'))
 source(here::here('tab_panels/total_catch_plot.R'))
 source(here::here('tab_panels/sidebar_ui.R'))
 source(here::here('tab_panels/mapCatchesmodules.R'))
+source(here::here('modules/categoryGlobalPieChart.R'))
+source(here::here('modules/pieMapTimeSeriesUI.R'))
 
 ui <- page_navbar(
   title = "Tuna Atlas: Interactive Indicator",
@@ -70,10 +69,11 @@ ui <- page_navbar(
   data_explorer_overview_ui(),  additional_info_ui()
   
 )
+pool <- connect_to_db()
 
 
 server <- function(input, output, session) {
-  pool <- connect_to_db()
+  # pool <- connect_to_db()
   
   output$select_dataset <- renderUI({
     # datasets <- unique(filters_combinations$dataset)
@@ -152,7 +152,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "select_fishing_fleet", selected = default_flag)
   })
   
-  totalCatchplotUIServer("plot_by_variable")
+  catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
+  # catches_by_variable_moduleServer("catches_by_variable_year")
   
   
   sql_query_metadata_plot1 <- eventReactive(input$submit, {
@@ -214,11 +215,18 @@ server <- function(input, output, session) {
   },
   ignoreNULL = FALSE)
   
+  data_without_geom <- reactive({
+    data_without_geom <- as.data.frame(data())
+    data_without_geom$geom <- NULL
+    data_without_geom
+    })
+ 
+  
+  
   sum_all <- reactive({
     st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY geom")) 
   }) 
   
-  mapCatchesServer("total_catch", sum_all) 
   
   
   sum_species <- reactive({
@@ -236,18 +244,13 @@ server <- function(input, output, session) {
       dplyr::mutate(total = rowSums(across(any_of(target_flag$fishing_fleet))))
   })
   
-  data_pie_map_species <- reactive({
-    st_read(pool, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, geom"))  %>% 
-      spread(species, measurement_value, fill=0)  %>%  
-      dplyr::mutate(total = rowSums(across(any_of(as.vector(target_species$species)))))  })
+
   
   data_time_serie <- reactive({
     st_read(pool, query = paste0("SELECT to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY year")) 
   })
   
-  data_time_serie_species <- reactive({
-    st_read(pool, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, year")) 
-  })
+
   
   data_time_serie_fishing_fleet <- reactive({
     st_read(pool, query = paste0("SELECT fishing_fleet,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY fishing_fleet, year"))
@@ -350,120 +353,6 @@ server <- function(input, output, session) {
   }) 
   
   
-   
-  
-  
-  
-  
-  output$total_catch_species <- renderLeaflet({
-    
-    df <- sum_species()
-    lat_centroid <- st_coordinates(centroid())[2]
-    lon_centroid <- st_coordinates(centroid())[1]
-    
-    qpal <- colorQuantile(rev(viridis::viridis(10)),df$measurement_value, n=10)
-    
-    # https://r-spatial.github.io/sf/articles/sf5.html
-    # https://rstudio.github.io/leaflet/showhide.html
-    mymap <- leaflet() %>% 
-      addProviderTiles("Esri.NatGeoWorldMap") %>% 
-      clearBounds() %>%
-      addPolygons(data = df,
-                  label = ~measurement_value,
-                  popup = ~paste0("Total catches for ",species," species in this square of the grid: ", round(measurement_value), " tons (t) et des brouettes"),
-                  fillColor = ~qpal(measurement_value),
-                  fill = TRUE,
-                  fillOpacity = 0.8,
-                  smoothFactor = 0.5) %>% 
-      addDrawToolbar(
-        targetGroup = "draw",
-        editOptions = editToolbarOptions(
-          selectedPathOptions = selectedPathOptions()
-        )
-      ) %>%
-      addLayersControl(
-        overlayGroups = c("draw"),
-        options = layersControlOptions(collapsed = FALSE)
-      )  %>% 
-      leaflet::addLegend("bottomright", pal = qpal, values = df$measurement_value,
-                         title = "Total catch per cell for selected criteria",
-                         labFormat = labelFormat(prefix = "MT "),
-                         opacity = 1
-      )
-  })
-  
-
-  
-  
-  
-  
-  output$plot_fishing_fleet<- renderPlotly({ 
-    df_i2 = st_read(pool, query = paste0("SELECT fishing_fleet, count(fishing_fleet), sum(measurement_value) FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('",wkt(),"',4326)) GROUP BY fishing_fleet ORDER BY count;")) 
-    
-    # https://www.tenderisthebyte.com/blog/2019/04/25/rotating-axis-labels-in-r/
-    # barplot(as.vector(as.integer(df_i2$count)),names.arg=df_i2$fishing_fleet, xlab="fishing_fleet",ylab="count",las = 2, cex.names = 1)
-    la_palette_fishing_fleet = palette_fishing_fleet[names(palette_fishing_fleet) %in% unique(df_i2$fishing_fleet)]
-    
-    
-    fig <- plot_ly(df_i2, labels = ~fishing_fleet, values = ~count, type = 'pie',
-                   marker = list(colors = la_palette_fishing_fleet, line = list(color = '#FFFFFF', width = 1), sort = FALSE),
-                   showlegend = TRUE)
-    fig <- fig %>% layout(title = 'Overall fishing_fleet composition in selected area and period of time',
-                          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-    
-    
-  })
-  
-  
-  output$plot_species<- renderPlotly({ 
-    df_i2 = st_read(pool, query = paste0("SELECT species, count(species), sum(measurement_value) FROM public.i6i7i8 WHERE ST_Within(geom,ST_GeomFromText('",wkt(),"',4326)) GROUP BY species ORDER BY count;")) 
-    
-    # https://www.tenderisthebyte.com/blog/2019/04/25/rotating-axis-labels-in-r/
-    # barplot(as.vector(as.integer(df_i2$count)),names.arg=df_i2$species, xlab="species",ylab="count",las = 2, cex.names = 1)
-    la_palette_species = palette_species[names(palette_species) %in% unique(df_i2$species)]
-    
-    
-    fig <- plot_ly(df_i2, labels = ~species, values = ~count, type = 'pie',
-                   marker = list(colors = la_palette_species, line = list(color = '#FFFFFF', width = 1), sort = FALSE),
-                   showlegend = TRUE)
-    fig <- fig %>% layout(title = 'Overall species composition in selected area and period of time',
-                          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-    
-    
-  })
-  
-  
-  
-  # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
-  
-  
-  
-  
-  
-  
-  
-  
-  # output$pie_map_i11 <- renderPlotly({
-  output$plot_fishing_fleet <- renderPlotly({
-      metadata_i11 <- data_pie_chart_fishing_fleet() 
-    df_i11_map <- as_tibble(metadata_i11)  
-    
-    la_palette = palette3[names(palette3) %in% unique(df_i11_map$fishing_fleet)]    
-    
-    fig <- plot_ly(df_i11_map, labels = ~fishing_fleet, values = ~measurement_value, type = 'pie',
-                   marker = list(colors = la_palette, line = list(color = '#FFFFFF', width = 1), sort = FALSE),
-                   showlegend = TRUE)
-    fig <- fig %>% layout(title = 'Tuna catches by fishing_fleet for selected species, area and period of time',
-                          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-    
-    fig
-    
-    
-  })
-  
   output$plot_by_time <- renderDygraph({
     df_i1 <- data_time_serie()
     
@@ -480,45 +369,7 @@ server <- function(input, output, session) {
     g1
   })
   
-  
-  output$plot_species_by_time <- renderDygraph({
-    df_i1 <- data_time_serie_species()
-    
-    # Reshape the data so that each species becomes a column
-    df_wide <- df_i1 %>%
-      tidyr::spread(key = species, value = measurement_value, fill = 0)
-    
-    # Convert to xts object
-    tuna_catches_timeSeries <- xts(df_wide[-1], order.by = as.Date(df_wide$year))
-    
-    # Plot the dygraph with one line per species
-    g1 <- dygraph(tuna_catches_timeSeries) %>%
-      dyOptions(fillGraph = TRUE) %>%
-      dyGroup(colnames(tuna_catches_timeSeries)) %>%
-      dyRangeSelector()
-    
-    g1
-  })
-  
-  
-  output$plot_fishing_fleet_by_time <- renderDygraph({
-    df_i1 <- data_time_serie_fishing_fleet()
-    
-    # Reshape the data so that each fishing_fleet becomes a column
-    df_wide <- df_i1 %>%
-      tidyr::spread(key = fishing_fleet, value = measurement_value, fill = 0)
-    
-    # Convert to xts object
-    tuna_catches_timeSeries <- xts(df_wide[-1], order.by = as.Date(df_wide$year))
-    
-    # Plot the dygraph with one line per fishing_fleet
-    g1 <- dygraph(tuna_catches_timeSeries) %>%
-      dyOptions(fillGraph = TRUE) %>%
-      dyGroup(colnames(tuna_catches_timeSeries)) %>%
-      dyRangeSelector()
-    
-    g1
-  })
+  mapCatchesServer("total_catch", sum_all) 
   
   
   output$plot11 <- renderImage({
@@ -544,67 +395,17 @@ server <- function(input, output, session) {
          alt = "This is alternate text")
   }, deleteFile = TRUE)
   
-  
-  output$pie_map_fishing_fleet <- renderLeaflet({
-    data_pie_map_fishing_fleet <- data_pie_map_fishing_fleet()
-    lat_centroid <- st_coordinates(centroid())[2]
-    lon_centroid <- st_coordinates(centroid())[1]
-    la_palette_fishing_fleet = palette_fishing_fleet[names(palette_fishing_fleet) %in% unique(data_pie_map_fishing_fleet$fishing_fleet)]
-    la_palette_fishing_fleet = palette_fishing_fleet[names(palette_fishing_fleet) %in% colnames(dplyr::select(data_pie_map_fishing_fleet,-total))]
-    
-    data_pie_map_fishing_fleet <-  leaflet() %>%
-      addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
-      clearBounds() %>%
-      addDrawToolbar(
-        targetGroup = "draw",
-        editOptions = editToolbarOptions(
-          selectedPathOptions = selectedPathOptions()
-        )
-      ) %>%
-      addLayersControl(
-        overlayGroups = c("draw"),
-        options = layersControlOptions(collapsed = FALSE)
-      )  %>%
-      addMinicharts(lng = st_coordinates(st_centroid(data_pie_map_fishing_fleet, crs = 4326))[, "X"],
-                    lat = st_coordinates(st_centroid(data_pie_map_fishing_fleet, crs = 4326))[, "Y"],
-                    maxValues = max(data_pie_map_fishing_fleet$total),
-                    chartdata = dplyr::select(data_pie_map_fishing_fleet,-total) %>% st_drop_geometry(),type = "pie",
-                    colorPalette = unname(la_palette_fishing_fleet),
-                    width = (60*data_pie_map_fishing_fleet$total/max(data_pie_map_fishing_fleet$total))+20,
-                    legend = TRUE, legendPosition = "bottomright") %>%
-      addLayersControl(baseGroups = c("minicharts","grid"), overlayGroups = c("background"))
-  })
+  categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet")
+  categoryGlobalPieChartServer("species_chart", "species")
   
   
-  output$pie_map_species <- renderLeaflet({
-    data_pie_map_species <- data_pie_map_species()
-    lat_centroid <- st_coordinates(centroid())[2]
-    lon_centroid <- st_coordinates(centroid())[1]
-    la_palette_species = palette_species[names(palette_species) %in% unique(data_pie_map_species$species)]
-    la_palette_species = palette_species[names(palette_species) %in% colnames(dplyr::select(data_pie_map_species,-total))]
-    
-    data_pie_map_species <-  leaflet() %>%  
-      addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
-      clearBounds() %>% 
-      addDrawToolbar(
-        targetGroup = "draw",
-        editOptions = editToolbarOptions(
-          selectedPathOptions = selectedPathOptions()
-        )
-      ) %>%
-      addLayersControl(
-        overlayGroups = c("draw"),
-        options = layersControlOptions(collapsed = FALSE)
-      )  %>%
-      addMinicharts(lng = st_coordinates(st_centroid(data_pie_map_species, crs = 4326))[, "X"],
-                    lat = st_coordinates(st_centroid(data_pie_map_species, crs = 4326))[, "Y"],
-                    maxValues = max(data_pie_map_species$total),
-                    chartdata = dplyr::select(data_pie_map_species,-total) %>% st_drop_geometry(),type = "pie",
-                    colorPalette = unname(la_palette_species),
-                    width = (60*data_pie_map_species$total/max(data_pie_map_species$total))+20,
-                    legend = TRUE, legendPosition = "bottomright") %>% 
-      addLayersControl(baseGroups = c("minicharts","grid"), overlayGroups = c("background"))
-  })
+  
+  # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
+  
+  pieMapTimeSeriesServer("species_module", category_var = "species", sql_query = sql_query, centroid = centroid)
+  pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", sql_query = sql_query, centroid = centroid)
+  # pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet")
+  
   
   
   # output to download data

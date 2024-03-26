@@ -37,3 +37,18 @@ set.seed(2643598)
 # palette3 <- sample(palette3_all, nrow(unique(df_i11_map$fishing_fleet)), replace=TRUE)
 palette_fishing_fleet <- sample(palette3_fishing_fleet, nrow(target_flag), replace=TRUE)
 names(palette_fishing_fleet) = target_flag$fishing_fleet
+
+
+
+# Setup palettes for each category
+palettes <- list(
+  species = palette_species,        # Defined elsewhere, as shown above
+  fishing_fleet = palette_fishing_fleet  # Defined elsewhere, as shown above
+)
+
+# Function to get the correct palette based on category
+getPalette <- function(category) {
+  palette <- palettes[[category]]
+  
+  return(palette)
+}

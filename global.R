@@ -92,7 +92,7 @@ target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER 
 target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;") %>% dplyr::filter(!is.na(fishing_fleet))
 target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.i6i7i8 ORDER BY gridtype;")
 
-default_dataset <- ifelse('global_catch_firms_level0' %in%target_dataset, "global_catch_firms_level0", target_dataset[[1]][1])
+default_dataset <- ifelse('global_catch_firms_level0' %in%target_dataset$dataset, "global_catch_firms_level0", target_dataset[[1]][1])
 default_flag <- ifelse('EUFRA' %in%target_flag, "EUFRA", target_flag[[1]][1])
 default_species <- dbGetQuery(pool, paste0("SELECT DISTINCT(species) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' ORDER BY species;"))[[1]][1]
 default_gridtype <- dbGetQuery(pool, paste0("SELECT DISTINCT(gridtype) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND species = '", default_species, "' LIMIT 1;"))

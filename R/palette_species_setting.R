@@ -42,8 +42,8 @@ names(palette_fishing_fleet) = target_flag$fishing_fleet
 
 # Setup palettes for each category
 palettes <- list(
-  species = palette_species,        # Defined elsewhere, as shown above
-  fishing_fleet = palette_fishing_fleet  # Defined elsewhere, as shown above
+  species = palette_species,        
+  fishing_fleet = palette_fishing_fleet  
 )
 
 # Function to get the correct palette based on category
@@ -52,3 +52,5 @@ getPalette <- function(category) {
   
   return(palette)
 }
+
+

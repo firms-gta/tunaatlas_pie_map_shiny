@@ -112,4 +112,12 @@ create_logo_panel <- function() {
     style="text-align: start;"
   )
 }
-
+targettes <- list(
+  species = target_species,        # Defined elsewhere, as shown above
+  fishing_fleet = target_flag  # Defined elsewhere, as shown above
+)
+getTarget <- function(category) {
+  target <- targettes[[category]]
+  
+  return(target)
+}

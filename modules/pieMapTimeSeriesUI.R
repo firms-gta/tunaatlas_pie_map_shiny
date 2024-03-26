@@ -9,14 +9,14 @@ pieMapTimeSeriesUI <- function(id) {
 pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+    target_var <- getTarget(category_var)
     # Adjust the reactive expressions to use the dynamic category_var
     data_pie_map <- reactive({
       req(sql_query())
       query <- paste0("SELECT ", category_var, ", geom, sum(measurement_value) AS measurement_value FROM(", sql_query(), ") AS foo GROUP BY ", category_var, ", geom")
       df <- st_read(pool, query = query) %>%
         tidyr::spread(key = !!sym(category_var), value = measurement_value, fill = 0) %>%
-        dplyr::mutate(total = rowSums(across(any_of(target_species[[category_var]]))))
+        dplyr::mutate(total = rowSums(across(any_of(target_var[[category_var]]))))
       df
     })
     

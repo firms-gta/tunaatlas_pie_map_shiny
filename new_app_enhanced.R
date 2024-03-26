@@ -54,6 +54,8 @@ source(here::here('tab_panels/mapCatchesmodules.R'))
 source(here::here('modules/categoryGlobalPieChart.R'))
 source(here::here('modules/pieMapTimeSeriesUI.R'))
 
+pool <- connect_to_db()
+
 ui <- page_navbar(
   title = "Tuna Atlas: Interactive Indicator",
   selected = "GTA Shiny App",
@@ -69,7 +71,7 @@ ui <- page_navbar(
   data_explorer_overview_ui(),  additional_info_ui()
   
 )
-pool <- connect_to_db()
+
 
 
 server <- function(input, output, session) {

@@ -1,58 +1,4 @@
-source("global.R")
-
-####################################################################################################################################################################################################################################
-global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
-wkt <- reactiveVal(global_wkt)
-metadata <- reactiveVal() 
-zoom <- reactiveVal(1) 
-
-# target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.i6i7i8 ORDER BY dataset;")
-# target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.i6i7i8 ORDER BY species;")
-# target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER BY year;")
-# target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;")
-# target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.i6i7i8 ORDER BY gridtype;")
-# filters_combinations <- dbGetQuery(pool, "SELECT dataset, gridtype, species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY dataset, gridtype, species, year, fishing_fleet;")
-
-default_gridtype <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
-  head(1) %>% 
-  pull(gridtype)
-
-default_species <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
-  dplyr::filter(gridtype == default_gridtype) %>% 
-  head(1) %>% 
-  pull(species)
-
-default_flag <- unique(filters_combinations$fishing_fleet)
-
-# default_dataset <- ifelse('global_catch_firms_level0' %in%target_dataset$dataset, "global_catch_firms_level0", target_dataset$dataset[1])
-# default_gridtype <- dbGetQuery(pool, paste0("SELECT DISTINCT(gridtype) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' LIMIT 1;"))$gridtype
-# default_species <- dbGetQuery(pool, paste0("SELECT DISTINCT(species) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND gridtype = '", default_gridtype, "' ORDER BY species;"))[[1]][1]
-# default_year <- dbGetQuery(pool, paste0("SELECT DISTINCT(year) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND gridtype = '", default_gridtype, "' AND species = '", default_species, "' LIMIT 1;"))
-# default_flag <- ifelse('EUFRA' %in%target_flag, "EUFRA", target_flag[[1]][1])
-variable_to_display <-c("species","fishing_fleet","measurement_value", "gear_type")           
-
-require(bslib)
-require(gridlayout)
-require(here)
-require(RColorBrewer)
-
-source(here::here("R/palette_species_setting.R"))
-
-####################################################################################################################################################################################################################################
-source(here::here('tab_panels/geographic_catches_ui.R'))
-source(here::here('tab_panels/main_panel_ui.R'))
-source(here::here('tab_panels/geographic_catches_by_species_ui.R'))
-source(here::here('tab_panels/geographic_catches_by_fishing_fleet_ui.R'))
-source(here::here('tab_panels/ggplot_indicator_11_ui.R'))
-source(here::here('tab_panels/zoom_level_ui.R'))
-source(here::here('tab_panels/additional_info_ui.R'))
-source(here::here('tab_panels/filterUI.R'))
-source(here::here('tab_panels/data_explorer_overview_ui.R'))
-source(here::here('tab_panels/total_catch_plot.R'))
-source(here::here('tab_panels/sidebar_ui.R'))
-source(here::here('tab_panels/mapCatchesmodules.R'))
-source(here::here('modules/categoryGlobalPieChart.R'))
-source(here::here('modules/pieMapTimeSeriesUI.R'))
+# source("global.R")
 
 pool <- connect_to_db()
 
@@ -75,7 +21,6 @@ ui <- page_navbar(
 
 
 server <- function(input, output, session) {
-  # pool <- connect_to_db()
   
   output$select_dataset <- renderUI({
     # datasets <- unique(filters_combinations$dataset)
@@ -155,7 +100,6 @@ server <- function(input, output, session) {
   })
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
-  # catches_by_variable_moduleServer("catches_by_variable_year")
   
   
   sql_query_metadata_plot1 <- eventReactive(input$submit, {
@@ -164,7 +108,6 @@ server <- function(input, output, session) {
   ignoreNULL = FALSE)
   
   sql_query = eventReactive(input$submit, {
-    # if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
     
     query <- glue::glue_sql(
       "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
@@ -423,9 +366,9 @@ server <- function(input, output, session) {
   
 
   
-  onStop(function() {
-    poolClose(pool)
-  })
+  # onStop(function() {
+  #   poolClose(pool)
+  # })
 }
 
 # Run the application 

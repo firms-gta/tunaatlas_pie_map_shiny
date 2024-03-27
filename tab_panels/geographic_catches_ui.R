@@ -37,8 +37,7 @@ geographic_catches_ui <- function() {
                 area = "phrase_output",
                 card_body("testt")#textOutput(outputId = "textOutput"))
               ),
-              grid_card(area = "by_month", card_body(catches_by_variable_moduleUI("catches_by_variable_month")))#,
-              # grid_card_plot(area = "by_year", card_body(catches_by_variable_moduleUI("catches_by_variable_year")))
+              grid_card(area = "by_month", card_body(catches_by_variable_moduleUI("catches_by_variable_month")))
             )
           )
         )

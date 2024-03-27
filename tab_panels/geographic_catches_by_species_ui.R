@@ -3,7 +3,7 @@ geographic_catches_by_species_ui <- function() {
             grid_container(
               layout = c(
                 "pie_map_species  pie_map_species   ",
-                "logo logo"
+                "pie_map logo"
               ),   
               row_sizes = c(
                 "1.48fr",
@@ -24,11 +24,11 @@ geographic_catches_by_species_ui <- function() {
               grid_card(
                 area = "pie_map_species",
                 card_body(pieMapTimeSeriesUI("species_module"))
-              )
+              ), 
+              grid_card(area = "pie_map", card_body(categoryGlobalPieChartUI("fishing_fleet_chart")))
   )
   )
 }
-
 
 
 # geographic_catches_by_species_ui <- function() {

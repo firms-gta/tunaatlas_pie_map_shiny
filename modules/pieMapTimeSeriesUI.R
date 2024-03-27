@@ -28,10 +28,6 @@ pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid) {
       lat_centroid <- st_coordinates(centroid())[2]
       lon_centroid <- st_coordinates(centroid())[1]
       la_palette <- getPalette(category_var)
-      # la_palette = la_palette[names(la_palette) %in% unique(df[[category_var]])]
-      # la_palette = la_palette[names(la_palette) %in% colnames(dplyr::select(df,-total))]
-      # la_palette_fishing_fleet = palette_fishing_fleet[names(palette_fishing_fleet) %in% unique(df$fishing_fleet)]
-      # la_palette_fishing_fleet = palette_fishing_fleet[names(palette_fishing_fleet) %in% colnames(dplyr::select(df,-total))]
       
       
       df <-  leaflet() %>%

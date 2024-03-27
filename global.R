@@ -77,7 +77,6 @@ variable_to_display <-c("species","fishing_fleet","measurement_value", "gear_typ
 
 
 source(here::here("R/palette_species_setting.R"))
-
 ####################################################################################################################################################################################################################################
 source(here::here('tab_panels/geographic_catches_ui.R'))
 source(here::here('tab_panels/main_panel_ui.R'))
@@ -93,7 +92,7 @@ source(here::here('tab_panels/sidebar_ui.R'))
 source(here::here('tab_panels/mapCatchesmodules.R'))
 source(here::here('modules/categoryGlobalPieChart.R'))
 source(here::here('modules/pieMapTimeSeriesUI.R'))
-
+source(here::here('tab_panels/create_logo_panel.R'))
 
 
 targettes <- list(

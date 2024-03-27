@@ -1,4 +1,4 @@
-# source("global.R")
+source("global.R")
 
 pool <- connect_to_db()
 
@@ -13,7 +13,7 @@ ui <- page_navbar(
   geographic_catches_by_species_ui(),
   geographic_catches_by_fishing_fleet_ui(),
   # ggplot_indicator_11_ui(),
-  zoom_level_ui(),
+  # zoom_level_ui(),
   data_explorer_overview_ui(),  additional_info_ui()
   
 )

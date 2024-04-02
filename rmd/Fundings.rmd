@@ -1,0 +1,20 @@
+---
+title: "Project Funding"
+output: html_document
+---
+  
+# Project Funding
+  
+This work has been supported by several funding sources, outlined below:
+  
+- **Institute of Research for Development (IRD)**
+  - The support from IRD has been crucial for conducting our research.
+
+- **iMarine FP7 Project**
+  - Funded under the European Union's Seventh Framework Programme (FP7).
+
+- **BlueBridge H2020 Project**
+  - BlueBridge has received funding from the European Union's Horizon 2020 research and innovation programme under grant agreement No. 675680.
+
+- **Blue Cloud H2020 Project**
+  - Blue-Cloud has been funded by the European Union's Horizon programme call BG-07-2019-2020, topic: [A] 2019 - Blue Cloud services, Grant Agreement no. 862409. The views and opinions expressed in this website are solely the responsibility of the author and do not necessarily reflect the views of the European Commission.

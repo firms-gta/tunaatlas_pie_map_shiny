@@ -1,0 +1,32 @@
+---
+title: "Authors and Contributions"
+output: html_document
+---
+  
+# Authors and Contributions
+  
+This repository has been enriched and supported by the efforts and contributions of multiple individuals. Their diverse skills and dedication have been pivotal in the development and success of this project.
+
+## Main Contributors
+
+- **Julien Barde**
+- **Norbert Billet**
+- **Emmanuel Chassot**
+- **Taha Imzilen**
+- **Paul Taconet**
+- **Bastien Grasset**
+- **UMR MARBEC (Marine Biodiversity, Exploitation and Conservation)**
+  
+Each contributor has played a significant role in the repository's development, offering unique insights, expertise, and dedication to the project's growth.
+
+## Acknowledgments
+
+Special thanks are extended to **Alain Fontenau**, whose original draft of a set of indicators laid the groundwork for significant portions of the analysis code. His contributions have been instrumental in guiding the project's analytical direction.
+
+## Code Contributions
+
+The implementation of the indicators into the R programming language was skillfully executed by **Norbert Billet** and **Julien Barde** during the iMarine FP7 project. Their expertise in R programming facilitated the translation of conceptual indicators into practical, executable code, thereby enabling robust data analysis and insights.
+
+---
+
+This document serves to recognize and appreciate the collective efforts of all individuals involved. Their contributions have not only enhanced the repository but have also advanced the field of marine biodiversity research.

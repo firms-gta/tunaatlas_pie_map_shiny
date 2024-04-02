@@ -2111,6 +2111,25 @@
       ],
       "Hash": "7dc8feb4207741ff581422a04fc8f3ea"
     },
+    "shinyjs": {
+      "Package": "shinyjs",
+      "Version": "2.1.0.9005",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "shinyjs",
+      "RemoteUsername": "daattali",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "64f5a0892c8de7d6d12127983dce077fe8405fc4",
+      "Requirements": [
+        "R",
+        "jsonlite",
+        "rlang",
+        "shiny",
+        "utils"
+      ],
+      "Hash": "cdfaeb46e324a6442ea8cc91eb558ff0"
+    },
     "shinyuieditor": {
       "Package": "shinyuieditor",
       "Version": "0.5.1",

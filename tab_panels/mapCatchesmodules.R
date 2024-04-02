@@ -37,6 +37,6 @@ mapCatchesServer <- function(id, sum_all) {
         )
       return(my_map)
     })
-    
+
     })
 }

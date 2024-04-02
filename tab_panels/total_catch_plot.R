@@ -1,3 +1,14 @@
+#' UI for Catch Data by Variable Module
+#'
+#' This function creates a UI module for displaying the top N categories within a selected variable through dynamic plots. It includes controls for selecting the variable and specifying the number of top categories to display.
+#' 
+#' @param id Character. A namespace identifier for the module's UI components.
+#'
+#' @return A \code{tagList} object containing a slider input for selecting the number of top categories, a select input for choosing the variable, and plot outputs for yearly and monthly aggregated data.
+#' 
+#' @importFrom shiny NS tagList sliderInput selectInput plotOutput
+#' @export
+
 # Module UI
 catches_by_variable_moduleUI <- function(id) {
   ns <- NS(id)
@@ -17,7 +28,17 @@ catches_by_variable_moduleUI <- function(id) {
 }
 
 
-
+#' Server Logic for Catch Data by Variable Module
+#'
+#' This server module processes the selected variable and top N categories to visualize yearly and monthly data aggregations. It generates two plots: one for yearly data and one for monthly data, based on the top N categories of the selected variable.
+#'
+#' @param id Character. The namespace identifier for the UI components, ensuring isolation within the app.
+#' @param data_without_geom A reactive expression or a function returning a dataframe. This dataframe should contain the columns necessary for the visualization, excluding any geometric information.
+#'
+#' @importFrom shiny moduleServer reactive req
+#' @importFrom dplyr group_by summarise mutate top_n pull ungroup
+#' @importFrom ggplot2 ggplot aes_string geom_bar geom_line labs
+#' @export
 
 # Module Server
 catches_by_variable_moduleServer <- function(id, data_without_geom) {

@@ -22,9 +22,11 @@ require(bslib)
 require(gridlayout)
 require(here)
 require(RColorBrewer)
+require(shinyjs)
 
 connect_to_db <- function() {
-  
+  # if (is.null(pool) || !dbIsValid(pool)) {
+    
 try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
   
 db_host <- Sys.getenv("DB_HOST")
@@ -39,6 +41,10 @@ dbPool(RPostgreSQL::PostgreSQL(),
                  dbname = db_name,
                  user = db_user,
                  password = db_password)
+
+# message("La connexion à la base de données est établie.") } else {
+#   message("Déjà connecté à la base de données.")
+# }
 }
 
 pool <- connect_to_db()
@@ -80,8 +86,7 @@ source(here::here("R/palette_species_setting.R"))
 ####################################################################################################################################################################################################################################
 source(here::here('tab_panels/geographic_catches_ui.R'))
 source(here::here('tab_panels/main_panel_ui.R'))
-source(here::here('tab_panels/geographic_catches_by_species_ui.R'))
-source(here::here('tab_panels/geographic_catches_by_fishing_fleet_ui.R'))
+source(here::here('tab_panels/geographic_catches_by_variable_ui.R'))
 source(here::here('tab_panels/ggplot_indicator_11_ui.R'))
 source(here::here('tab_panels/zoom_level_ui.R'))
 source(here::here('tab_panels/additional_info_ui.R'))

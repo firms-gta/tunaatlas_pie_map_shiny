@@ -54,7 +54,7 @@ initialiserPalettes <- function(targetVariables, seed=2643598) {
 # Préparation de la liste targetVariables
 targetVariables <- list(
   species = target_species,
-  gridtype = target_gridtype
+  fishing_fleet = target_flag
 )
 
 # Initialisation des palettes avec une graine fixe pour assurer la reproductibilité
@@ -75,6 +75,6 @@ getPalette <- function(category) {
   if (!is.null(palettes[[category]])) {
     return(palettes[[category]])
   } else {
-    stop("Catégorie inconnue. Assurez-vous que la palette existe.")
+    stop("Unknown category. Be sure of the existance of this palette.")
   }
 }

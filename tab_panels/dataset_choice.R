@@ -1,6 +1,5 @@
 dataset_choice <- function(){
-  nav_panel("Changement de Dataset/Gridtype",
-            useShinyjs(),
+  nav_panel(title = "Choosing dataset and gridtype", value = "datasetchoicevalue",
             grid_container(
               layout = c(
                 "choosedatagrid  explenation",
@@ -11,8 +10,8 @@ dataset_choice <- function(){
                 "0.52fr"
               ),
               col_sizes = c(
-                "1.64fr",
-                "0.36fr"
+                "0.36fr",
+                "1.64fr"
               ),
               gap_size = "10px",
               # grid_card_plot(area = "plot"),
@@ -25,8 +24,9 @@ dataset_choice <- function(){
                 area = "choosedatagrid",
                 card_body(uiOutput("select_dataset"),     
                           tags$br(),
-                          uiOutput("select_gridtype"),
-                          actionButton("submit_dataset", "Submit Dataset Selection"))
+                          uiOutput("select_gridtype")
+                          # actionButton("submit_dataset", "Submit Dataset Selection")
+                          )
               )
            )
          )

@@ -1,6 +1,7 @@
 sidebar_ui <- function(){
   sidebar(
     title = "Filter your data",
+    useShinyjs(),
     uiOutput("year_input"),
     checkboxInput("toggle_year", "Discrete selection of year", value = FALSE),
     tags$br(),

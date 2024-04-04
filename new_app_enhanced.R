@@ -1,36 +1,48 @@
 source("global.R")
 
-ui <- page_navbar(
+ui <- page_navbar(id = "main",
   title = "Tuna Atlas: Interactive Indicator",
-  selected = "GTA Shiny App",
+  selected = "mainpanel",
   collapsible = TRUE,
   theme = bslib::bs_theme(),
   sidebar = sidebar_ui(),
-  main_panel_ui(),
-  dataset_choice(),
+  main_panel_ui(), dataset_choice(),  additional_info_ui(),
   geographic_catches_ui(),
   geographic_catches_by_variable_ui("species"),
   geographic_catches_by_variable_ui("fishing_fleet"),
-  # geographic_catches_by_variable_ui("gear_type"),
-  ggplot_indicator_11_ui(),
+  # ggplot_indicator_11_ui(),
   zoom_level_ui(),
-  data_explorer_overview_ui(),  additional_info_ui()
-  
-)
+  data_explorer_overview_ui()
+  )
 
 pool <- connect_to_db()
 
 server <- function(input, output, session) {
-  
-  observeEvent(input$change_dataset, {
-    shinyjs::runjs('$("#tabs li a[data-value=\'Changement de Dataset/Gridtype\']").tab("show");')
+
+    shinyjs::onclick("fishing_fleet_toggle", {
+    shinyjs::toggle("fishing_fleet_panel");
+    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");');
   })
   
-  shinyjs::onclick("fishing_fleet_toggle", {
-    shinyjs::toggle("fishing_fleet_panel")
-    shinyjs::runjs('$("#arrow_indicator").html($("#arrow_indicator").html() == "&#9660;" ? "&#9650;" : "&#9660;");')
+  shinyjs::delay(100, {
+    nav_select(id = "main", selected = "datasetchoicevalue")
   })
   
+  shinyjs::delay(500, {
+    nav_select(id = "main", selected = "mainpanel")
+  })
+  
+  # observe({
+  #   # Délai en secondes
+  #   delay <- 5
+  # 
+  #   # Utiliser Sys.sleep pour attendre
+  #   Sys.sleep(delay)
+  # 
+  #   # Simuler un clic sur le bouton submit après le délai
+  #   shinyjs::runjs('$("#submit").click();')
+  # })
+
   
   output$select_dataset <- renderUI({
     datasets <- filters_combinations %>% dplyr::select(dataset) %>% distinct()
@@ -106,6 +118,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "select_gridtype", selected = default_gridtype)
     updateSelectInput(session, "select_fishing_fleet", selected = default_flag)
   })
+  
+
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
   

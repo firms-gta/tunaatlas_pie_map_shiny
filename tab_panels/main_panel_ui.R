@@ -1,7 +1,7 @@
 main_panel_ui = function()
   {
   nav_panel(
-    title = "GTA Shiny App",
+    title = "GTA Shiny App", value = "mainpanel",
     card(
       full_screen = TRUE,
       card_header(

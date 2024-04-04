@@ -1,11 +1,18 @@
 pieMapTimeSeriesUI <- function(id) {
   ns <- NS(id)
   tagList(
-    leafletOutput(ns("pie_map")),
-    dygraphOutput(ns("plot_by_time")) ,
-    actionButton(ns("submit_draw"), "Update wkt from drawing")
+    div(
+      style = "height: 400px;",
+      leafletOutput(ns("pie_map")),
+      actionButton(ns("submit_draw"), "Update wkt from drawing", 
+                   class = "btn-primary", 
+                   style = "position: absolute; top: 100px; right: 20px; z-index: 400; font-size: 0.8em; padding: 5px 10px;")
+    ),
+    tags$br(),
+    dygraphOutput(ns("plot_by_time"), height = "300px") 
   )
 }
+
 
 pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid) {
   moduleServer(id, function(input, output, session) {
@@ -99,61 +106,24 @@ pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid) {
                       legend = TRUE, legendPosition = "bottomright")
     })
     
-    # # # not working yet
-    # observeEvent(input$map_draw_new_feature, {
-    #   req(input$map_draw_new_feature$geometry)  # Ensure geometry data is present
-    #   geojson <- input$map_draw_new_feature$geometry
-    # 
-    #   # Convert GeoJSON to sf object
-    #   sf_obj <- st_as_sf(geojson, crs = 4326)
-    # 
-    #   # Convert to WKT
-    #   wkt_val <- st_as_text(sf_obj)
-    #   wkt(wkt_val)  # Update the reactive value with the WKT representation
-    # })
-    
-    # edits <- callModule(editMod, "editor", mapview(qk_sf)@map)
 
     observeEvent(input$submit_draw, {
-      print("begin")
-      req(input$pie_map_draw_new_feature$geometry)  # Ensure geometry data is present
-      print("ok draw new feature")
+      req(input$pie_map_draw_new_feature$geometry)  
       req(input$pie_map_draw_stop)
-      print("ok stop")
       geojson <- input$pie_map_draw_new_feature$geometry
-      print(paste0("new geom is in geojson: "))
-      print(class(geojson))
       # Convert GeoJSON to sf object
       geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
-      # # Enregistre le GeoJSON dans un fichier temporaire
-      # temp_file <- tempfile(fileext = ".geojson")
-      # writeLines(geojson_text, temp_file)
-      # 
-      # # Lire le fichier GeoJSON avec st_read
-      # sf_obj <- st_read(temp_file)
-      # 
-      # # Nettoyage
-      # unlink(temp_file)
-      
       sf_obj <- geojsonsf::geojson_sf(geojson_text)
       
       
       # Convert to WKT
       wkt_val <- st_as_text(sf_obj$geometry)
       wkt(wkt_val)  # Update the reactive value with the WKT representation
-      
-      
-      # if (!is.null(wkt())) {
-      #   print(wkt())
-      # }
     })
     
-    ## for test to see if zoom_level is correctly changed, for now all is working fine!
-    # observe({
-    #   zoom_level <- input$map_zoom_level
-    #   print(paste("Zoom level from JS:", zoom_level))
-    # })
-      
+    observeEvent(input$submit_draw, {
+      shinyjs::click("submit")
+    })
 
     
     # Time series plot output

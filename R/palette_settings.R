@@ -1,5 +1,22 @@
-
-# Fonction pour initialiser les palettes basée sur les dataframes des variables cibles
+#' Initialize Color Palettes for Specific Variables
+#'
+#' This function generates unique color palettes for each specified variable based on the unique values
+#' of each variable. It uses a fixed seed to ensure the reproducibility of the generated palettes.
+#'
+#' @param targetVariables A list of dataframes, each dataframe containing one column
+#' with the unique values for a specific variable.
+#' @param seed An integer used to set the seed of the random number generator,
+#' ensuring the reproducibility of the generated palettes.
+#'
+#' @return A list of color vectors, where each vector corresponds to a color palette
+#' for the specified variable.
+#' @examples
+#' target_species <- data.frame(species = c("Species 1", "Species 2", "Species 3"))
+#' target_fishing_fleet <- data.frame(fishing_fleet = c("Fleet 1", "Fleet 2"))
+#' targetVariables <- list(species = target_species, fishing_fleet = target_fishing_fleet)
+#' palettes <- initialiserPalettes(targetVariables, seed=2643598)
+#' getPalette("species")
+#' @export
 initialiserPalettes <- function(targetVariables, seed=2643598) {
   # Fixer la graine pour la reproductibilité
   set.seed(seed)
@@ -43,7 +60,17 @@ targetVariables <- list(
 # Initialisation des palettes avec une graine fixe pour assurer la reproductibilité
 palettes <- initialiserPalettes(targetVariables, seed=2643598) 
 
-# Fonction pour récupérer une palette spécifique
+#' Retrieve a Specific Color Palette
+#'
+#' This function returns the color palette for the specified category, if it exists.
+#'
+#' @param category The name of the category for which the color palette is requested.
+#'
+#' @return A color vector for the specified category.
+#' @examples
+#' palette_species <- getPalette("species")
+#' @export
+#' 
 getPalette <- function(category) {
   if (!is.null(palettes[[category]])) {
     return(palettes[[category]])

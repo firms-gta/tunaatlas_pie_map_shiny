@@ -7,6 +7,7 @@ ui <- page_navbar(
   theme = bslib::bs_theme(),
   sidebar = sidebar_ui(),
   main_panel_ui(),
+  dataset_choice(),
   geographic_catches_ui(),
   geographic_catches_by_variable_ui("species"),
   geographic_catches_by_variable_ui("fishing_fleet"),
@@ -21,6 +22,10 @@ pool <- connect_to_db()
 
 server <- function(input, output, session) {
   
+  observeEvent(input$change_dataset, {
+    shinyjs::runjs('$("#tabs li a[data-value=\'Changement de Dataset/Gridtype\']").tab("show");')
+  })
+  
   shinyjs::onclick("fishing_fleet_toggle", {
     shinyjs::toggle("fishing_fleet_panel")
     shinyjs::runjs('$("#arrow_indicator").html($("#arrow_indicator").html() == "&#9660;" ? "&#9650;" : "&#9660;");')
@@ -28,16 +33,12 @@ server <- function(input, output, session) {
   
   
   output$select_dataset <- renderUI({
-    # datasets <- unique(filters_combinations$dataset)
-    # datasets <- dbGetQuery(pool, "SELECT DISTINCT dataset FROM public.i6i7i8 ORDER BY dataset;")
-    # selectizeInput('dataset', 'Select the Dataset', choices = datasets)
     datasets <- filters_combinations %>% dplyr::select(dataset) %>% distinct()
     selectizeInput('select_dataset', 'Select the Dataset', choices = datasets$dataset, selected = default_dataset)
   })
   
   output$select_gridtype <- renderUI({
     req(input$select_dataset)
-    # gridtypes <- dbGetQuery(pool, sprintf("SELECT DISTINCT gridtype FROM public.i6i7i8 WHERE dataset = '%s' ORDER BY gridtype;", input$select_dataset))
     gridtypes <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>%
       dplyr::select(gridtype) %>%
       distinct()
@@ -47,8 +48,6 @@ server <- function(input, output, session) {
   
   output$select_species <- renderUI({
     req(input$select_dataset, input$select_gridtype)
-    # species <- dbGetQuery(pool, sprintf("SELECT DISTINCT species FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s' ORDER BY species;", input$select_dataset, input$select_gridtype))
-    
     species <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% 
       dplyr::filter(gridtype == input$select_gridtype) %>% 
       dplyr::select(species) %>% 
@@ -59,8 +58,6 @@ server <- function(input, output, session) {
   
   output$select_fishing_fleet <- renderUI({
     req(input$select_dataset, input$select_gridtype)
-    # fleets <- dbGetQuery(pool, sprintf("SELECT DISTINCT fishing_fleet FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s' ORDER BY fishing_fleet;", input$select_dataset, input$select_gridtype))
-    
     fleets <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% 
       dplyr::filter(gridtype == input$select_gridtype) %>% 
       dplyr::select(fishing_fleet) %>% 
@@ -83,13 +80,6 @@ server <- function(input, output, session) {
                   min = years$min_year, max = years$max_year, value = c(years$min_year, years$max_year))
     }
   })
-  
-  # output$select_year <- renderUI({
-  #   req(input$select_dataset, input$select_gridtype)
-  #   years <- dbGetQuery(pool, sprintf("SELECT MIN(year) as min_year, MAX(year) as max_year FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s';", input$select_dataset, input$select_gridtype))
-  #   sliderInput('select_year', 'Select the year range', min = years$min_year, max = years$max_year, value = c(years$min_year, years$max_year))
-  # })
-  
   
   # Implement "Select All" functionality for species
   observeEvent(input$all_species, {

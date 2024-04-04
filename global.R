@@ -5,7 +5,7 @@ source('install.R')
 ####################################################################################################################################################################################################################################
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
-source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spdf.R")
+# source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spdf.R")
 ####################################################################################################################################################################################################################################
 require(dygraphs)
 require(shiny)
@@ -61,10 +61,6 @@ target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7
 target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.i6i7i8 ORDER BY gridtype;")
 
 default_dataset <- ifelse('global_catch_firms_level0' %in%target_dataset$dataset, "global_catch_firms_level0", target_dataset[[1]][1])
-default_flag <- ifelse('EUFRA' %in%target_flag, "EUFRA", target_flag[[1]][1])
-default_species <- dbGetQuery(pool, paste0("SELECT DISTINCT(species) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' ORDER BY species;"))[[1]][1]
-default_gridtype <- dbGetQuery(pool, paste0("SELECT DISTINCT(gridtype) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND species = '", default_species, "' LIMIT 1;"))
-default_year <- dbGetQuery(pool, paste0("SELECT DISTINCT(year) FROM public.i6i7i8 WHERE dataset = '", default_dataset, "' AND gridtype = '", default_gridtype, "' AND species = '", default_species, "' LIMIT 1;"))
 
 filters_combinations <- dbGetQuery(pool, "SELECT dataset, gridtype, species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY dataset, gridtype, species, year, fishing_fleet;")
 ####################################################################################################################################################################################################################################
@@ -98,14 +94,16 @@ source(here::here('tab_panels/mapCatchesmodules.R'))
 source(here::here('modules/categoryGlobalPieChart.R'))
 source(here::here('modules/pieMapTimeSeriesUI.R'))
 source(here::here('tab_panels/create_logo_panel.R'))
-
+source(here::here("R/palette_settings.R"))
+source(here::here("tab_panels/dataset_choice.R"))
 
 targettes <- list(
-  species = target_species,        # Defined elsewhere, as shown above
-  fishing_fleet = target_flag  # Defined elsewhere, as shown above
+  species = target_species,        
+  fishing_fleet = target_flag  
 )
 getTarget <- function(category) {
   target <- targettes[[category]]
   
   return(target)
 }
+

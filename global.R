@@ -41,10 +41,6 @@ dbPool(RPostgreSQL::PostgreSQL(),
                  dbname = db_name,
                  user = db_user,
                  password = db_password)
-
-# message("La connexion à la base de données est établie.") } else {
-#   message("Déjà connecté à la base de données.")
-# }
 }
 
 pool <- connect_to_db()
@@ -84,7 +80,6 @@ source(here::here('tab_panels/geographic_catches_ui.R'))
 source(here::here('tab_panels/main_panel_ui.R'))
 source(here::here('tab_panels/geographic_catches_by_variable_ui.R'))
 source(here::here('tab_panels/ggplot_indicator_11_ui.R'))
-source(here::here('tab_panels/zoom_level_ui.R'))
 source(here::here('tab_panels/additional_info_ui.R'))
 source(here::here('tab_panels/filterUI.R'))
 source(here::here('tab_panels/data_explorer_overview_ui.R'))
@@ -96,6 +91,9 @@ source(here::here('modules/pieMapTimeSeriesUI.R'))
 source(here::here('tab_panels/create_logo_panel.R'))
 source(here::here("R/palette_settings.R"))
 source(here::here("tab_panels/dataset_choice.R"))
+source(here::here("tab_panels/sqlqueriesui.R"))
+source(here::here("tab_panels/data_explorer_i11_ui.R"))
+source(here::here("rmd/rendering_rmd_files_to_html.R"))
 
 targettes <- list(
   species = target_species,        
@@ -107,3 +105,5 @@ getTarget <- function(category) {
   return(target)
 }
 
+
+list_markdown_path <- c("rmd/Authors.html", "rmd/Datasets.html", "rmd/Fundings.html")

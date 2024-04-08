@@ -6,43 +6,36 @@ ui <- page_navbar(id = "main",
   collapsible = TRUE,
   theme = bslib::bs_theme(),
   sidebar = sidebar_ui(),
-  main_panel_ui(), dataset_choice(),  additional_info_ui(),
+  main_panel_ui(), dataset_choice(),
   geographic_catches_ui(),
   geographic_catches_by_variable_ui("species"),
   geographic_catches_by_variable_ui("fishing_fleet"),
   # ggplot_indicator_11_ui(),
-  zoom_level_ui(),
-  data_explorer_overview_ui()
+  data_explorer_overview_ui(), data_explorer_i11_ui(), sqlqueriesui(),
+  more_about(),
+  additional_info_ui()
   )
 
 pool <- connect_to_db()
 
 server <- function(input, output, session) {
-
+  
+  addResourcePath("rmd", here::here("rmd"))
+  serveRmdContents("rmd_docs", list_markdown_path)
+  
+  
     shinyjs::onclick("fishing_fleet_toggle", {
     shinyjs::toggle("fishing_fleet_panel");
     shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");');
   })
   
-  shinyjs::delay(100, {
+  shinyjs::delay(500, {
     nav_select(id = "main", selected = "datasetchoicevalue")
   })
   
-  shinyjs::delay(500, {
+  shinyjs::delay(1500, {
     nav_select(id = "main", selected = "mainpanel")
   })
-  
-  # observe({
-  #   # Délai en secondes
-  #   delay <- 5
-  # 
-  #   # Utiliser Sys.sleep pour attendre
-  #   Sys.sleep(delay)
-  # 
-  #   # Simuler un clic sur le bouton submit après le délai
-  #   shinyjs::runjs('$("#submit").click();')
-  # })
-
   
   output$select_dataset <- renderUI({
     datasets <- filters_combinations %>% dplyr::select(dataset) %>% distinct()
@@ -54,7 +47,6 @@ server <- function(input, output, session) {
     gridtypes <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>%
       dplyr::select(gridtype) %>%
       distinct()
-    
     selectizeInput('select_gridtype', 'Select the Grid Type', choices = gridtypes$gridtype, selected = default_gridtype)
   })
   
@@ -87,7 +79,6 @@ server <- function(input, output, session) {
                   choices =c(years$min_year: years$max_year), selected = round(mean(years$min_year, years$max_year)), multiple = TRUE)
     } else {
       # Mode sélection plage d'années
-     
       sliderInput("years", "Choose a period", 
                   min = years$min_year, max = years$max_year, value = c(years$min_year, years$max_year))
     }
@@ -119,17 +110,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "select_fishing_fleet", selected = default_flag)
   })
   
-
-  
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
-  
-  
-  sql_query_metadata_plot1 <- eventReactive(input$submit, {
-    paste0("Your zoom is Zoom ",zoom(),"   ;")
-  },
-  ignoreNULL = FALSE)
-  
-
   
   #    /* AND year BETWEEN ({start_year*}) AND ({end_year*}) */ removed as it is not only a slider input
   sql_query = eventReactive(input$submit, {
@@ -220,8 +201,6 @@ server <- function(input, output, session) {
   },
   ignoreInit = TRUE)
   
-  
-  
   ############################################################# OUTPUTS   ############################################################# 
   
   output$sql_query <- renderText({ 
@@ -232,19 +211,12 @@ server <- function(input, output, session) {
     paste("Your SQL Query is : \n", sql_query_metadata())
   })
   
-  output$zoom <- renderText({ 
-    paste0("Your zoom is Zoom ",zoom(),"   ;")
-  })
-  
-  
   output$DT <- renderDT({
     data()  %>% st_drop_geometry()
   }) 
   
-  
   output$DTi11 <- renderDT({
     data_pie_map_species()  %>% st_drop_geometry()
-    
   }) 
   
   
@@ -293,15 +265,10 @@ server <- function(input, output, session) {
   categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", sql_query)
   categoryGlobalPieChartServer("species_chart", "species", sql_query)
   
-  
-  
   # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
   
   pieMapTimeSeriesServer("species_module", category_var = "species", sql_query = sql_query, centroid = centroid)
   pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", sql_query = sql_query, centroid = centroid)
-  # pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet")
-  
-  
   
   # output to download data
   output$downloadCsv <- downloadHandler(
@@ -318,6 +285,7 @@ server <- function(input, output, session) {
   onStop(function() {
     poolClose(pool)
   })
+  
 }
 # Run the application 
 shinyApp(ui = ui, server = server)

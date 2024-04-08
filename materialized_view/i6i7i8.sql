@@ -1,4 +1,4 @@
- DROP MATERIALIZED VIEW IF EXISTS public.i6i7i8;
+DROP MATERIALIZED VIEW IF EXISTS public.i6i7i8;
 
 -- Recreate the materialized view
 CREATE MATERIALIZED VIEW public.i6i7i8 AS

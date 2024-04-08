@@ -1,0 +1,18 @@
+---
+title: "Datasets explenations"
+output: html_document
+---
+
+# Accessible Data in the Shiny App
+
+Our Shiny application provides access to several datasets that allow for a thorough exploration of data from the Global Tuna Atlas database. Each dataset comes with a detailed explanation and a DOI identifier, which can be found in the table below. These details aim to provide you with precise context and technical insights into the accessible data.
+
+## Recommendations for Data Selection
+
+Currently, we strongly advise opting for `datasetlevel1aggregated5deg` data. This recommendation is based on the accessibility and the richness of information these data provide, making exploration and analysis both simpler and more rewarding.
+
+## Display of Grid Types
+
+It is crucial to note that our application does not support the display of multiple grid types simultaneously. To maximize the value of the explored information, we recommend using datasets that are already aggregated into 5-degree grids. This approach prevents the selection of a specific grid type, which could lead to a partial loss of available information.
+
+By choosing aggregated data, you benefit from a comprehensive and consolidated view, thus facilitating the identification of trends and patterns within the data.

@@ -12,18 +12,18 @@
 # Module UI
 catches_by_variable_moduleUI <- function(id) {
   ns <- NS(id)
-  tagList(sliderInput(ns("topn"),
-    label = "Top number of : variable to display (on the total selected data)",
-    min = 0,
-    max = 10,
-    value = 5,
-  ),
-    selectInput(ns("variable"), 
+  tagList(selectInput(ns("variable"), 
                 "Variable to Display", 
                 choices = c("Species" = "species", 
                             "Fishing Fleet" = "fishing_fleet", 
                             "Gear Type" = "gear_type")),
-    plotOutput(ns("plot_year")),    plotOutput(ns("plot_month"))
+    plotOutput(ns("plot_year")),    plotOutput(ns("plot_month")), 
+    sliderInput(ns("topn"),
+                label = "Number of this variable to display",
+                min = 0,
+                max = 10,
+                value = 5,
+    )
   )
 }
 

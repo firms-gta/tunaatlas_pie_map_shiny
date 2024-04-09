@@ -4,8 +4,9 @@ pieMapTimeSeriesUI <- function(id) {
     div(
       style = "height: 400px;",
       leafletOutput(ns("pie_map")),
-      actionButton(ns("submit_draw"), "Update wkt from drawing", 
-                   class = "btn-primary", 
+      # submitWktUI(id = ns("submit_wkt_pie_map"))
+      actionButton(ns("submit_draw"), "Update wkt from drawing",
+                   class = "btn-primary",
                    style = "position: absolute; top: 100px; right: 20px; z-index: 400; font-size: 0.8em; padding: 5px 10px;")
     ),
     tags$br(),
@@ -106,23 +107,21 @@ pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid) {
                       legend = TRUE, legendPosition = "bottomright")
     })
     
-
+    # wktdraw <- submitWktServer(id = session$ns("submit_wkt_pie_map"))
+    # wkt(wktdraw)
+    ## same without using moduls
     observeEvent(input$submit_draw, {
-      req(input$pie_map_draw_new_feature$geometry)  
+      req(input$pie_map_draw_new_feature$geometry)
       req(input$pie_map_draw_stop)
       geojson <- input$pie_map_draw_new_feature$geometry
       # Convert GeoJSON to sf object
       geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
       sf_obj <- geojsonsf::geojson_sf(geojson_text)
-      
-      
+
+
       # Convert to WKT
       wkt_val <- st_as_text(sf_obj$geometry)
       wkt(wkt_val)  # Update the reactive value with the WKT representation
-    })
-    
-    observeEvent(input$submit_draw, {
-      shinyjs::click("submit")
     })
 
     

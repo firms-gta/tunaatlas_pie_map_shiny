@@ -1,11 +1,12 @@
 # Render R Markdown documents
-rmd_files <- list.files(here::here("rmd"), full.names = TRUE, pattern = "\\.rmd$")
 
-html_files <- sapply(rmd_files, function(rmd) {
-  render(rmd, output_format = "html_document", quiet = TRUE)
+list_markdown_path <- c("rmd/Authors.html", "rmd/Datasets.html", "rmd/Fundings.html", "rmd/sidebar_explenations.html")
+
+html_files <- sapply(list_markdown_path, function(html_file) {
+  rmd_file <- gsub(".html",".Rmd",html_file)
+  # if(!file.exists(html_file)){
+  render(rmd_file, output_format = "html_document", quiet = TRUE)
+  # }
 }, USE.NAMES = FALSE)
 
-documentTabs <- lapply(seq_along(html_files), function(i) {
-  tabPanel(title = titles[i], 
-           HTML(paste(readLines(html_files[i]), collapse = "\n")))
-})
+

@@ -1,30 +1,18 @@
-# tunaatlas_pie_map_shiny
+# Tunaatlas_pie_map_shiny
+
 Shiny app to display Tuna atlas catches with pie maps
 
-### System Wide Dependendencies
-These dependencies can be installed using the usual *sudo apt install* command
+# Prequesite
 
+If you want to make this app display the data you need a database populated with Global Tuna Atlas data and metadata. Please follow instruction from https://github.com/firms-gta/geoflow-tunaatlas to create the database or provide a .txt containing connection to a populated database. 
 
+## Running the app from rstudio
 
-### R libraries
-**devtools** must be installed in order to install some packages from GitHub
-```
-install.packages("devtools")
-```
-The following libraries have to be installed from GitHub
-```
-devtools::install_github('')
-```
-The following libraries can be installed from CRAN
-```
-install.packages(c('shiny', ), repos='https://cloud.r-project.org/')
-```
+To run the app from you rstudio, launch the app.R file.
 
-### Docker
+Currently the shiny app use the renv package to record state of the packages used to run correctly the application. If you are using a different version of R than the one recorded on the lockfile, error loading the packages can happen.
 
-#### Pull / Run the image from DockerHub
-
-
+## Running the app from docker
 
 ```
 docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest

@@ -3,12 +3,13 @@ title: "Project Funding"
 output: html_document
 ---
   
-# Project Funding
-  
 This work has been supported by several funding sources, outlined below:
   
 - **Institute of Research for Development (IRD)**
   - The support from IRD has been crucial for conducting our research.
+  
+
+![IRD Logo](https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg)
 
 - **iMarine FP7 Project**
   - Funded under the European Union's Seventh Framework Programme (FP7).

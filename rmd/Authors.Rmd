@@ -2,12 +2,12 @@
 title: "Authors and Contributions"
 output: html_document
 ---
-  
-# Authors and Contributions
-  
+
+# The Global Tuna Atlas project
+
 This repository has been enriched and supported by the efforts and contributions of multiple individuals. Their diverse skills and dedication have been pivotal in the development and success of this project.
 
-## Main Contributors
+# Main Contributors
 
 - **Julien Barde**
 - **Norbert Billet**
@@ -19,14 +19,26 @@ This repository has been enriched and supported by the efforts and contributions
   
 Each contributor has played a significant role in the repository's development, offering unique insights, expertise, and dedication to the project's growth.
 
-## Acknowledgments
+# Acknowledgments
 
 Special thanks are extended to **Alain Fontenau**, whose original draft of a set of indicators laid the groundwork for significant portions of the analysis code. His contributions have been instrumental in guiding the project's analytical direction.
+[Documentation IRD on Global Tuna Atlas](https://www.documentation.ird.fr/hor/fdi:010012425)
+[Global Tuna Atlas pdf](https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers11-03/010012425.pdf)
 
-## Code Contributions
+# Indicators creation
 
 The implementation of the indicators into the R programming language was skillfully executed by **Norbert Billet** and **Julien Barde** during the iMarine FP7 project. Their expertise in R programming facilitated the translation of conceptual indicators into practical, executable code, thereby enabling robust data analysis and insights.
 
+# The shiny app 
+
+This shiny app as been enriched by Grasset Bastien from an original repository created by Julien Barde.
+
+For question about the use of the shiny app or about the creation of the data of the Global Tuna Atlas, feel free to contact us on github or by email: 
+- bastien.grasset@ird.fr 
+- julien.barde@ird.fr. 
+
+
+
 ---
 
-This document serves to recognize and appreciate the collective efforts of all individuals involved. Their contributions have not only enhanced the repository but have also advanced the field of marine biodiversity research.
+This document serves to recognize and appreciate the collective efforts of all individuals involved.

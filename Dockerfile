@@ -1,5 +1,5 @@
-# Use the rocker/r-ver:4.3.1 image as the base
-FROM rocker/r-ver:4.3.2
+# Use the rocker/r-ver:4.3.2 image as the base
+FROM rocker/r-ver:4.2.3
 
 # Maintainer information
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"

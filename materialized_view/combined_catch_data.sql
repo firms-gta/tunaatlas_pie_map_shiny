@@ -33,12 +33,6 @@ metadata.identifier = ANY(ARRAY['global_catch_firms_level0', 'global_catch_5deg_
                           'global_catch_1deg_1m_ps_bb_ird_level2', 'global_catch_5deg_1m_ird_level1',
                           'global_catch_5deg_1m_ird_level2', 'global_catch_ird_level1','global_catch_5deg_1m_firms_level1',  */ 
                          'global_catch_ird_level2'])
-GROUP BY 
-metadata.identifier, fact.id_area, area.codesource_area, "time".year, species_labels.codesource_species, fishing_fleet_labels.codesource_fishing_fleet, cwp_grid.geom,gear_type.gear_type_labels, geargoup_label, measurement_unit_labels.codesource_measurement_unit 
-WITH DATA;
+GROUP BY metadata.identifier, fact.id_area, area.codesource_area, "time".year, species_labels.codesource_species, fishing_fleet_labels.codesource_fishing_fleet, cwp_grid.geom,gear_type.gear_type_labels, geargoup_label, measurement_unit_labels.codesource_measurement_unit
 
-ALTER TABLE public.combined_catch_data
-OWNER TO tunaatlas_u;
 
-GRANT ALL ON TABLE public.combined_catch_data TO tunaatlas_u;
-GRANT SELECT ON TABLE public.combined_catch_data TO tunaatlas_inv;

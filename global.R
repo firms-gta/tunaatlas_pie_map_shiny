@@ -49,6 +49,7 @@ global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
+list_markdown_path <- c("rmd/Authors.html", "rmd/Datasets.html", "rmd/Fundings.html")
 
 target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.i6i7i8 ORDER BY dataset;")
 target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.i6i7i8 ORDER BY species;")
@@ -94,6 +95,8 @@ source(here::here("tab_panels/dataset_choice.R"))
 source(here::here("tab_panels/sqlqueriesui.R"))
 source(here::here("tab_panels/data_explorer_i11_ui.R"))
 source(here::here("rmd/rendering_rmd_files_to_html.R"))
+source(here::here("tab_panels/more_about.R"))
+source(here::here("modules/generateRmdNavMenu.R"))
 
 targettes <- list(
   species = target_species,        
@@ -106,4 +109,3 @@ getTarget <- function(category) {
 }
 
 
-list_markdown_path <- c("rmd/Authors.html", "rmd/Datasets.html", "rmd/Fundings.html")

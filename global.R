@@ -110,6 +110,7 @@ getTarget <- function(category) {
   return(target)
 }
 
+
 sql_query <- glue::glue_sql(
   "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
   ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
@@ -127,5 +128,57 @@ sql_query <- glue::glue_sql(
 
 data <- st_read(pool, query = sql_query)
 
-data_init <- data
-
+  data_without_geom <- as.data.frame(data)
+  data_without_geom$geom_wkt <- NULL
+  df <- data_without_geom %>%
+    dplyr::group_by(.data[["fishing_fleet"]], year) %>%
+    dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>% ungroup()
+  
+  # Determine top n groups
+  top_n_groups <- df %>%
+    dplyr::group_by(.data[["fishing_fleet"]]) %>%
+    dplyr::summarise(total = sum(measurement_value)) %>%
+    dplyr::top_n(5, total) %>%
+    pull(.data[["fishing_fleet"]])
+  
+  # Modify the dataset to group non-top n values
+  df <- df %>%
+    dplyr::mutate(!!sym("fishing_fleet") :=if_else(.data[["fishing_fleet"]] %in% top_n_groups, as.character(.data[["fishing_fleet"]]), "Other")) %>%
+    dplyr::group_by(.data[["fishing_fleet"]], year) %>%
+    dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
+  
+  plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
+    geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
+  png("tab_panels/plot_init.png")
+  plot_init
+  dev.off()
+   
+  a <- st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query,") AS foo GROUP BY geom")) 
+  
+  qpal <- colorQuantile(rev(viridis::viridis(10)),a$measurement_value, n=10)
+  tmap_mode("plot")
+  map_init <- leaflet() %>% 
+    addProviderTiles("Esri.NatGeoWorldMap") %>% 
+    clearBounds() %>%
+    addPolygons(data = a,
+                label = ~measurement_value,
+                popup = ~paste0("Total catches for the selected criteria in this square of the grid: ", round(measurement_value), " tons (t) et des brouettes"),
+                fillColor = ~qpal(measurement_value),
+                fill = TRUE,
+                fillOpacity = 0.8,
+                smoothFactor = 0.5) %>% 
+    addDrawToolbar(
+      targetGroup = "draw",
+      editOptions = editToolbarOptions(
+        selectedPathOptions = selectedPathOptions()
+      )
+    ) %>%
+    addLayersControl(
+      overlayGroups = c("draw"),
+      options = layersControlOptions(collapsed = FALSE)
+    )  %>% 
+    leaflet::addLegend("bottomright", pal = qpal, values = a$measurement_value,
+                       title = "Quantile of the grid for the total catches",
+                       labFormat = labelFormat(prefix = "MT "),
+                       opacity = 1
+    )

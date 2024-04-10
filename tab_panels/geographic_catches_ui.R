@@ -7,7 +7,7 @@ geographic_catches_ui <- function() {
             "plot_catches by_month"
           ),
           row_sizes = c("1.48fr", "0.52fr"),
-          col_sizes = c("1.64fr", "0.36fr"),
+          col_sizes = c("1.4fr", "0.6fr"),
           gap_size = "10px",
           grid_card(
             area = "mapcatches",

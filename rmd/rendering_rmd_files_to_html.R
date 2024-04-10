@@ -1,7 +1,8 @@
 # Render R Markdown documents
 rmarkdown::render(here::here("rmd/Application_overview.Rmd"))
+rmarkdown::render(here::here("rmd/Datasets.Rmd"))
 
-list_markdown_path <- c("rmd/Authors.html", "rmd/Datasets.html", "rmd/Fundings.html", 
+list_markdown_path <- c("rmd/Authors.html", "rmd/Fundings.html", 
                         "rmd/sidebar_explenations.html", "rmd/General_disclaimer.html", 
                         "rmd/Running_the_app.html")
 

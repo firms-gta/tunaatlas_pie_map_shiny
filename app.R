@@ -14,7 +14,6 @@ ui <- page_navbar(id = "main",
   data_explorer_overview_ui(), data_explorer_i11_ui(), sqlqueriesui(),
   # additional_info_ui(),
   more_about()
-  
   )
 
 pool <- connect_to_db()
@@ -236,9 +235,11 @@ server <- function(input, output, session) {
     g1
   })
   
-  mapCatchesServer("total_catch", sum_all) 
-  mapCatchesServer("total_catch_init", sum_all) 
+  mapCatchesServer("total_catch", sum_all)
   
+  output$total_catch_init <- renderLeaflet({
+    map_init
+  })
   
   output$plot11 <- renderImage({
     # https://semba-blog.netlify.app/06/13/2020/plots-in-interactive-maps-with-r/
@@ -283,32 +284,6 @@ server <- function(input, output, session) {
   )
   output$head_table <- renderDataTable({
   head(data())
-  })
-  
-  output$plot_init <- renderPlot({
-    data_without_geom <- as.data.frame(data_init)
-    data_without_geom$geom_wkt <- NULL
-    df <- data_without_geom %>%
-      dplyr::group_by(.data[["fishing_fleet"]], year) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>% ungroup()
-    
-    # Determine top n groups
-    top_n_groups <- df %>%
-      dplyr::group_by(.data[["fishing_fleet"]]) %>%
-      dplyr::summarise(total = sum(measurement_value)) %>%
-      dplyr::top_n(5, total) %>%
-      pull(.data[["fishing_fleet"]])
-    
-    # Modify the dataset to group non-top n values
-    df <- df %>%
-      dplyr::mutate(!!sym("fishing_fleet") :=if_else(.data[["fishing_fleet"]] %in% top_n_groups, as.character(.data[["fishing_fleet"]]), "Other")) %>%
-      dplyr::group_by(.data[["fishing_fleet"]], year) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
-    
-    plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
-      geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
-    plot_init
-    
   })
   
   onStop(function() {

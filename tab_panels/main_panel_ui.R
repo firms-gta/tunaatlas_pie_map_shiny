@@ -1,13 +1,12 @@
 main_panel_ui = function()
   {
-  nav_panel(
-    title = "GTA Shiny App", value = "mainpanel",
-    card(
-      full_screen = TRUE,
+  nav_panel(title = "GTA Shiny App", value = "mainpanel",
+    card(fill = TRUE,
       card_header(
-        "Indicators for Fisheries: use case of the Tuna Atlas"
+        "Global Tuna Atlas shiny app overview"
       ),
-      card_body(tags$iframe(src = "rmd/Application_overview.html", height = 500, width = "100%"),
+      card_body(fillable = TRUE,
+        tags$iframe(src = "rmd/Application_overview.html", width = "100%"),
         grid_container(
           layout = c(
             "howtouse datadisplayed",
@@ -21,8 +20,8 @@ main_panel_ui = function()
             "0.5fr",
             "1.5fr"
           ),
-          gap_size = "10px",
-          grid_card(
+          gap_size = "5px",
+          grid_card(max_height = 500,
             area = "datadisplayed",
             full_screen = TRUE,
             card_header("Example of displayed data"),
@@ -40,24 +39,24 @@ main_panel_ui = function()
                   "1fr",
                   "1fr"
                 ),
-                gap_size = "10px",
-                grid_card(
+                gap_size = "5px",
+                grid_card(max_height = 250,
                   area = "map_example",
-                  card_body(mapCatchesUI("total_catch_init"))
+                  card_header(strong("Map")),
+                  card_body(class = "p-0",leafletOutput("total_catch_init"))
                 ),
-                grid_card(
-                  area = "example_plot",
-                  card_body(plotOutput("plot_init"))
-                ),
-                grid_card(
+                grid_card(card_header(strong("Plot")),max_height = 250,area = "example_plot",card_image(
+                  file = "tab_panels/plot_init.png"
+                )),
+                grid_card(card_header(strong("Datatable")),
                   area = "example_grid",
-                  card_body(dataTableOutput("head_table"))
+                  card_body(dataTableOutput("head_table"), height = "100%" ,fill = TRUE)
                 ),
-                grid_card(area = "example_query", textOutput("sql_query_init"))
+                grid_card(card_header(strong("SQL Queries")),max_height = 250,area = "example_query", textOutput("sql_query_init"),fill = TRUE, height = "100%")
               )
             )
           ),
-          grid_card(
+          grid_card(max_height = 500,
             area = "howtouse",
             full_screen = TRUE,
             card_header("Example of use"),
@@ -75,19 +74,19 @@ main_panel_ui = function()
                   "1fr",
                   "1fr"
                 ),
-                gap_size = "10px",
-                grid_card(
+                gap_size = "5px",
+                grid_card(max_height = 250, fill = TRUE,
                   area = "indicator1",
-                  card_body(
-                    "Example of indicators for Albacore tuna in Indian ocean",
+                  card_body(fill = TRUE,
+                    "Indicators for major tuna in Indian ocean",
                     actionButton(inputId = "buttoni7", label = "Geographes catches"),
                     actionButton(inputId = "buttoni8", label = "Time series by fishing_fleet")
                   )
                 ),
-                grid_card(
+                grid_card(fill = TRUE,
                   area = "button",
-                  card_body(
-                    "Example of indicators for Skipjack Tuna in 2000",
+                  card_body(max_height = 250, fill = TRUE,
+                    "Indicators for Skipjack Tuna in 2000",
                     actionButton(inputId = "buttoni7", label = "Geographes catches"),
                     actionButton(inputId = "buttoni8", label = "Geographic catches by fishing_fleet")
                   )

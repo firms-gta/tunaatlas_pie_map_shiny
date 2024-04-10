@@ -1,0 +1,20 @@
+---
+title: "Application Overview"
+output: html_document
+---
+
+This Shiny application, part of the GlobalTunaAtlas project, is designed to facilitate the exploration and analysis of global tuna fisheries data. It serves as a tool for a wide range of users, from novices to experts, to interact with various datasets through a user-friendly interface, leveraging predefined indicators for insightful fisheries data analysis.  
+
+# Key features
+  
+This application allows users to select different datasets and apply filters to explore tuna fisheries indicators, displayed through interactive maps and charts.
+
+- **Dataset Selection:** Users can choose from different levels of Global Tuna Atlas catch data.
+- **Filter Application:** Filters can be applied to tailor exploration according to specific interests.
+- **Indicator Visualization:** After submitting choices, users can view interactive visualizations like maps and charts by clicking on submit.
+
+Please be aware that mapping features may experience delays due to data complexity and applied filters.
+
+# General Disclaimer
+
+The repository is a work in progress intended for exploring tuna fisheries data. It contains publicly available data from Tuna RFMOs. The content should not be used for publications without explicit agreement from the authors. Accuracy of estimates depends on data quality and availability, and may not represent the official view of IRD or its affiliates. Caution must be taken when interpreting all data presented, and differences between information products published by IRD and other sources using different inclusion criteria and different data cut-off times are to be expected. While steps are taken to ensure accuracy and reliability, all data are subject to continuous verification and change. See "Detailed explanations on the datasets used" for further background and other important considerations surrounding the source data. 

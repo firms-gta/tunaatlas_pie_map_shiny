@@ -1,0 +1,50 @@
+---
+title: "Global Tuna Atlas Shiny Application"
+output: html_document
+---
+
+```{r include=FALSE}
+
+source(here::here("R/include_childrmd_with_lowered_headings.R"))
+
+```
+
+# Application Overview
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/Application_overview.Rmd")
+
+```
+
+# Detailed explanations on the datasets used 
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/Datasets.Rmd") 
+
+```
+
+# Authors
+
+```{r echo=FALSE, results='asis'}
+include_child_with_lowered_headings("rmd/Authors.Rmd") 
+```
+
+# Fundings 
+
+```{r echo=FALSE, results='asis'}
+include_child_with_lowered_headings("rmd/Fundings.Rmd") 
+```
+
+# Detailed explenation on filterings, variables and metadatas
+
+```{r echo=FALSE, results='asis'}
+include_child_with_lowered_headings("rmd/sidebar_explenations.Rmd") 
+```
+
+# Running the application
+
+```{r echo=FALSE, results='asis'}
+include_child_with_lowered_headings("rmd/Running_the_app.Rmd")
+```

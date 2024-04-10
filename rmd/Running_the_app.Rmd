@@ -1,0 +1,40 @@
+---
+title: "How to run the application"
+output: html_document
+---
+
+# Running the application on BlueCloud Infrastructure
+
+The app is a component of the GlobalFisheriesAtlas Virtual Research Environment (VRE), which includes an RStudio server for developers and a Shiny proxy server for hosting applications. The VRE aims to simplify data exploration through analytical indicators without the need for delving into source code.
+
+# Running the application outside the BlueCloud Infrastructure
+
+## Prerequisites
+
+A populated database with Global Tuna Atlas data and metadata is required. Instructions for database creation or connection setup are available on the project's GitHub page.
+
+## Running from RStudio
+
+Launch the `app.R` file in RStudio. The app uses the `renv` package for package management. Ensure compatibility with the R version specified in the lockfile to avoid loading errors.
+
+## Running with Docker
+
+### Pull and Run
+
+```sh
+
+docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
+docker run --name tuna_atlas_i11 -p 3839:3838 ghcr.io/firms-gta/tunaatlas_pie_map_shiny
+```
+
+Access the app by navigating to http://localhost:3839 in your browser.
+
+### Build and Run Locally
+
+```sh
+
+sudo docker build -t tuna_atlas_i11 <Path to the Dockerfile>
+sudo docker run -p 3839:3838 tuna_atlas_i11
+```
+
+Access the app by navigating to http://localhost:3839.

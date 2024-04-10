@@ -3,8 +3,6 @@ title: "Authors and Contributions"
 output: html_document
 ---
 
-# The Global Tuna Atlas project
-
 This repository has been enriched and supported by the efforts and contributions of multiple individuals. Their diverse skills and dedication have been pivotal in the development and success of this project.
 
 # Main Contributors
@@ -29,15 +27,13 @@ Special thanks are extended to **Alain Fontenau**, whose original draft of a set
 
 The implementation of the indicators into the R programming language was skillfully executed by **Norbert Billet** and **Julien Barde** during the iMarine FP7 project. Their expertise in R programming facilitated the translation of conceptual indicators into practical, executable code, thereby enabling robust data analysis and insights.
 
-# The shiny app 
+# Shiny app creation
 
 This shiny app as been enriched by Grasset Bastien from an original repository created by Julien Barde.
 
 For question about the use of the shiny app or about the creation of the data of the Global Tuna Atlas, feel free to contact us on github or by email: 
 - bastien.grasset@ird.fr 
 - julien.barde@ird.fr. 
-
-
 
 ---
 

@@ -7,6 +7,12 @@ output: html_document
   
 This document offers a detailed explanation of the filtering components used in the Shiny application. The filtering interface allows users to customize data display based on specific criteria such as year, selected species, and fishing fleet.
 
+# Usage Instructions
+
+1. **Select a Dataset:** Begin by choosing the desired dataset.
+2. **Apply Filters:** Specify filters based on provided criteria.
+3. **Submit:** Click submit to view the data visualizations.
+
 # Year Filtering
 
 Users can select a range of year or select several non consecutives years by clicking on the  "Discrete selection of the year" button.

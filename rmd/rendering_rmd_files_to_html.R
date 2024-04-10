@@ -1,6 +1,9 @@
 # Render R Markdown documents
+rmarkdown::render(here::here("rmd/Application_overview.Rmd"))
 
-list_markdown_path <- c("rmd/Authors.html", "rmd/Datasets.html", "rmd/Fundings.html", "rmd/sidebar_explenations.html")
+list_markdown_path <- c("rmd/Authors.html", "rmd/Datasets.html", "rmd/Fundings.html", 
+                        "rmd/sidebar_explenations.html", "rmd/General_disclaimer.html", 
+                        "rmd/Running_the_app.html")
 
 html_files <- sapply(list_markdown_path, function(html_file) {
   rmd_file <- gsub(".html",".Rmd",html_file)

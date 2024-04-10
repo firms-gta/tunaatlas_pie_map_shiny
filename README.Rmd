@@ -3,21 +3,21 @@ title: "Global Tuna Atlas Shiny Application"
 output: html_document
 ---
 
+\clearpage
+
 ```{r include=FALSE}
 
 source(here::here("R/include_childrmd_with_lowered_headings.R"))
+res <- knitr::knit_child("rmd/Application_overview.Rmd", quiet = TRUE)
 
 ```
 
-# Application Overview
 
 ```{r echo=FALSE, results='asis'}
 
-include_child_with_lowered_headings("rmd/Application_overview.Rmd")
+cat(res, sep =  "\\clearpage")
 
 ```
-
-# Detailed explanations on the datasets used 
 
 ```{r echo=FALSE, results='asis'}
 
@@ -25,26 +25,36 @@ include_child_with_lowered_headings("rmd/Datasets.Rmd")
 
 ```
 
-# Authors
+
 
 ```{r echo=FALSE, results='asis'}
-include_child_with_lowered_headings("rmd/Authors.Rmd") 
+
+include_child_with_lowered_headings("rmd/General_disclaimer.Rmd")
+
 ```
 
-# Fundings 
 
 ```{r echo=FALSE, results='asis'}
-include_child_with_lowered_headings("rmd/Fundings.Rmd") 
+
+include_child_with_lowered_headings("rmd/Authors.Rmd")
+
 ```
 
-# Detailed explenation on filterings, variables and metadatas
-
 ```{r echo=FALSE, results='asis'}
-include_child_with_lowered_headings("rmd/sidebar_explenations.Rmd") 
-```
 
-# Running the application
-
-```{r echo=FALSE, results='asis'}
 include_child_with_lowered_headings("rmd/Running_the_app.Rmd")
+
 ```
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/Fundings.Rmd")
+
+```
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/sidebar_explenations.Rmd")
+
+```
+

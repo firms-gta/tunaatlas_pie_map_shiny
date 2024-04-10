@@ -1,9 +1,7 @@
 ---
-title: "Data Filtering Explanation"
+title: "Detailed explenation on filterings, variables and metadatas"
 output: html_document
 ---
-  
-# Introduction
   
 This document offers a detailed explanation of the filtering components used in the Shiny application. The filtering interface allows users to customize data display based on specific criteria such as year, selected species, and fishing fleet.
 
@@ -13,23 +11,27 @@ This document offers a detailed explanation of the filtering components used in 
 2. **Apply Filters:** Specify filters based on provided criteria.
 3. **Submit:** Click submit to view the data visualizations.
 
-# Year Filtering
+
+# Filterings 
+
+## Year Filtering
 
 Users can select a range of year or select several non consecutives years by clicking on the  "Discrete selection of the year" button.
 
-# Species filtering 
+## Species filtering 
 
 Users can filter the data based on species. Two action buttons provide shortcuts for selecting all species or only the major tunas species being YFT, ALB, BET, SKJ, SBF
 
-# Fishing fleet filtering 
+## Fishing fleet filtering 
 
 A collapsible panel allows users to select one or multiple fishing fleets. An action button is provided to select all fishing fleets at once.
 
-# WKT filtering
+## WKT filtering
 
 From all the maps user is allowed to select a wkt to filter data from a specific region. It is needed to click on submit after this selection to filter the data. 
 
 # Reset and Submission
+
 Users have the option to reset the geographical selection to a global view or reset all filters to their default values. A submit button sends the selected filtering criteria to update the data display.
 
 # Future advances

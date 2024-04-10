@@ -7,7 +7,7 @@ main_panel_ui = function()
       card_header(
         "Indicators for Fisheries: use case of the Tuna Atlas"
       ),
-      card_body("The application allows users to explore different indicators related to tuna fisheries. To begin the exploration, users are invited to explore data and select desired filters. Upon submission, the application will render the selected indicators, which may include visual representations such as maps and graphs. The selection of the dataset to explore can be changed in the Dataset selection tab and more info about this app and the global project are displayed in the About panel",
+      card_body(tags$iframe(src = "rmd/Application_overview.html", height = 600, width = "100%"),
         grid_container(
           layout = c(
             "howtouse datadisplayed",

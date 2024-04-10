@@ -1,7 +1,3 @@
----
-title: "Application Overview"
-output: html_document
----
 
 This Shiny application, part of the GlobalTunaAtlas project, is designed to facilitate the exploration and analysis of worldwide tuna fisheries data. To begin the exploration, users are invited to explore data and select desired filters. Upon submission, the application will render the selected indicators, which may include visual representations such as maps and graphs. The selection of the dataset to explore can be changed in the Dataset selection tab and more info about this app and the global project are displayed in the "More about" panel.
 

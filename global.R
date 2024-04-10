@@ -110,4 +110,22 @@ getTarget <- function(category) {
   return(target)
 }
 
+sql_query <- glue::glue_sql(
+  "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
+  ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
+      WHERE dataset IN ({dataset_name})
+      AND fishing_fleet IN ({fishing_fleet_name*})
+      AND species IN ({species_name*})
+      AND year IN ({selected_years*})
+      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
+      ORDER BY species,fishing_fleet DESC", 
+  dataset_name = default_dataset, 
+  species_name = default_species,
+  fishing_fleet_name = default_flag,
+  selected_years = c(1900:2100),
+  .con = pool)
+
+data <- st_read(pool, query = sql_query)
+
+data_init <- data
 

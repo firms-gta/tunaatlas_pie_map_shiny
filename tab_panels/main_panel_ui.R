@@ -7,7 +7,7 @@ main_panel_ui = function()
       card_header(
         "Indicators for Fisheries: use case of the Tuna Atlas"
       ),
-      card_body(tags$iframe(src = "rmd/Application_overview.html", height = 600, width = "100%"),
+      card_body(tags$iframe(src = "rmd/Application_overview.html", height = 500, width = "100%"),
         grid_container(
           layout = c(
             "howtouse datadisplayed",
@@ -25,7 +25,7 @@ main_panel_ui = function()
           grid_card(
             area = "datadisplayed",
             full_screen = TRUE,
-            card_header("Data displayed"),
+            card_header("Example of displayed data"),
             card_body(
               grid_container(
                 layout = c(
@@ -43,21 +43,17 @@ main_panel_ui = function()
                 gap_size = "10px",
                 grid_card(
                   area = "map_example",
-                  card_body('plotOutput(outputId = "plot")')
+                  card_body(mapCatchesUI("total_catch_init"))
                 ),
                 grid_card(
                   area = "example_plot",
-                  card_body('plotOutput(outputId = "plot")')
+                  card_body(plotOutput("plot_init"))
                 ),
                 grid_card(
                   area = "example_grid",
-                  card_body('DTOutput(outputId = "myTable", width = "100%")')
+                  card_body(dataTableOutput("head_table"))
                 ),
-                grid_card_text(
-                  content = "Text for card",
-                  alignment = "center",
-                  area = "example_query"
-                )
+                grid_card(area = "example_query", textOutput("sql_query_init"))
               )
             )
           ),

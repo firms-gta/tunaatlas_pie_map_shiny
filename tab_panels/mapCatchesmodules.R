@@ -1,4 +1,3 @@
-# Module UI
 mapCatchesUI <- function(id) {
   ns <- NS(id)
   tagList(

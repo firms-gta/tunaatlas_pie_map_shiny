@@ -55,10 +55,11 @@ target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.i6i7i8 
 target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER BY year;")
 target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;") %>% dplyr::filter(!is.na(fishing_fleet))
 target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.i6i7i8 ORDER BY gridtype;")
+target_gear_type <- dbGetQuery(pool, "SELECT DISTINCT(gear_type) FROM public.i6i7i8 ORDER BY gear_type;")
 
 default_dataset <- ifelse('global_catch_firms_level0' %in%target_dataset$dataset, "global_catch_firms_level0", target_dataset[[1]][1])
 
-filters_combinations <- dbGetQuery(pool, "SELECT dataset, gridtype, species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY dataset, gridtype, species, year, fishing_fleet;")
+filters_combinations <- dbGetQuery(pool, "SELECT dataset, gear_type, gridtype, species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY dataset,gear_type, gridtype, species, year, fishing_fleet;")
 ####################################################################################################################################################################################################################################
 
 default_gridtype <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
@@ -71,6 +72,8 @@ default_species <- filters_combinations %>% dplyr::filter(dataset == default_dat
   pull(species)
 
 default_flag <- unique(filters_combinations$fishing_fleet)
+default_gear_type <- unique(filters_combinations$gear_type) 
+
 variable_to_display <-c("species","fishing_fleet","measurement_value", "gear_type")           
 
 
@@ -102,7 +105,8 @@ source(here::here("R/get_html_title.R"))
 
 targettes <- list(
   species = target_species,        
-  fishing_fleet = target_flag  
+  fishing_fleet = target_flag, 
+  gear_type = target_gear_type
 )
 getTarget <- function(category) {
   target <- targettes[[category]]
@@ -112,17 +116,19 @@ getTarget <- function(category) {
 
 
 sql_query <- glue::glue_sql(
-  "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
+  "SELECT   geom_id, gear_type, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
   ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
       WHERE dataset IN ({dataset_name})
       AND fishing_fleet IN ({fishing_fleet_name*})
       AND species IN ({species_name*})
+      AND gear_type IN ({gear_type_name*})
       AND year IN ({selected_years*})
-      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
+      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year, gear_type
       ORDER BY species,fishing_fleet DESC", 
   dataset_name = default_dataset, 
   species_name = default_species,
   fishing_fleet_name = default_flag,
+  gear_type_name = default_gear_type,
   selected_years = c(1900:2100),
   .con = pool)
 
@@ -182,3 +188,5 @@ data <- st_read(pool, query = sql_query)
                        labFormat = labelFormat(prefix = "MT "),
                        opacity = 1
     )
+
+  

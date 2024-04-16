@@ -25,6 +25,14 @@ sidebar_ui <- function(){
     ),
     tags$br(),
     tags$br(),
+    div(id = "gear_type_toggle", style = "cursor: pointer;", 
+        HTML("Select Gear Type <span id='arrow_indicator'>&#9660;</span>")),
+    div(id = "gear_type_panel",
+        uiOutput("select_gear_type"),
+        actionButton("all_gear_type", "Select All Gear Types")
+    ),
+    tags$br(),
+    tags$br(),
     div(class = "row", 
         div(class = "col-6", 
             actionButton("resetWkt", "Reset WKT to global")

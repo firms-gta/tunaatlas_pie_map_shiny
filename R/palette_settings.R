@@ -28,7 +28,7 @@ initialiserPalettes <- function(targetVariables, seed=2643598) {
   palettes <- list()
   
   # Pour chaque dataframe dans targetVariables, générer une palette
-  names(targetVariables) <- c("species", "fishing_fleet") # S'assurer que les noms correspondent
+  names(targetVariables) <- c("species", "fishing_fleet", "gear_type") # S'assurer que les noms correspondent
   for (variableName in names(targetVariables)) {
     dataframe <- targetVariables[[variableName]]
     # Le nom de la colonne unique dans chaque dataframe de targetVariables
@@ -54,7 +54,8 @@ initialiserPalettes <- function(targetVariables, seed=2643598) {
 # Préparation de la liste targetVariables
 targetVariables <- list(
   species = target_species,
-  fishing_fleet = target_flag
+  fishing_fleet = target_flag,
+  gear_type = target_gear_type
 )
 
 # Initialisation des palettes avec une graine fixe pour assurer la reproductibilité

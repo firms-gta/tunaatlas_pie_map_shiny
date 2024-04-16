@@ -1,5 +1,5 @@
 geographic_catches_by_variable_ui <- function(variable) {
-  nav_panel(title = paste0("Georeferenced catch by ",  variable),
+  nav_panel(title = paste0("Indicators by ",  variable),
             grid_container(
               layout = c(
                 "map_pie_map_and_plot  pie_map",
@@ -29,4 +29,9 @@ geographic_catches_by_variable_ui <- function(variable) {
   )
   )
 }
+
+
+
+
+
 

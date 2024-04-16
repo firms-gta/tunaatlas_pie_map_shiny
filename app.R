@@ -1,20 +1,28 @@
 source("global.R")
 
+analysis_options <- list(
+  list(title = "Species Analysis", id = "species_analysis"),
+  list(title = "Fishing Fleet Analysis", id = "fleet_analysis"),
+  list(title = "Gear Type Analysis", id = "gear_analysis")
+)
+
+
 ui <- page_navbar(id = "main",
-  title = "Tuna Atlas: Interactive Indicator",
-  selected = "datasetchoicevalue",
-  collapsible = TRUE,
-  theme = bslib::bs_theme(),
-  sidebar = sidebar_ui(),
-  main_panel_ui(), dataset_choice(),
-  geographic_catches_ui(),
-  geographic_catches_by_variable_ui("species"),
-  geographic_catches_by_variable_ui("fishing_fleet"),
-  # ggplot_indicator_11_ui(),
-  data_explorer_overview_ui(), data_explorer_i11_ui(), sqlqueriesui(),
-  # additional_info_ui(),
-  more_about()
-  )
+                  title = "Tuna Atlas: Interactive Indicator",
+                  selected = "datasetchoicevalue",
+                  collapsible = TRUE,
+                  theme = bslib::bs_theme(),
+                  sidebar = sidebar_ui(),
+                  main_panel_ui(),
+                  geographic_catches_ui(),
+                  nav_menu(title = "Indicators for each variable", geographic_catches_by_variable_ui("species"),
+                           geographic_catches_by_variable_ui("fishing_fleet"),
+                           geographic_catches_by_variable_ui("gear_type")),
+                  # ggplot_indicator_11_ui(),
+                  data_explorer_overview_ui(),  dataset_choice(), sqlqueriesui(),
+                  data_explorer_i11_ui(),
+                  more_about()
+)
 
 pool <- connect_to_db()
 
@@ -23,8 +31,13 @@ server <- function(input, output, session) {
   addResourcePath("rmd", here::here("rmd"))
   serveRmdContents("rmd_docs", list_markdown_path)# to create rmd tabpanels
   
-    shinyjs::onclick("fishing_fleet_toggle", {
+  shinyjs::onclick("fishing_fleet_toggle", {
     shinyjs::toggle("fishing_fleet_panel");
+    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");');
+  })
+  
+  shinyjs::onclick("gear_type_toggle", {
+    shinyjs::toggle("gear_type_panel");
     shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");');
   })
   
@@ -56,6 +69,16 @@ server <- function(input, output, session) {
       dplyr::select(species) %>% 
       distinct()
     selectizeInput('select_species', 'Select Species', choices = species$species, multiple = TRUE, selected = default_species)
+    
+  })
+  
+  output$select_gear_type <- renderUI({
+    req(input$select_dataset, input$select_gridtype)
+    gear_type <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% 
+      dplyr::filter(gridtype == input$select_gridtype) %>% 
+      dplyr::select(gear_type) %>% 
+      distinct()
+    selectizeInput('select_gear_type', 'Select Gear', choices = gear_type$gear_type, multiple = TRUE, selected = default_gear_type)
     
   })
   
@@ -102,11 +125,18 @@ server <- function(input, output, session) {
     updateSelectInput(session, "select_fishing_fleet", selected = fleets$fishing_fleet)
   })
   
+  # Implement "Select All" functionality for gear type
+  observeEvent(input$all_gear_type, {
+    gear_type <- dbGetQuery(pool, sprintf("SELECT DISTINCT gear_type FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s' ORDER BY gear_type;", input$select_dataset, input$select_gridtype))
+    updateSelectInput(session, "select_gear_type", selected = gear_type$gear_type)
+  })
+  
   observeEvent(input$resetFilters, {
     updateSelectInput(session, "select_species", selected = default_species)
     updateSelectInput(session, "select_dataset", selected = default_dataset)
     updateSelectInput(session, "select_gridtype", selected = default_gridtype)
     updateSelectInput(session, "select_fishing_fleet", selected = default_flag)
+    updateSelectInput(session, "select_gear_type", selected = default_gear_type)
   })
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
@@ -114,24 +144,26 @@ server <- function(input, output, session) {
   #    /* AND year BETWEEN ({start_year*}) AND ({end_year*}) */ removed as it is not only a slider input
   sql_query = eventReactive(input$submit, {
     year_vector <- if(input$toggle_year) {
-        input$years
-      } else {
-        seq(input$years[1], input$years[2])
-      }
+      input$years
+    } else {
+      seq(input$years[1], input$years[2])
+    }
     query <- glue::glue_sql(
-      "SELECT   geom_id, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
+      "SELECT   geom_id, geom, species,gear_type, fishing_fleet, SUM(measurement_value) as measurement_value,
   ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
       WHERE dataset IN ({dataset_name})
       AND ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
       AND fishing_fleet IN ({fishing_fleet_name*})
       AND species IN ({species_name*})
+      AND gear_type IN ({gear_type_name*})
       AND year IN ({selected_years*})
-      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year
+      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year, gear_type
       ORDER BY species,fishing_fleet DESC", 
       wkt = wkt(),
       dataset_name = input$select_dataset, 
       species_name = input$select_species,
       fishing_fleet_name = input$select_fishing_fleet,
+      gear_type_name = input$select_gear_type,
       selected_years = year_vector,
       .con = pool)
   }, ignoreNULL = FALSE)
@@ -148,8 +180,8 @@ server <- function(input, output, session) {
     data_without_geom <- as.data.frame(data())
     data_without_geom$geom <- NULL
     data_without_geom
-    })
- 
+  })
+  
   sum_all <- reactive({
     st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY geom")) 
   }) 
@@ -162,6 +194,10 @@ server <- function(input, output, session) {
     st_read(pool, query = paste0("SELECT fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY fishing_fleet, geom")) 
   })
   
+  sum_gear_type <- reactive({
+    st_read(pool, query = paste0("SELECT gear_type, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY gear_type, geom")) 
+  })  
+  
   data_pie_map_fishing_fleet <- reactive({
     st_read(pool, query = paste0("SELECT fishing_fleet, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY fishing_fleet, geom")) %>% 
       spread(fishing_fleet, measurement_value, fill = 0) %>%
@@ -170,12 +206,26 @@ server <- function(input, output, session) {
   
   data_pie_map_species <- reactive({
     st_read(pool, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, geom")) %>% 
-      spread(fishing_fleet, measurement_value, fill = 0) %>%
-      dplyr::mutate(total = rowSums(across(any_of(target_flag$fishing_fleet))))
+      spread(species, measurement_value, fill = 0) %>%
+      dplyr::mutate(total = rowSums(across(any_of(target_species$species))))
+  })
+  
+  data_pie_map_gear_type <- reactive({
+    st_read(pool, query = paste0("SELECT gear_type, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY gear_type, geom")) %>% 
+      spread(gear_type, measurement_value, fill = 0) %>%
+      dplyr::mutate(total = rowSums(across(any_of(target_gear_type$gear_type))))
   })
   
   data_time_serie_fishing_fleet <- reactive({
     st_read(pool, query = paste0("SELECT fishing_fleet,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY fishing_fleet, year"))
+  })
+  
+  data_time_serie_species <- reactive({
+    st_read(pool, query = paste0("SELECT species,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, year"))
+  })
+  
+  data_time_serie_gear_type <- reactive({
+    st_read(pool, query = paste0("SELECT gear_type,to_date(year::varchar(4),'YYYY') AS  year, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY gear_type, year"))
   })
   
   data_time_serie <- reactive({
@@ -263,14 +313,21 @@ server <- function(input, output, session) {
          height = 1200,
          alt = "This is alternate text")
   }, deleteFile = TRUE)
-
+  
+  # variables_nav_menu_server("vars_nav", 
+  #                           c("Species", "Fishing Fleet", "Gear Type"), 
+  #                           sql_query(), 
+  #                           centroid())
+  
   categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", sql_query)
   categoryGlobalPieChartServer("species_chart", "species", sql_query)
+  categoryGlobalPieChartServer("gear_type_chart", "gear_type", sql_query)
   
   # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
   
   pieMapTimeSeriesServer("species_module", category_var = "species", sql_query = sql_query, centroid = centroid)
   pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", sql_query = sql_query, centroid = centroid)
+  pieMapTimeSeriesServer("gear_type_module", category_var = "gear_type", sql_query = sql_query, centroid = centroid)
   
   # output to download data
   output$downloadCsv <- downloadHandler(
@@ -283,7 +340,7 @@ server <- function(input, output, session) {
     }
   )
   output$head_table <- renderDataTable({
-  head(data())
+    head(data())
   })
   
   onStop(function() {

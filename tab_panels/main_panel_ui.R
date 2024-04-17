@@ -50,7 +50,10 @@ main_panel_ui = function()
                 )),
                 grid_card(card_header(strong("Datatable")),
                   area = "example_grid",
-                  card_body(dataTableOutput("head_table"), height = "100%" ,fill = TRUE)
+                  card_body(
+                    dataTableOutput("head_table_init"),
+                    style = "height: auto; overflow-y: visible;"  # Adjust height and overflow as needed
+                  )
                 ),
                 grid_card(card_header(strong("SQL Queries")),max_height = 250,area = "example_query", textOutput("sql_query_init"),fill = TRUE, height = "100%")
               )

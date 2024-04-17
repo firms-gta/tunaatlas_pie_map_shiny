@@ -24,8 +24,8 @@ dataset_choice <- function(){
                 area = "choosedatagrid",
                 card_body(uiOutput("select_dataset"),     
                           tags$br(),
-                          uiOutput("select_gridtype")
-                          # actionButton("submit_dataset", "Submit Dataset Selection")
+                          uiOutput("select_gridtype"), 
+                          uiOutput("select_measurement_unit")
                           )
               )
            )

@@ -37,7 +37,8 @@ initialiserPalettes <- function(targetVariables, seed=2643598) {
 # Préparation de la liste targetVariables
 targetVariables <- list(
   species = target_species,
-  gridtype = target_gridtype
+  # gridtype = target_gridtype,
+  gear_type = target_gear_type
 )
 
 # Initialisation des palettes avec une graine fixe pour assurer la reproductibilité

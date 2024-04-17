@@ -15,7 +15,7 @@ pieMapTimeSeriesUI <- function(id) {
 }
 
 
-pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid) {
+pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid, submitTrigger) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     zoom_level <- reactiveVal(1)
@@ -111,18 +111,43 @@ pieMapTimeSeriesServer <- function(id, category_var, sql_query,centroid) {
     # wkt(wktdraw)
     ## same without using moduls
     observeEvent(input$submit_draw, {
-      req(input$pie_map_draw_new_feature$geometry)
-      req(input$pie_map_draw_stop)
-      geojson <- input$pie_map_draw_new_feature$geometry
-      # Convert GeoJSON to sf object
-      geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
-      sf_obj <- geojsonsf::geojson_sf(geojson_text)
-
-
-      # Convert to WKT
-      wkt_val <- st_as_text(sf_obj$geometry)
-      wkt(wkt_val)  # Update the reactive value with the WKT representation
+      
+      showModal(modalDialog(
+        title = "Changing spatial coverage",
+        "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
+        footer = tagList(
+          modalButton("No"),
+          actionButton(ns("yes_button"), "Yes")  # Ensure ns is used
+        ),
+        easyClose = TRUE,
+        id = ns("confirmation_modal")  
+      ))
     })
+      
+      observeEvent(input$yes_button, {
+        req(input$pie_map_draw_new_feature$geometry)
+        req(input$pie_map_draw_stop)
+        geojson <- input$pie_map_draw_new_feature$geometry
+        # Convert GeoJSON to sf object
+        geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
+        sf_obj <- geojsonsf::geojson_sf(geojson_text)
+        
+        
+        # Convert to WKT
+        wkt_val <- st_as_text(sf_obj$geometry)
+        wkt(wkt_val)  # Update the reactive value with the WKT representation
+        submitTrigger(TRUE)      
+        removeModal()
+      })
+      
+
+      
+
+
+      
+
+      
+
 
     
     # Time series plot output

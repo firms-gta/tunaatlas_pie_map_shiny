@@ -1,12 +1,5 @@
 source("global.R")
 
-analysis_options <- list(
-  list(title = "Species Analysis", id = "species_analysis"),
-  list(title = "Fishing Fleet Analysis", id = "fleet_analysis"),
-  list(title = "Gear Type Analysis", id = "gear_analysis")
-)
-
-
 ui <- page_navbar(id = "main",
                   title = "Tuna Atlas: Interactive Indicator",
                   selected = "datasetchoicevalue",
@@ -15,7 +8,8 @@ ui <- page_navbar(id = "main",
                   sidebar = sidebar_ui(),
                   main_panel_ui(),
                   geographic_catches_ui(),
-                  nav_menu(title = "Indicators for each variable", geographic_catches_by_variable_ui("species"),
+                  nav_menu(title = "Indicators for each variable", 
+                           geographic_catches_by_variable_ui("species"),
                            geographic_catches_by_variable_ui("fishing_fleet"),
                            geographic_catches_by_variable_ui("gear_type")),
                   # ggplot_indicator_11_ui(),
@@ -48,6 +42,8 @@ server <- function(input, output, session) {
   shinyjs::delay(1500, {
     nav_select(id = "main", selected = "mainpanel")
   })
+  submitTrigger <- reactiveVal(FALSE)
+
   
   output$select_dataset <- renderUI({
     datasets <- filters_combinations %>% dplyr::select(dataset) %>% distinct()
@@ -62,10 +58,18 @@ server <- function(input, output, session) {
     selectizeInput('select_gridtype', 'Select the Grid Type', choices = gridtypes$gridtype, selected = default_gridtype)
   })
   
+  output$select_measurement_unit <- renderUI({
+    req(input$select_dataset)
+    measurement_units <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>%
+      dplyr::select(measurement_unit) %>%
+      distinct()
+    selectizeInput('select_measurement_unit', 'Select the Measurement unit', choices = measurement_units$measurement_unit, selected = default_measurement_unit)
+  })
+  
   output$select_species <- renderUI({
     req(input$select_dataset, input$select_gridtype)
     species <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% 
-      dplyr::filter(gridtype == input$select_gridtype) %>% 
+      dplyr::filter(gridtype == input$select_gridtype) %>% dplyr::filter(measurement_unit == input$select_measurement_unit) %>% 
       dplyr::select(species) %>% 
       distinct()
     selectizeInput('select_species', 'Select Species', choices = species$species, multiple = TRUE, selected = default_species)
@@ -75,7 +79,7 @@ server <- function(input, output, session) {
   output$select_gear_type <- renderUI({
     req(input$select_dataset, input$select_gridtype)
     gear_type <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% 
-      dplyr::filter(gridtype == input$select_gridtype) %>% 
+      dplyr::filter(gridtype == input$select_gridtype)%>% dplyr::filter(measurement_unit == input$select_measurement_unit) %>% 
       dplyr::select(gear_type) %>% 
       distinct()
     selectizeInput('select_gear_type', 'Select Gear', choices = gear_type$gear_type, multiple = TRUE, selected = default_gear_type)
@@ -85,16 +89,26 @@ server <- function(input, output, session) {
   output$select_fishing_fleet <- renderUI({
     req(input$select_dataset, input$select_gridtype)
     fleets <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% 
-      dplyr::filter(gridtype == input$select_gridtype) %>% 
+      dplyr::filter(gridtype == input$select_gridtype)%>% dplyr::filter(measurement_unit == input$select_measurement_unit) %>% 
       dplyr::select(fishing_fleet) %>% 
       distinct()
     selectizeInput('select_fishing_fleet', 'Select the Fishing Fleet', choices = fleets$fishing_fleet, multiple = TRUE, selected = default_flag)
     
   })
   
+  output$select_fishing_mode <- renderUI({
+    req(input$select_dataset, input$select_gridtype)
+    fishing_modes <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% 
+      dplyr::filter(gridtype == input$select_gridtype)%>% dplyr::filter(measurement_unit == input$select_measurement_unit) %>% 
+      dplyr::select(fishing_mode) %>% 
+      distinct()
+    selectizeInput('select_fishing_mode', 'Select the Fishing mode', choices = fishing_modes$fishing_mode, multiple = TRUE, selected = default_fishing_mode)
+    
+  })
+  
   output$year_input <- renderUI({
     req(input$select_dataset, input$select_gridtype)
-    years <- dbGetQuery(pool, sprintf("SELECT MIN(year) as min_year, MAX(year) as max_year FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s';", input$select_dataset, input$select_gridtype))
+    years <- dbGetQuery(pool, sprintf("SELECT MIN(year) as min_year, MAX(year) as max_year FROM public.shinycatch WHERE dataset = '%s' AND gridtype = '%s';", input$select_dataset, input$select_gridtype))
     if(input$toggle_year) {
       # Mode sélection multiple
       selectInput("years", "Choose discrete(s) year", 
@@ -108,27 +122,33 @@ server <- function(input, output, session) {
   
   # Implement "Select All" functionality for species
   observeEvent(input$all_species, {
-    species <- dbGetQuery(pool, sprintf("SELECT DISTINCT species FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s' ORDER BY species;", input$select_dataset, input$select_gridtype))
+    species <- dbGetQuery(pool, sprintf("SELECT DISTINCT species FROM public.shinycatch WHERE dataset = '%s' AND gridtype = '%s' ORDER BY species;", input$select_dataset, input$select_gridtype))
     updateSelectInput(session, "select_species", selected = species$species)
   })
   
   # Implement "Select major species" functionality for species
   observeEvent(input$major_tunas, {
-    species <- dbGetQuery(pool, sprintf("SELECT DISTINCT species FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s' ORDER BY species;", input$select_dataset, input$select_gridtype)) %>% 
+    species <- dbGetQuery(pool, sprintf("SELECT DISTINCT species FROM public.shinycatch WHERE dataset = '%s' AND gridtype = '%s' ORDER BY species;", input$select_dataset, input$select_gridtype)) %>% 
       dplyr::filter(species %in% c("YFT", "SKJ", "ALB", "BET", "SBF"))
     updateSelectInput(session, "select_species", selected = species$species)
   })
   
   # Implement "Select All" functionality for fishing fleets
   observeEvent(input$all_fishing_fleet, {
-    fleets <- dbGetQuery(pool, sprintf("SELECT DISTINCT fishing_fleet FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s' ORDER BY fishing_fleet;", input$select_dataset, input$select_gridtype))
+    fleets <- dbGetQuery(pool, sprintf("SELECT DISTINCT fishing_fleet FROM public.shinycatch WHERE dataset = '%s' AND gridtype = '%s' ORDER BY fishing_fleet;", input$select_dataset, input$select_gridtype))
     updateSelectInput(session, "select_fishing_fleet", selected = fleets$fishing_fleet)
   })
   
   # Implement "Select All" functionality for gear type
   observeEvent(input$all_gear_type, {
-    gear_type <- dbGetQuery(pool, sprintf("SELECT DISTINCT gear_type FROM public.i6i7i8 WHERE dataset = '%s' AND gridtype = '%s' ORDER BY gear_type;", input$select_dataset, input$select_gridtype))
+    gear_type <- dbGetQuery(pool, sprintf("SELECT DISTINCT gear_type FROM public.shinycatch WHERE dataset = '%s' AND gridtype = '%s' ORDER BY gear_type;", input$select_dataset, input$select_gridtype))
     updateSelectInput(session, "select_gear_type", selected = gear_type$gear_type)
+  })
+  
+  # Implement "Select All" functionality for fishing fleets
+  observeEvent(input$all_fishing_mode, {
+    fishing_modes <- dbGetQuery(pool, sprintf("SELECT DISTINCT fishing_mode FROM public.shinycatch WHERE dataset = '%s' AND gridtype = '%s' ORDER BY fishing_mode;", input$select_dataset, input$select_gridtype))
+    updateSelectInput(session, "select_fishing_mode", selected = fishing_modes$fishing_mode)
   })
   
   observeEvent(input$resetFilters, {
@@ -137,35 +157,41 @@ server <- function(input, output, session) {
     updateSelectInput(session, "select_gridtype", selected = default_gridtype)
     updateSelectInput(session, "select_fishing_fleet", selected = default_flag)
     updateSelectInput(session, "select_gear_type", selected = default_gear_type)
+    updateSelectInput(session, "select_fishing_mode", selected = default_fishing_mode)
   })
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
   
-  #    /* AND year BETWEEN ({start_year*}) AND ({end_year*}) */ removed as it is not only a slider input
   sql_query = eventReactive(input$submit, {
     year_vector <- if(input$toggle_year) {
       input$years
     } else {
       seq(input$years[1], input$years[2])
     }
-    query <- glue::glue_sql(
-      "SELECT   geom_id, geom, species,gear_type, fishing_fleet, SUM(measurement_value) as measurement_value,
-  ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
-      WHERE dataset IN ({dataset_name})
-      AND ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
-      AND fishing_fleet IN ({fishing_fleet_name*})
-      AND species IN ({species_name*})
-      AND gear_type IN ({gear_type_name*})
-      AND year IN ({selected_years*})
-      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year, gear_type
-      ORDER BY species,fishing_fleet DESC", 
-      wkt = wkt(),
-      dataset_name = input$select_dataset, 
-      species_name = input$select_species,
-      fishing_fleet_name = input$select_fishing_fleet,
-      gear_type_name = input$select_gear_type,
-      selected_years = year_vector,
-      .con = pool)
+    query <- createSQLQuery(dataset_name = input$select_dataset, 
+                            species_name = input$select_species,
+                            fishing_fleet_name = input$select_fishing_fleet,
+                            gear_type_name = input$select_gear_type,
+                            selected_years = year_vector,wkt = wkt(),
+                            con = pool)
+  #   query <- glue::glue_sql(
+  #     "SELECT   geom_id, geom, species,gear_type, fishing_fleet, SUM(measurement_value) as measurement_value,
+  # ST_asText(geom) AS geom_wkt, year FROM public.shinycatch
+  #     WHERE dataset IN ({dataset_name})
+  #     AND ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
+  #     AND fishing_fleet IN ({fishing_fleet_name*})
+  #     AND species IN ({species_name*})
+  #     AND gear_type IN ({gear_type_name*})
+  #     AND year IN ({selected_years*})
+  #     GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year, gear_type
+  #     ORDER BY species,fishing_fleet DESC", 
+  #     wkt = wkt(),
+  #     dataset_name = input$select_dataset, 
+  #     species_name = input$select_species,
+  #     fishing_fleet_name = input$select_fishing_fleet,
+  #     gear_type_name = input$select_gear_type,
+  #     selected_years = year_vector,
+  #     .con = pool)
   }, ignoreNULL = FALSE)
   
   
@@ -242,14 +268,33 @@ server <- function(input, output, session) {
   ignoreNULL = FALSE)
   
   observeEvent(input$resetWkt, {
-    wkt(global_wkt)
+    
+    showModal(modalDialog(
+      title = "Changing spatial coverage",
+      "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
+      footer = tagList(
+        modalButton("No"),
+        actionButton("yes_button", "Yes")  # Ensure ns is used
+      ),
+      easyClose = TRUE,
+    ))
+    
+
+    
+
   },
   ignoreInit = TRUE)
+  
+  observeEvent(input$yes_button, {
+    wkt(global_wkt)
+    submitTrigger(TRUE)      
+    removeModal()
+  })
   
   ############################################################# OUTPUTS   ############################################################# 
   
   output$sql_query_init <- renderText({ 
-    paste(sql_query())
+    paste(sql_query_init)
   })
   
   output$sql_query <- renderText({ 
@@ -285,7 +330,7 @@ server <- function(input, output, session) {
     g1
   })
   
-  mapCatchesServer("total_catch", sum_all)
+  mapCatchesServer("total_catch", sum_all, submitTrigger)
   
   output$total_catch_init <- renderLeaflet({
     map_init
@@ -314,20 +359,24 @@ server <- function(input, output, session) {
          alt = "This is alternate text")
   }, deleteFile = TRUE)
   
-  # variables_nav_menu_server("vars_nav", 
-  #                           c("Species", "Fishing Fleet", "Gear Type"), 
-  #                           sql_query(), 
-  #                           centroid())
-  
   categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", sql_query)
   categoryGlobalPieChartServer("species_chart", "species", sql_query)
   categoryGlobalPieChartServer("gear_type_chart", "gear_type", sql_query)
   
   # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
   
-  pieMapTimeSeriesServer("species_module", category_var = "species", sql_query = sql_query, centroid = centroid)
-  pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", sql_query = sql_query, centroid = centroid)
-  pieMapTimeSeriesServer("gear_type_module", category_var = "gear_type", sql_query = sql_query, centroid = centroid)
+  pieMapTimeSeriesServer("species_module", category_var = "species", sql_query = sql_query, centroid = centroid, submitTrigger)
+  pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", sql_query = sql_query, centroid = centroid, submitTrigger)
+  pieMapTimeSeriesServer("gear_type_module", category_var = "gear_type", sql_query = sql_query, centroid = centroid, submitTrigger)
+  
+  observeEvent(submitTrigger(), {
+    print("submittrigger")
+    if(submitTrigger()) {
+      print("submlit")
+      shinyjs::click("submit")  # Trigger the submit button click in the sidebar
+      submitTrigger(FALSE)
+    }
+  })
   
   # output to download data
   output$downloadCsv <- downloadHandler(
@@ -339,8 +388,8 @@ server <- function(input, output, session) {
       write.csv(csv_tuna, file)
     }
   )
-  output$head_table <- renderDataTable({
-    head(data())
+  output$head_table_init <- renderDataTable({
+    head(data_init)
   })
   
   onStop(function() {

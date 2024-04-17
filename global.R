@@ -23,6 +23,9 @@ require(gridlayout)
 require(here)
 require(RColorBrewer)
 require(shinyjs)
+require(rlang)
+require(rmarkdown)
+require(sf)
 
 connect_to_db <- function() {
   # if (is.null(pool) || !dbIsValid(pool)) {
@@ -50,34 +53,60 @@ wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
 
-target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.i6i7i8 ORDER BY dataset;")
-target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.i6i7i8 ORDER BY species;")
-target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.i6i7i8 ORDER BY year;")
-target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.i6i7i8 ORDER BY fishing_fleet;") %>% dplyr::filter(!is.na(fishing_fleet))
-target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.i6i7i8 ORDER BY gridtype;")
-target_gear_type <- dbGetQuery(pool, "SELECT DISTINCT(gear_type) FROM public.i6i7i8 ORDER BY gear_type;")
+target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")
+target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
+target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.shinycatch ORDER BY year;")
+target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.shinycatch ORDER BY fishing_fleet;")
+target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.shinycatch ORDER BY gridtype;")
+target_gear_type <- dbGetQuery(pool, "SELECT DISTINCT(gear_type) FROM public.shinycatch ORDER BY gear_type;")
+target_measurement_unit <- dbGetQuery(pool, "SELECT DISTINCT(measurement_unit) FROM public.shinycatch ORDER BY measurement_unit;")
+target_fishing_mode <- dbGetQuery(pool, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
 
 default_dataset <- ifelse('global_catch_firms_level0' %in%target_dataset$dataset, "global_catch_firms_level0", target_dataset[[1]][1])
 
-filters_combinations <- dbGetQuery(pool, "SELECT dataset, gear_type, gridtype, species, year, fishing_fleet FROM  public.i6i7i8 GROUP BY dataset,gear_type, gridtype, species, year, fishing_fleet;")
+filters_combinations <- dbGetQuery(pool, "SELECT dataset, gear_type, gridtype, species, year, fishing_fleet, fishing_mode, measurement_unit FROM  public.shinycatch GROUP BY dataset,gear_type, gridtype, species, year, fishing_fleet, fishing_mode, measurement_unit;")
 ####################################################################################################################################################################################################################################
 
 default_gridtype <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
   head(1) %>% 
   pull(gridtype)
 
+default_measurement_unit <- "t"
+
 default_species <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
-  dplyr::filter(gridtype == default_gridtype) %>% 
-  head(1) %>% 
+  dplyr::filter(gridtype == default_gridtype) %>% dplyr::filter(measurement_unit == default_measurement_unit)%>% 
+  head(5) %>% 
   pull(species)
 
-default_flag <- unique(filters_combinations$fishing_fleet)
-default_gear_type <- unique(filters_combinations$gear_type) 
 
-variable_to_display <-c("species","fishing_fleet","measurement_value", "gear_type")           
+filtered_combinations_default <-filters_combinations%>% dplyr::filter(dataset == default_dataset) %>% dplyr::filter(measurement_unit == default_measurement_unit)%>% 
+  dplyr::filter(gridtype == default_gridtype) 
 
+# default_flag <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
+#   dplyr::arrange(fishing_fleet) %>% 
+#   dplyr::filter(gridtype == default_gridtype) %>% 
+#   head(5) %>% 
+#   pull(fishing_fleet)
+# 
+# default_gear_type <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
+#   dplyr::arrange(gear_type) %>% 
+#   dplyr::filter(gridtype == default_gridtype) %>% 
+#   head(5) %>% 
+#   pull(gear_type)
 
-source(here::here("R/palette_species_setting.R"))
+default_flag <- unique(filtered_combinations_default$fishing_fleet)
+default_gear_type <- unique(filtered_combinations_default$gear_type)
+default_fishing_mode <- unique(filtered_combinations_default$fishing_mode)
+
+variable_to_display <-c("species","fishing_fleet","measurement_value", "gear_type", "fishing_mode")           
+
+analysis_options <- list(
+  list(title = "Species Analysis", id = "species_analysis"),
+  list(title = "Fishing Fleet Analysis", id = "fleet_analysis"),
+  list(title = "Gear Type Analysis", id = "gear_analysis"),
+  list(title = "Fishing Mode Analysis", id = "fishing_mode_analysis")
+)
+
 ####################################################################################################################################################################################################################################
 source(here::here('tab_panels/geographic_catches_ui.R'))
 source(here::here('tab_panels/main_panel_ui.R'))
@@ -106,7 +135,7 @@ source(here::here("R/get_html_title.R"))
 targettes <- list(
   species = target_species,        
   fishing_fleet = target_flag, 
-  gear_type = target_gear_type
+  gear_type = target_gear_type, fishing_mode = target_fishing_mode
 )
 getTarget <- function(category) {
   target <- targettes[[category]]
@@ -115,26 +144,39 @@ getTarget <- function(category) {
 }
 
 
-sql_query <- glue::glue_sql(
-  "SELECT   geom_id, gear_type, geom, species, fishing_fleet, SUM(measurement_value) as measurement_value,
-  ST_asText(geom) AS geom_wkt, year FROM public.i6i7i8
+createSQLQuery <- function(dataset_name = default_dataset,
+                           species_name = default_species,
+                           fishing_fleet_name = default_flag,
+                           gear_type_name = default_gear_type,
+                           selected_years = target_year$year,
+                           measurement_unit_name = default_measurement_unit,
+                           fishing_mode_name = default_fishing_mode,
+                           wkt = global_wkt,
+                           con = pool) {
+
+  query <- glue::glue_sql(
+    "SELECT   geom_id, geom, species,gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode,
+  ST_asText(geom) AS geom_wkt, year FROM public.shinycatch
       WHERE dataset IN ({dataset_name})
+      AND ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
       AND fishing_fleet IN ({fishing_fleet_name*})
       AND species IN ({species_name*})
       AND gear_type IN ({gear_type_name*})
       AND year IN ({selected_years*})
-      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year, gear_type
+      AND measurement_unit IN ({measurement_unit_name*})
+      AND fishing_mode IN ({fishing_mode_name*})
+      GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year, gear_type, fishing_mode, measurement_unit
       ORDER BY species,fishing_fleet DESC", 
-  dataset_name = default_dataset, 
-  species_name = default_species,
-  fishing_fleet_name = default_flag,
-  gear_type_name = default_gear_type,
-  selected_years = c(1900:2100),
-  .con = pool)
+    .con = pool)
 
-data <- st_read(pool, query = sql_query)
+  return(query)
+}
 
-  data_without_geom <- as.data.frame(data)
+sql_query_init <- createSQLQuery()
+
+data_init <- st_read(pool, query = sql_query_init)
+
+  data_without_geom <- as.data.frame(data_init)
   data_without_geom$geom_wkt <- NULL
   df <- data_without_geom %>%
     dplyr::group_by(.data[["fishing_fleet"]], year) %>%
@@ -159,7 +201,7 @@ data <- st_read(pool, query = sql_query)
   plot_init
   dev.off()
    
-  a <- st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query,") AS foo GROUP BY geom")) 
+  a <- st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query_init,") AS foo GROUP BY geom")) 
   
   qpal <- colorQuantile(rev(viridis::viridis(10)),a$measurement_value, n=10)
   tmap_mode("plot")

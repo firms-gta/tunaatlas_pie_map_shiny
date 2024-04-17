@@ -9,7 +9,7 @@ mapCatchesUI <- function(id) {
 }
 
 # Module Server
-mapCatchesServer <- function(id, sum_all) {
+mapCatchesServer <- function(id, sum_all, submitTrigger) {
   moduleServer(id, function(input, output, session) {
     
     output$map_total_catch <- renderLeaflet({
@@ -44,6 +44,19 @@ mapCatchesServer <- function(id, sum_all) {
     })
     
     observeEvent(input$submit_draw_total, {
+      
+      showModal(modalDialog(
+        title = "Changing spatial coverage",
+        "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
+        footer = tagList(
+          modalButton("No"),
+          actionButton("yes_button", "Yes")  
+        ),
+        easyClose = TRUE,
+      ))
+    })
+    
+    observeEvent(input$yes_button, {
       req(input$map_total_catch_draw_new_feature$geometry)
       req(input$map_total_catch_draw_stop)
       geojson <- input$map_total_catch_draw_new_feature$geometry
@@ -55,6 +68,8 @@ mapCatchesServer <- function(id, sum_all) {
       # Convert to WKT
       wkt_val <- st_as_text(sf_obj$geometry)
       wkt(wkt_val)  # Update the reactive value with the WKT representation
+      submitTrigger(TRUE)      
+      removeModal()
     })
     
 

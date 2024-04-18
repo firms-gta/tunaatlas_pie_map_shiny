@@ -33,6 +33,12 @@ sidebar_ui <- function(){
     ),
     tags$br(),
     tags$br(),
+    div(id = "fishing_mode_panel",
+        uiOutput("select_fishing_mode"),
+        actionButton("all_fishing_mode", "Select All Fishing mode")
+    ),
+    tags$br(),
+    tags$br(),
     div(class = "row", 
         div(class = "col-6", 
             actionButton("resetWkt", "Reset WKT to global")

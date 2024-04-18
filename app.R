@@ -11,8 +11,9 @@ ui <- page_navbar(id = "main",
                   nav_menu(title = "Indicators for each variable", 
                            geographic_catches_by_variable_ui("species"),
                            geographic_catches_by_variable_ui("fishing_fleet"),
-                           geographic_catches_by_variable_ui("gear_type")),
-                  # ggplot_indicator_11_ui(),
+                           geographic_catches_by_variable_ui("gear_type"),
+                  geographic_catches_by_variable_ui("fishing_mode")),
+# ggplot_indicator_11_ui(),
                   data_explorer_overview_ui(),  dataset_choice(), sqlqueriesui(),
                   data_explorer_i11_ui(),
                   more_about()
@@ -362,12 +363,18 @@ server <- function(input, output, session) {
   categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", sql_query)
   categoryGlobalPieChartServer("species_chart", "species", sql_query)
   categoryGlobalPieChartServer("gear_type_chart", "gear_type", sql_query)
-  
-  # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
-  
+  categoryGlobalPieChartServer("fishing_mode_chart", "fishing_mode", sql_query)
   pieMapTimeSeriesServer("species_module", category_var = "species", sql_query = sql_query, centroid = centroid, submitTrigger)
   pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", sql_query = sql_query, centroid = centroid, submitTrigger)
   pieMapTimeSeriesServer("gear_type_module", category_var = "gear_type", sql_query = sql_query, centroid = centroid, submitTrigger)
+  pieMapTimeSeriesServer("fishing_mode_module", category_var = "fishing_mode", sql_query = sql_query, centroid = centroid, submitTrigger)
+  
+  
+  # https://francoisguillem.shinyapps.io/shiny-demo/ => ADD TIME TO PLAY A VIDEO !!
+  
+  observeEvent(input$change_dataset, {
+    updateNavbarPage(session, "main", selected = "datasetchoicevalue")
+  })
   
   observeEvent(submitTrigger(), {
     print("submittrigger")

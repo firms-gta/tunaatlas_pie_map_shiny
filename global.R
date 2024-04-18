@@ -129,7 +129,6 @@ source(here::here("rmd/rendering_rmd_files_to_html.R"))
 source(here::here("tab_panels/more_about.R"))
 source(here::here("rmd/rendering_rmd_files_to_html.R"))
 source(here::here("modules/generateRmdNavMenu.R"))
-source(here::here("modules/submitWktFromDrawing.R"))
 source(here::here("R/get_html_title.R"))
 
 targettes <- list(

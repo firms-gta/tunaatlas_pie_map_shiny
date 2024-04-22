@@ -42,7 +42,7 @@ WORKDIR /root
 # Install renv package
 COPY renv.lock .
 RUN Rscript -e 'install.packages("renv", repos="https://cran.r-project.org/")' \
-   && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()' 
+   && Rscript -e 'source("on_start.R")'
 
 # Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny and Create a symbolic link to the cloned repository
 

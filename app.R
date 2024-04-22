@@ -1,5 +1,3 @@
-source("global.R")
-
 ui <- page_navbar(id = "main",
                   title = "Tuna Atlas: Interactive Indicator",
                   selected = "datasetchoicevalue",
@@ -19,7 +17,6 @@ ui <- page_navbar(id = "main",
                   more_about()
 )
 
-pool <- connect_to_db()
 
 server <- function(input, output, session) {
   

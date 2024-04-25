@@ -39,15 +39,15 @@ RUN apt-get update && apt-get install -y git wget
 
 # Install renv and restore R packages
 RUN Rscript -e 'install.packages("renv", repos="https://cran.r-project.org/")' \
-    && wget -O renv.lock "https://raw.githubusercontent.com/firms-gta/tunaatlas_pie_map_shiny/CWP_database/renv.lock" \
+    && wget -O renv.lock "https://raw.githubusercontent.com/firms-gta/GlobalTunaAtlasExplorer/CWP_database/renv.lock" \
     && Rscript -e 'renv::restore()'
 
 # Clone the specific branch of the GitHub repository and create a symbolic link
-RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny \
-    && ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
+RUN git clone -b CWP_database https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer \
+    && ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 
 # Define the entry point to run the Shiny app
-CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
+CMD ["R", "-e", "shiny::runApp('/root/GlobalTunaAtlasExplorer', port=3838, host='0.0.0.0')"]

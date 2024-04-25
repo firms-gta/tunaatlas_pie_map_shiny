@@ -1,11 +1,10 @@
-# Use the rocker/r-ver:4.3.2 image as the base
+# Use the rocker/r-ver:4.2.3 image as the base
 FROM rocker/r-ver:4.2.3
 
 # Maintainer information
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
 
-
-# Install system libraries of general use
+# Update and install system dependencies
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
@@ -21,13 +20,9 @@ RUN apt-get update && apt-get install -y \
     libsodium-dev \
     libsecret-1-dev \
     git \
-    libnetcdf-dev
-
-# Update and upgrade the system
-RUN apt-get update && apt-get upgrade -y
-
-# Install cmake
-RUN apt-get update && apt-get -y install cmake
+    libnetcdf-dev \
+    cmake \
+    wget
 
 # Install additional geospatial libraries
 RUN /rocker_scripts/install_geospatial.sh
@@ -39,21 +34,20 @@ RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r
 # Set the working directory to /root
 WORKDIR /root
 
-# Install renv package
-COPY renv.lock .
+# Install git and wget if not already installed
+RUN apt-get update && apt-get install -y git wget
+
+# Install renv and restore R packages
 RUN Rscript -e 'install.packages("renv", repos="https://cran.r-project.org/")' \
-   && Rscript -e 'source("on_start.R")'
+    && wget -O renv.lock "https://raw.githubusercontent.com/firms-gta/tunaatlas_pie_map_shiny/CWP_database/renv.lock" \
+    && Rscript -e 'renv::restore()'
 
-# Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny and Create a symbolic link to the cloned repository
-
+# Clone the specific branch of the GitHub repository and create a symbolic link
 RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny \
     && ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
-
-#etc dirs (for config)
-RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]

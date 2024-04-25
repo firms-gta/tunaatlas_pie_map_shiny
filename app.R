@@ -1,3 +1,5 @@
+source("global.R")
+
 ui <- page_navbar(id = "main",
                   title = "Tuna Atlas: Interactive Indicator",
                   selected = "datasetchoicevalue",
@@ -402,8 +404,5 @@ server <- function(input, output, session) {
   
 }
 
-
-
-
-
-
+# Run the application 
+shinyApp(ui = ui, server = server)

@@ -1,0 +1,50 @@
+---
+title: "Global Tuna Atlas overview"
+output: html_document
+---
+  
+This Shiny application is designed to facilitate the exploration of various datasets from the Global Tuna Atlas. It aims to provide users, from novices to experts, with a user-friendly interface to interact with and analyze fisheries data through a set of predefined indicators.
+
+## About the Application
+
+The application allows users to explore different indicators related to tuna fisheries. To begin the exploration, users are invited to explore data and select desired filters. Upon submission, the application will render the selected indicators, which may include visual representations such as maps and graphs. The selection of the dataset to explore can be changed in the Dataset selection tab and more info about this app and the global project are displayed in the About panel
+
+### Key Features:
+
+- **Dataset Selection:** Choose from multiple levels of global catch data to analyze.
+- **Filter Application:** Tailor your exploration by applying specific filters relevant to your area of interest.
+- **Indicator Visualization:** Submit your choices to see the data represented through interactive maps and charts.
+
+### Usage Instructions:
+
+1. **Select a Dataset:** Start by choosing the dataset you wish to explore from the available options.
+2. **Apply Filters:** Specify your filters based on the criteria provided.
+3. **Submit:** Click the submit button to view the indicators. Please note that rendering the maps may take some time.
+
+## Caution
+
+The mapping feature may experience delays in displaying the results. This is normal and depends on the complexity of the data and filters applied.
+
+## Technical Background
+
+These Shiny applications are part of the Fisheries Atlas Virtual Research Environment (VRE), which includes an RStudio server for developers and a Shiny proxy server for hosting the applications. The aim is to make it easier for newcomers to explore the data using a set of analytical indicators without delving into the source code. Users interested in the underlying code are encouraged to refer to the associated Jupyter notebooks instead of the Shiny app's source code.
+
+## Data Sources
+
+The data displayed in this application comes from several datasets, each with its specificities:
+
+- **Global Catch Firms Level 0**
+- **Global Catch Firms Level 1**
+- **Global Catch Firms Level 2**
+
+For detailed information on each dataset, including DOI and further explanations, please refer to the corresponding documentation provided within the application.
+
+---
+
+This application is a tool for enhancing understanding and analysis of fisheries data, making it accessible to a broad audience interested in marine biology and fisheries management.
+
+## General Disclaimer:
+
+This repository contains work in progress. It can be used to explore the content of multi-dimensionnal data cubes storing tuna fisheries data. Dimensions are: spatial (lat,lon), time, flag of the fishing fleet, free schools or FADs. The content is made of publicly available data delivered by Tuna RFMOs. Its content should not be used for publications without explicit agreement from the authors. The accuracy of the estimates provided in these analyses is contingent on data quality and availability. Results presented here do not represent the official view of IRD, its staff or consultants.
+Caution must be taken when interpreting all data presented, and differences between information products published by IRD and other sources using different inclusion criteria and different data cut-off times are to be expected. While steps are taken to ensure accuracy and reliability, all data are subject to continuous verification and change.  See here for further background and other important considerations surrounding the source data.
+

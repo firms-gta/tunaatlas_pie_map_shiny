@@ -1,0 +1,6 @@
+---
+title: "General disclaimer"
+output: html_document
+---
+
+The repository is a work in progress intended for exploring tuna fisheries data. It contains publicly available data from Tuna RFMOs. The content should not be used for publications without explicit agreement from the authors. Accuracy of estimates depends on data quality and availability, and may not represent the official view of IRD or its affiliates. Caution must be taken when interpreting all data presented, and differences between information products published by IRD and other sources using different inclusion criteria and different data cut-off times are to be expected. While steps are taken to ensure accuracy and reliability, all data are subject to continuous verification and change. See "Detailed explanations on the datasets used" for further background and other important considerations surrounding the source data. 

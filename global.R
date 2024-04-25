@@ -1,6 +1,6 @@
 
-renv::restore(exclude = c("geojsonio", "protolite", "geojson", "magick"))
-source('install.R')
+renv::restore(exclude = c("shinyuieditor"))
+source(here::here('install.R'))
 
 ####################################################################################################################################################################################################################################
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")

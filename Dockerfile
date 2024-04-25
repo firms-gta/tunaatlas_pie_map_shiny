@@ -46,8 +46,8 @@ RUN Rscript -e 'install.packages("renv", repos="https://cran.r-project.org/")' \
 
 # Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny and Create a symbolic link to the cloned repository
 
-RUN git clone -b CWP_database https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny \
-    && ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
+RUN git clone -b CWP_database https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer \
+    && ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
@@ -56,4 +56,4 @@ EXPOSE 3838
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
 # Define the entry point to run the Shiny app
-CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
+CMD ["R", "-e", "shiny::runApp('/root/GlobalTunaAtlasExplorer', port=3838, host='0.0.0.0')"]

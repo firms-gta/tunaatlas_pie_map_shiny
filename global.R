@@ -30,7 +30,9 @@ require(sf)
 connect_to_db <- function() {
   # if (is.null(pool) || !dbIsValid(pool)) {
     
-try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
+try(dotenv::load_dot_env(here::here("connection_tunaatlas_inv.txt")))
+  
+print("dotenv.ok")
   
 db_host <- Sys.getenv("DB_HOST")
 db_port <- as.integer(Sys.getenv("DB_PORT"))

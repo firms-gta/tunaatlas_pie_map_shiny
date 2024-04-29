@@ -43,7 +43,7 @@ WORKDIR /root
 # Copy everything from the current directory (project directory) to /root/GlobalTunaAtlasExplorer
 # ADD . /root/GlobalTunaAtlasExplorer
 # clone app
-RUN git clone -b CWP_database https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer && echo "OK!"
+RUN git clone -b main https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer && echo "OK!"
 # Create a symbolic link to the cloned repository
 RUN ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer
 

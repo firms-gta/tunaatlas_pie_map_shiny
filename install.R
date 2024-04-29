@@ -6,7 +6,7 @@ package_names <- list.files(.libPaths()[1])
 lapply(package_names, library, character.only = TRUE)
 
 # renv::init(force = TRUE)
-# renv::restore()
+renv::restore()
 # 
 # if (!requireNamespace("here", quietly = TRUE)) {
 #   install.packages("here")

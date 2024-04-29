@@ -43,6 +43,8 @@ WORKDIR /root
 #    && wget -O renv/settings.json "https://raw.githubusercontent.com/firms-gta/GlobalTunaAtlasExplorer/CWP_database/renv/settings.json" \
 #     && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()'
 
+RUN R -e "install.packages('renv', repos = c(CRAN = 'https://cloud.r-project.org'))"
+
 # Clone the specific branch of the GitHub repository and create a symbolic link
 RUN git clone -b main https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer \
     && ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer \

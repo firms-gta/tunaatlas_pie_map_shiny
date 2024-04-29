@@ -44,7 +44,7 @@ WORKDIR /root
 #     && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()'
 
 # Clone the specific branch of the GitHub repository and create a symbolic link
-RUN git clone -b CWP_database https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer \
+RUN git clone -b main https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer \
     && ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer \
     && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()'
 

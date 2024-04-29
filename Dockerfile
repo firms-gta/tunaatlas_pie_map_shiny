@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y \
     git \
     libnetcdf-dev \
     cmake \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+    wget #\
+    #&& rm -rf /var/lib/apt/lists/*
 #Last line to clean up to prevent the layer from becoming unnecessarily large with cached package data
 
 # Install additional geospatial libraries
@@ -48,7 +48,7 @@ RUN git clone -b CWP_database https://github.com/firms-gta/GlobalTunaAtlasExplor
     && ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer \
     && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()'
 
-COPY connection_tunaatlas_inv.txt /root/connection_tunaatlas_inv.txt
+# COPY connection_tunaatlas_inv.txt /root/connection_tunaatlas_inv.txt
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838

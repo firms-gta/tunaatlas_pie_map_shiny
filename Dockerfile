@@ -1,11 +1,11 @@
-# Use the rocker/r-ver:4.3.1 image as the base
-FROM rocker/r-ver:4.3.1
+# Use the rocker/r-ver:4.2.3 image as the base
+FROM rocker/r-ver:4.2.3
 
 # Maintainer information
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
+LABEL maintainer="Bastien Grasset <bastien.grasset@ird.fr>"
 
-
-# Install system libraries of general use
+# Update and install system dependencies
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
@@ -21,13 +21,9 @@ RUN apt-get update && apt-get install -y \
     libsodium-dev \
     libsecret-1-dev \
     git \
-    libnetcdf-dev
-
-# Update and upgrade the system
-RUN apt-get update && apt-get upgrade -y
-
-# Install cmake
-RUN apt-get update && apt-get -y install cmake
+    libnetcdf-dev \
+    cmake \
+    wget
 
 # Install additional geospatial libraries
 RUN /rocker_scripts/install_geospatial.sh
@@ -39,21 +35,26 @@ RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r
 # Set the working directory to /root
 WORKDIR /root
 
-# Install renv package
-COPY renv.lock .
+
+# Install renv and restore R packages
 RUN Rscript -e 'install.packages("renv", repos="https://cran.r-project.org/")' \
-   && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()' 
+    && wget -O renv.lock "https://raw.githubusercontent.com/firms-gta/GlobalTunaAtlasExplorer/CWP_database/renv.lock" \
+    && wget -O Rprofile "https://raw.githubusercontent.com/firms-gta/GlobalTunaAtlasExplorer/CWP_database/.Rprofile" \
+    && wget -O renv/activate.R "https://raw.githubusercontent.com/firms-gta/GlobalTunaAtlasExplorer/CWP_database/renv/activate.R" \
+    && wget -O renv/settings.json "https://raw.githubusercontent.com/firms-gta/GlobalTunaAtlasExplorer/CWP_database/renv/settings.json" \
+     && Rscript -e 'renv::activate()' && Rscript -e 'renv::repair()' && Rscript -e 'renv::restore()'
 
-# Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny and Create a symbolic link to the cloned repository
+# Install git and wget if not already installed
+RUN apt-get update && apt-get install -y git wget
 
+# Clone the specific branch of the GitHub repository and create a symbolic link
 RUN git clone -b CWP_database https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer \
     && ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer
 
+# COPY connection_tunaatlas_inv.txt /root/connection_tunaatlas_inv.txt
+
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
-
-#etc dirs (for config)
-RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/GlobalTunaAtlasExplorer', port=3838, host='0.0.0.0')"]

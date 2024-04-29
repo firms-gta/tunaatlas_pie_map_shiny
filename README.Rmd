@@ -1,0 +1,62 @@
+---
+title: "Global Tuna Atlas Shiny Application"
+output: html_document
+---
+
+\clearpage
+
+# Application overview
+
+```{r include=FALSE}
+
+source(here::here("R/include_childrmd_with_lowered_headings.R"))
+res <- knitr::knit_child("rmd/Application_overview.Rmd", quiet = TRUE)
+
+```
+
+
+```{r echo=FALSE, results='asis'}
+
+cat(res, sep =  "\\clearpage")
+
+```
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/Datasets.Rmd") 
+
+```
+
+
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/General_disclaimer.Rmd")
+
+```
+
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/Authors.Rmd")
+
+```
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/Running_the_app.Rmd")
+
+```
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/Fundings.Rmd")
+
+```
+
+```{r echo=FALSE, results='asis'}
+
+include_child_with_lowered_headings("rmd/sidebar_explenations.Rmd")
+
+```
+

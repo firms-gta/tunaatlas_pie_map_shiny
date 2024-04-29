@@ -21,8 +21,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            /root/renv/library
-            /root/.local/share/renv
+            ${{ github.workspace }}/renv/cache
           key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
           restore-keys: |
             ${{ runner.os }}-renv-
@@ -30,6 +29,7 @@ jobs:
       - name: Restore R packages
         run: |
           Rscript -e 'renv::activate()'
+          Rscript -e 'renv::repair()'
           Rscript -e 'renv::restore()'
 
       - name: Docker meta
@@ -58,3 +58,6 @@ jobs:
           push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          load: true
+      - name: Run R package restore within Docker
+        run: docker run --rm ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database_test_cache_renv Rscript -e "renv::restore()"

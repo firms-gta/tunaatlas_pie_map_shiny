@@ -18,7 +18,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database_renv_cache
+          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
           flavor: latest=true
           tags: |
             type=ref,event=branch

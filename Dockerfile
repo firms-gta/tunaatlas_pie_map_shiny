@@ -4,7 +4,6 @@ FROM rocker/r-ver:4.2.3
 # Maintainer information
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>, Bastien Grasset <bastien.grasset@ird.fr>"
 
-
 # Install system libraries of general use
 RUN apt-get update && apt-get install -y \
     sudo \
@@ -21,53 +20,33 @@ RUN apt-get update && apt-get install -y \
     libsodium-dev \
     libsecret-1-dev \
     git \
-    libnetcdf-dev
+    libnetcdf-dev \
+    cmake \
+    wget \
+    && rm -rf /var/lib/apt/lists/*  # Nettoyage pour éviter de surcharger l'image avec des données de cache inutiles
 
-# Update and upgrade the system
-RUN apt-get update && apt-get upgrade -y
-
-# Install cmake
-RUN apt-get update && apt-get -y install cmake
-
-# Install additional geospatial libraries
+# Installation de bibliothèques géospatiales supplémentaires
 RUN /rocker_scripts/install_geospatial.sh
 
-# Install R core package dependencies
-RUN install2.r --error --skipinstalled --ncpus -1 httpuv
-RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r-project.org/')"
-
-# Set the working directory to /root
-
+# Définition du répertoire de travail
 WORKDIR /root
 
-# Copy everything from the current directory (project directory) to /root/GlobalTunaAtlasExplorer
-# ADD . /root/GlobalTunaAtlasExplorer
-# clone app
-RUN git clone -b main https://github.com/firms-gta/GlobalTunaAtlasExplorer.git /root/GlobalTunaAtlasExplorer && echo "OK!"
-# Create a symbolic link to the cloned repository
-RUN ln -s /root/GlobalTunaAtlasExplorer /srv/GlobalTunaAtlasExplorer
+# Argument pour déterminer si le cache local doit être utilisé
+ARG USE_CACHE=false
 
-# Install renv package
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+# Copie du répertoire renv et du fichier renv.lock
+COPY renv.lock /root/
+COPY .Rprofile /root/
 
-# Set the working directory to /root/GlobalTunaAtlasExplorer
-WORKDIR /root/GlobalTunaAtlasExplorer
+# Condition pour restaurer les paquets seulement si le cache n'est pas utilisé
+# Activation et restauration de l'environnement renv
+RUN if [ "$USE_CACHE" = "false" ]; then \
+        Rscript -e "install.packages('renv', repos='https://cran.r-project.org/')"; \
+        Rscript -e 'renv::activate(); renv::repair(); renv::restore()'; \
+    fi
 
-RUN Rscript -e 'renv::activate()'
-RUN Rscript -e 'renv::repair()'
-RUN Rscript -e 'renv::restore()'
-
-
-# Expose port 3838 for the Shiny app
+# Exposition du port 3838 pour l'application Shiny
 EXPOSE 3838
 
-
-#etc dirs (for config)
-RUN mkdir -p /etc/GlobalTunaAtlasExplorer/
-
-# Define the entry point to run the Shiny app
+# Point d'entrée pour lancer l'application Shiny
 CMD ["R", "-e", "shiny::runApp('/root/GlobalTunaAtlasExplorer', port=3838, host='0.0.0.0')"]
-
-# Update and install curl (if needed)
-RUN apt-get -y update
-RUN apt-get install -y curl

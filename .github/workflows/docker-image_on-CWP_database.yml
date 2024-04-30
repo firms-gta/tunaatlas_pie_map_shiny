@@ -11,32 +11,52 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v2
         
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
+          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database_renv_cache
           flavor: latest=true
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}}  
+            type=semver,pattern={{version}}
+          labels: |
+            org.opencontainers.image.url=${{ github.repository }}
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.title=GlobalTunaAtlasExplorer
+            org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
+            org.opencontainers.image.vendor=IRD
+            org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>, Bastien Grasset <bastien.grasset@ird.fr>
+            
       - name: Login to image repository
-        uses: docker/login-action@v2
+        if: github.ref_type == 'tag'
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
+      - name: Cache Renv Libraries
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}/.local/share/renv
+            ${{ github.workspace }}/renv.lock
+          key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile
           push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: USE_CACHE=true
+          

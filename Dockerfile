@@ -34,7 +34,6 @@ WORKDIR /root
 # Argument pour déterminer si le cache local doit être utilisé
 ARG USE_CACHE=false
 
-# Copie du répertoire renv et du fichier renv.lock
 COPY renv.lock /root/
 COPY .Rprofile /root/
 
@@ -45,6 +44,8 @@ RUN if [ "$USE_CACHE" = "false" ]; then \
         Rscript -e 'renv::activate(); renv::repair(); renv::restore()'; \
     fi
 
+# Copy the app
+COPY . /root/tunaatlas_pie_map_shiny
 # Exposition du port 3838 pour l'application Shiny
 EXPOSE 3838
 

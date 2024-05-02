@@ -12,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database_renv_cache
+          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
           flavor: latest=true
           tags: |
             type=ref,event=branch

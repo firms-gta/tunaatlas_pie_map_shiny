@@ -56,5 +56,6 @@ jobs:
           context: .
           file: Dockerfile
           push: true
+          tags: user/app:latest
           build-args: USE_CACHE=true
           

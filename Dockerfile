@@ -35,7 +35,6 @@ WORKDIR /root
 ARG USE_CACHE=false
 
 COPY renv.lock /root/
-COPY .Rprofile /root/
 
 # Condition pour restaurer les paquets seulement si le cache n'est pas utilisé
 # Activation et restauration de l'environnement renv

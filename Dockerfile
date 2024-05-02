@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*  # Nettoyage pour éviter de surcharger l'image avec des données de cache inutiles
 
 # Installation de bibliothèques géospatiales supplémentaires
-RUN /rocker_scripts/install_geospatial.sh
+# RUN /rocker_scripts/install_geospatial.sh
 
 # Définition du répertoire de travail
 WORKDIR /root

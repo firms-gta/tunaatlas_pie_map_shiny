@@ -3,7 +3,9 @@ data_explorer_overview_ui <- function() {
 # hr(),
 # textOutput("sql_query"),
 hr(),
-DT::dataTableOutput("DT")
+DT::dataTableOutput("DT"), 
+hr(), 
+sqlqueriesui()
 # downloadButton("downloadCsv", "Download as CSV"),tags$br(),tags$br(),
 )
 }

@@ -13,8 +13,9 @@ ui <- page_navbar(id = "main",
                            geographic_catches_by_variable_ui("fishing_fleet"),
                            geographic_catches_by_variable_ui("gear_type"),
                   geographic_catches_by_variable_ui("fishing_mode")),
-# ggplot_indicator_11_ui(),
-                  data_explorer_overview_ui(),  dataset_choice(), sqlqueriesui(),
+                  data_explorer_overview_ui(),  
+                  dataset_choice(), 
+                  # sqlqueriesui(),
                   data_explorer_i11_ui(),
                   more_about()
 )

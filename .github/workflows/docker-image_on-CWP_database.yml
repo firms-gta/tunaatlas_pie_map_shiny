@@ -55,7 +55,7 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          push: true
+          push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: USE_CACHE=true

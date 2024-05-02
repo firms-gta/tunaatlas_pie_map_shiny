@@ -49,4 +49,4 @@ RUN if [ "$USE_CACHE" = "false" ]; then \
 EXPOSE 3838
 
 # Point d'entrée pour lancer l'application Shiny
-CMD ["R", "-e", "shiny::runApp('/root/GlobalTunaAtlasExplorer', port=3838, host='0.0.0.0')"]
+CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]

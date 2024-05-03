@@ -48,7 +48,6 @@ RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 # Set the working directory to /root/tunaatlas_pie_map_shiny
 WORKDIR /root/tunaatlas_pie_map_shiny
 
-RUN Rscript -e 'install.packages("renv")'
 RUN Rscript -e 'renv::activate()'
 RUN Rscript -e 'renv::repair()'
 RUN Rscript -e 'renv::restore()'

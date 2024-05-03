@@ -1,4 +1,4 @@
-
+# This file launched with runApp
 renv::restore(exclude = c("shinyuieditor"))
 source(here::here('install.R'))
 
@@ -28,9 +28,8 @@ require(rmarkdown)
 require(sf)
 
 connect_to_db <- function() {
-  # if (is.null(pool) || !dbIsValid(pool)) {
     
-try(dotenv::load_dot_env(here::here("connection_tunaatlas_inv.txt")))
+dotenv::load_dot_env(here::here("connection_tunaatlas_inv.txt"))
   
 print("dotenv.ok")
   
@@ -132,6 +131,18 @@ source(here::here("tab_panels/more_about.R"))
 source(here::here("rmd/rendering_rmd_files_to_html.R"))
 source(here::here("modules/generateRmdNavMenu.R"))
 source(here::here("R/get_html_title.R"))
+source(here::here("R/getPalette.R"))
+
+# Préparation de la liste targetVariables
+targetVariables <- list(
+  species = target_species,
+  fishing_fleet = target_flag,
+  gear_type = target_gear_type, 
+  fishing_mode = target_fishing_mode
+)
+
+# Initialisation des palettes avec une graine fixe pour assurer la reproductibilité
+palettes <- initialiserPalettes(targetVariables, seed=2643598) 
 
 targettes <- list(
   species = target_species,        
@@ -233,3 +244,6 @@ data_init <- st_read(pool, query = sql_query_init)
     )
 
   
+#---------------------------------------------------------------------------------------
+source(here::here("ui.R"))
+source(here::here("server.R"))

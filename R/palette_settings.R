@@ -51,32 +51,5 @@ initialiserPalettes <- function(targetVariables, seed=2643598) {
   return(palettes)
 }
 
-# Préparation de la liste targetVariables
-targetVariables <- list(
-  species = target_species,
-  fishing_fleet = target_flag,
-  gear_type = target_gear_type, 
-  fishing_mode = target_fishing_mode
-)
 
-# Initialisation des palettes avec une graine fixe pour assurer la reproductibilité
-palettes <- initialiserPalettes(targetVariables, seed=2643598) 
 
-#' Retrieve a Specific Color Palette
-#'
-#' This function returns the color palette for the specified category, if it exists.
-#'
-#' @param category The name of the category for which the color palette is requested.
-#'
-#' @return A color vector for the specified category.
-#' @examples
-#' palette_species <- getPalette("species")
-#' @export
-#' 
-getPalette <- function(category) {
-  if (!is.null(palettes[[category]])) {
-    return(palettes[[category]])
-  } else {
-    stop("Unknown category. Be sure of the existance of this palette.")
-  }
-}

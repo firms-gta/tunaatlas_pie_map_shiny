@@ -1,0 +1,18 @@
+ui <- page_navbar(id = "main",
+                  title = "Tuna Atlas: Interactive Indicator",
+                  selected = "datasetchoicevalue",
+                  collapsible = TRUE,
+                  theme = bslib::bs_theme(),
+                  sidebar = sidebar_ui(),
+                  main_panel_ui(),
+                  geographic_catches_ui(),
+                  nav_menu(title = "Indicators for each variable", 
+                           geographic_catches_by_variable_ui("species"),
+                           geographic_catches_by_variable_ui("fishing_fleet"),
+                           geographic_catches_by_variable_ui("gear_type"),
+                           geographic_catches_by_variable_ui("fishing_mode")),
+                  data_explorer_overview_ui(),  
+                  dataset_choice(), 
+                  data_explorer_i11_ui(),
+                  more_about()
+)

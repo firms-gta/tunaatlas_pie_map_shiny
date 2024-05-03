@@ -46,7 +46,7 @@ jobs:
           echo "RENV_PATHS_ROOT=${{ runner.temp }}/renv" >> $GITHUB_ENV
       - name: Install and activate renv
         run: |
-          install.packages('renv', repos='https://cran.r-project.org/', lib = =${{ runner.temp }}/renv)
+          install.packages('renv', repos='https://cran.r-project.org/', lib = ${{ runner.temp }}/renv)
           renv::activate()
         shell: Rscript {0}
       - name: Get R and OS version

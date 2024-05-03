@@ -1,4 +1,6 @@
-source("global.R")
+renv::restore(exclude = c("shinyuieditor"))
+source(here::here('install.R'))
+source(here::here("global.R"))
 
 ui <- page_navbar(id = "main",
                   title = "Tuna Atlas: Interactive Indicator",

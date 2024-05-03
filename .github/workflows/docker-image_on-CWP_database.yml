@@ -43,7 +43,8 @@ jobs:
       - name: "Install R Packages: Cache packages"
         uses: actions/cache@v1
         with:
-          path: RENV_PATHS_ROOTkey: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
+          path: RENV_PATHS_ROOT
+          key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
           restore-keys: |
             ${{ runner.os }}-renv-
       - name: "Install R Packages: Restore packages"

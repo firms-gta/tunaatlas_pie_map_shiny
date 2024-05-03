@@ -33,7 +33,7 @@ jobs:
             org.opencontainers.image.title=GlobalTunaAtlasExplorer
             org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
             org.opencontainers.image.vendor=IRD
-            org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>, Bastien Grasset <bastien.grasset@ird.fr
+            org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>, Bastien Grasset <bastien.grasset@ird.fr}
             
       - name: Login to image repository
         if: github.ref_type == 'tag'

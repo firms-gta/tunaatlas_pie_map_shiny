@@ -1,4 +1,4 @@
 shinyApp(
   server = server, 
-  ui = ui,
+  ui = ui
 )

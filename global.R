@@ -194,36 +194,36 @@ sql_query_init <- createSQLQuery()
 
 data_init <- st_read(pool, query = sql_query_init)
 
-  data_without_geom <- as.data.frame(data_init)
-  data_without_geom$geom_wkt <- NULL
-  df <- data_without_geom %>%
+data_without_geom <- as.data.frame(data_init)
+data_without_geom$geom_wkt <- NULL
+df <- data_without_geom %>%
     dplyr::group_by(.data[["fishing_fleet"]], year) %>%
     dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>% ungroup()
   
   # Determine top n groups
-  top_n_groups <- df %>%
+top_n_groups <- df %>%
     dplyr::group_by(.data[["fishing_fleet"]]) %>%
     dplyr::summarise(total = sum(measurement_value)) %>%
     dplyr::top_n(5, total) %>%
     pull(.data[["fishing_fleet"]])
   
   # Modify the dataset to group non-top n values
-  df <- df %>%
+df <- df %>%
     dplyr::mutate(!!sym("fishing_fleet") :=if_else(.data[["fishing_fleet"]] %in% top_n_groups, as.character(.data[["fishing_fleet"]]), "Other")) %>%
     dplyr::group_by(.data[["fishing_fleet"]], year) %>%
     dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
   
-  plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
+plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
     geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
-  png("tab_panels/plot_init.png")
-  plot_init
-  dev.off()
+png("tab_panels/plot_init.png")
+plot_init
+dev.off()
    
-  a <- st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query_init,") AS foo GROUP BY geom")) 
+a <- st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query_init,") AS foo GROUP BY geom")) 
   
-  qpal <- colorQuantile(rev(viridis::viridis(10)),a$measurement_value, n=10)
-  tmap_mode("plot")
-  map_init <- leaflet() %>% 
+qpal <- colorQuantile(rev(viridis::viridis(10)),a$measurement_value, n=10)
+tmap_mode("plot")
+map_init <- leaflet() %>% 
     addProviderTiles("Esri.NatGeoWorldMap") %>% 
     clearBounds() %>%
     addPolygons(data = a,

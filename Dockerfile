@@ -1,4 +1,4 @@
-FROM rocker/r-ver:4.3.1
+FROM rocker/r-ver:4.2.3
 
 # Maintainer information
 MAINTAINER Julien Barde "julien.barde@ird.fr"

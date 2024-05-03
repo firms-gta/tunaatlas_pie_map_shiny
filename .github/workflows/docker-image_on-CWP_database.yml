@@ -6,6 +6,9 @@ on:
       - 'main'
     tags:
       - "v*"
+      
+env:
+  RENV_PATHS_ROOT: ~/.cache/R/renv
 
 jobs:
   docker:
@@ -39,16 +42,30 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Cache Renv Libraries
-        uses: actions/cache@v3
+          
+      - name: Cache packages
+        uses: actions/cache@v1
         with:
-          path: |
-            ${{ github.workspace }}/.local/share/renv
-            ${{ github.workspace }}/renv.lock
+          path: ${{ env.RENV_PATHS_ROOT }}
           key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
           restore-keys: |
             ${{ runner.os }}-renv-
+
+      - name: Restore packages
+        shell: Rscript {0}
+        run: |
+          if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+          renv::restore()
+
+#      # - name: Cache Renv Libraries
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       ${{ github.workspace }}/.local/share/renv
+      #       ${{ github.workspace }}/renv.lock
+      #     key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-renv-
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -58,5 +75,4 @@ jobs:
           push: ${{ github.ref_type == 'tag' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: USE_CACHE=true
           

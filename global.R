@@ -1,5 +1,11 @@
 # This file launched with runApp
+if(!require(renv)){
+  install.packages('renv', repos='https://cran.r-project.org/')
+  require(renv)
+}
+
 renv::restore(exclude = c("shinyuieditor"))
+require(here)
 source(here::here('install.R'))
 
 ####################################################################################################################################################################################################################################

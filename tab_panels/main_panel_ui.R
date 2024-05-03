@@ -46,7 +46,7 @@ main_panel_ui = function()
                   card_body(class = "p-0",leafletOutput("total_catch_init"))
                 ),
                 grid_card(card_header(strong("Plot")),max_height = 250,area = "example_plot",card_image(
-                  file = "tab_panels/plot_init.png"
+                  file = here::here("tab_panels/plot_init.png")
                 )),
                 grid_card(card_header(strong("Datatable")),
                   area = "example_grid",

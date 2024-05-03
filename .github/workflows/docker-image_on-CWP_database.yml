@@ -16,12 +16,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
+          images: ghcr.io/fdiwg/dcf-shiny
           flavor: latest=true
           tags: |
             type=ref,event=branch
@@ -33,8 +32,7 @@ jobs:
             org.opencontainers.image.title=GlobalTunaAtlasExplorer
             org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
             org.opencontainers.image.vendor=IRD
-            org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>, Bastien Grasset <bastien.grasset@ird.fr}
-            
+            org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>
       - name: Login to image repository
         if: github.ref_type == 'tag'
         uses: docker/login-action@v3
@@ -42,22 +40,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-          
-      - name: Cache packages
+      - name: "Install R Packages: Cache packages"
         uses: actions/cache@v1
         with:
-          path: ${{ env.RENV_PATHS_ROOT }}
+          path: RENV_PATHS_ROOT
           key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
           restore-keys: |
             ${{ runner.os }}-renv-
-
-      - name: Restore packages
+      - name: "Install R Packages: Restore packages"
         shell: Rscript {0}
         run: |
           if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
           renv::restore()
-        
-
       - name: Build and push
         uses: docker/build-push-action@v5
         with:

@@ -13,25 +13,15 @@ source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtl
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
 # source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/wkt2spdf.R")
 ####################################################################################################################################################################################################################################
-require(dygraphs)
-require(shiny)
-require(DBI)
-require(plotly)
-require(leaflet.minicharts)
-require(ncdf4)
-require(pool)
-library(glue)
-library(dplyr)
-library(leaflet)
-library(DT)
-require(bslib)
-require(gridlayout)
-require(here)
-require(RColorBrewer)
-require(shinyjs)
-require(rlang)
-require(rmarkdown)
-require(sf)
+load_libraries <- function() {
+  libraries <- c(
+    "dygraphs", "shiny", "DBI", "plotly", "leaflet.minicharts", "ncdf4", 
+    "pool", "glue", "dplyr", "leaflet", "DT", "bslib", "gridlayout", 
+    "here", "RColorBrewer", "shinyjs", "rlang", "rmarkdown", "sf"
+  )
+  lapply(libraries, require, character.only = TRUE)
+}
+load_libraries()
 
 connect_to_db <- function() {
   
@@ -55,7 +45,7 @@ connect_to_db <- function() {
 
 pool <- connect_to_db()
 ####################################################################################################################################################################################################################################
-global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90))'
+global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1) 
@@ -89,18 +79,6 @@ default_species <- filters_combinations %>% dplyr::filter(dataset == default_dat
 filtered_combinations_default <-filters_combinations%>% dplyr::filter(dataset == default_dataset) %>% dplyr::filter(measurement_unit == default_measurement_unit)%>% 
   dplyr::filter(gridtype == default_gridtype) 
 
-# default_flag <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
-#   dplyr::arrange(fishing_fleet) %>% 
-#   dplyr::filter(gridtype == default_gridtype) %>% 
-#   head(5) %>% 
-#   pull(fishing_fleet)
-# 
-# default_gear_type <- filters_combinations %>% dplyr::filter(dataset == default_dataset) %>% 
-#   dplyr::arrange(gear_type) %>% 
-#   dplyr::filter(gridtype == default_gridtype) %>% 
-#   head(5) %>% 
-#   pull(gear_type)
-
 default_flag <- unique(filtered_combinations_default$fishing_fleet)
 default_gear_type <- unique(filtered_combinations_default$gear_type)
 default_fishing_mode <- unique(filtered_combinations_default$fishing_mode)
@@ -115,29 +93,36 @@ analysis_options <- list(
 )
 
 ####################################################################################################################################################################################################################################
-source(here::here('tab_panels/geographic_catches_ui.R'))
-source(here::here('tab_panels/main_panel_ui.R'))
-source(here::here('tab_panels/geographic_catches_by_variable_ui.R'))
-source(here::here('tab_panels/ggplot_indicator_11_ui.R'))
-source(here::here('tab_panels/additional_info_ui.R'))
-source(here::here('tab_panels/filterUI.R'))
-source(here::here('tab_panels/data_explorer_overview_ui.R'))
-source(here::here('tab_panels/total_catch_plot.R'))
-source(here::here('tab_panels/sidebar_ui.R'))
-source(here::here('tab_panels/mapCatchesmodules.R'))
-source(here::here('modules/categoryGlobalPieChart.R'))
-source(here::here('modules/pieMapTimeSeriesUI.R'))
-source(here::here('tab_panels/create_logo_panel.R'))
-source(here::here("R/palette_settings.R"))
-source(here::here("tab_panels/dataset_choice.R"))
-source(here::here("tab_panels/sqlqueriesui.R"))
-source(here::here("tab_panels/data_explorer_i11_ui.R"))
-source(here::here("rmd/rendering_rmd_files_to_html.R"))
-source(here::here("tab_panels/more_about.R"))
-source(here::here("rmd/rendering_rmd_files_to_html.R"))
-source(here::here("modules/generateRmdNavMenu.R"))
-source(here::here("R/get_html_title.R"))
-source(here::here("R/getPalette.R"))
+load_ui_modules <- function() {
+  ui_files <- c(
+    'tab_panels/geographic_catches_ui.R', 
+    'tab_panels/main_panel_ui.R', 
+    'tab_panels/geographic_catches_by_variable_ui.R',
+    'tab_panels/ggplot_indicator_11_ui.R',
+    'tab_panels/additional_info_ui.R', 
+    'tab_panels/filterUI.R',
+    'tab_panels/data_explorer_overview_ui.R', 
+    'tab_panels/total_catch_plot.R',
+    'tab_panels/sidebar_ui.R', 
+    'tab_panels/mapCatchesmodules.R',
+    'tab_panels/create_logo_panel.R', 
+    'tab_panels/dataset_choice.R',
+    'tab_panels/sqlqueriesui.R', 
+    'tab_panels/data_explorer_i11_ui.R', 
+    'tab_panels/more_about.R',
+    'rmd/rendering_rmd_files_to_html.R',
+    'rmd/rendering_rmd_files_to_html.R',
+    'modules/generateRmdNavMenu.R',
+    'modules/categoryGlobalPieChart.R', 
+    'modules/pieMapTimeSeriesUI.R',
+    'R/get_html_title.R', 
+    'R/getPalette.R',
+    'R/palette_settings.R'
+    
+  )
+  lapply(ui_files, function(file) source(here::here(file)))
+}
+
 
 # Préparation de la liste targetVariables
 targetVariables <- list(
@@ -192,64 +177,64 @@ createSQLQuery <- function(dataset_name = default_dataset,
 
 sql_query_init <- createSQLQuery()
 
-data_init <- st_read(pool, query = sql_query_init)
-
-data_without_geom <- as.data.frame(data_init)
-data_without_geom$geom_wkt <- NULL
-df <- data_without_geom %>%
-  dplyr::group_by(.data[["fishing_fleet"]], year) %>%
-  dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>% ungroup()
-
-# Determine top n groups
-top_n_groups <- df %>%
-  dplyr::group_by(.data[["fishing_fleet"]]) %>%
-  dplyr::summarise(total = sum(measurement_value)) %>%
-  dplyr::top_n(5, total) %>%
-  pull(.data[["fishing_fleet"]])
-
-# Modify the dataset to group non-top n values
-df <- df %>%
-  dplyr::mutate(!!sym("fishing_fleet") := if_else(.data[["fishing_fleet"]] %in% top_n_groups, as.character(.data[["fishing_fleet"]]), "Other")) %>%
-  dplyr::group_by(.data[["fishing_fleet"]], year) %>%
-  dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
-
-plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
-  geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
-
-png("tab_panels/plot_init.png")
-print(plot_init)  # Ensure the plot is printed to the device
-dev.off()
-
-a <- st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query_init,") AS foo GROUP BY geom")) 
-
-qpal <- colorQuantile(rev(viridis::viridis(10)),a$measurement_value, n=10)
-tmap_mode("plot")
-map_init <- leaflet() %>% 
-  addProviderTiles("Esri.NatGeoWorldMap") %>% 
-  clearBounds() %>%
-  addPolygons(data = a,
-              label = ~measurement_value,
-              popup = ~paste0("Total catches for the selected criteria in this square of the grid: ", round(measurement_value), " tons (t) et des brouettes"),
-              fillColor = ~qpal(measurement_value),
-              fill = TRUE,
-              fillOpacity = 0.8,
-              smoothFactor = 0.5) %>% 
-  addDrawToolbar(
-    targetGroup = "draw",
-    editOptions = editToolbarOptions(
-      selectedPathOptions = selectedPathOptions()
+initialize_data_and_plots <- function(pool, sql_query_init) {
+  data_init <- st_read(pool, query = sql_query_init)
+  
+  data_without_geom <- as.data.frame(data_init)
+  data_without_geom$geom_wkt <- NULL
+  df <- data_without_geom %>%
+    dplyr::group_by(.data[["fishing_fleet"]], year) %>%
+    dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>% ungroup()
+  
+  top_n_groups <- df %>%
+    dplyr::group_by(.data[["fishing_fleet"]]) %>%
+    dplyr::summarise(total = sum(measurement_value)) %>%
+    dplyr::top_n(5, total) %>%
+    pull(.data[["fishing_fleet"]])
+  
+  df <- df %>%
+    dplyr::mutate(!!sym("fishing_fleet") := if_else(.data[["fishing_fleet"]] %in% top_n_groups, as.character(.data[["fishing_fleet"]]), "Other")) %>%
+    dplyr::group_by(.data[["fishing_fleet"]], year) %>%
+    dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
+  
+  plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
+    geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
+  
+  png("tab_panels/plot_init.png")
+  print(plot_init)
+  dev.off()
+  
+  a <- st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(", sql_query_init, ") AS foo GROUP BY geom"))
+  
+  qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n=10)
+  tmap_mode("plot")
+  map_init <- leaflet() %>% 
+    addProviderTiles("Esri.NatGeoWorldMap") %>% 
+    clearBounds() %>%
+    addPolygons(data = a,
+                label = ~measurement_value,
+                popup = ~paste0("Total catches for the selected criteria in this square of the grid: ", round(measurement_value), " tons (t) et des brouettes"),
+                fillColor = ~qpal(measurement_value),
+                fill = TRUE,
+                fillOpacity = 0.8,
+                smoothFactor = 0.5) %>% 
+    addDrawToolbar(
+      targetGroup = "draw",
+      editOptions = editToolbarOptions(
+        selectedPathOptions = selectedPathOptions()
+      )
+    ) %>%
+    addLayersControl(
+      overlayGroups = c("draw"),
+      options = layersControlOptions(collapsed = FALSE)
+    )  %>% 
+    leaflet::addLegend("bottomright", pal = qpal, values = a$measurement_value,
+                       title = "Quantile of the grid for the total catches",
+                       labFormat = labelFormat(prefix = "MT "),
+                       opacity = 1
     )
-  ) %>%
-  addLayersControl(
-    overlayGroups = c("draw"),
-    options = layersControlOptions(collapsed = FALSE)
-  )  %>% 
-  leaflet::addLegend("bottomright", pal = qpal, values = a$measurement_value,
-                     title = "Quantile of the grid for the total catches",
-                     labFormat = labelFormat(prefix = "MT "),
-                     opacity = 1
-  )
-
+}
+initialize_data_and_plots(pool, sql_query_init)
 
 #---------------------------------------------------------------------------------------
 source(here::here("ui.R"))

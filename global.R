@@ -122,7 +122,7 @@ load_ui_modules <- function() {
   )
   lapply(ui_files, function(file) source(here::here(file)))
 }
-
+load_ui_modules()
 
 # Préparation de la liste targetVariables
 targetVariables <- list(
@@ -176,9 +176,9 @@ createSQLQuery <- function(dataset_name = default_dataset,
 }
 
 sql_query_init <- createSQLQuery()
-
-initialize_data_and_plots <- function(pool, sql_query_init) {
-  data_init <- st_read(pool, query = sql_query_init)
+data_init <- st_read(pool, query = sql_query_init)
+initialize_data_and_plots <- function(data_init,pool, sql_query_init) {
+  
   
   data_without_geom <- as.data.frame(data_init)
   data_without_geom$geom_wkt <- NULL
@@ -200,7 +200,7 @@ initialize_data_and_plots <- function(pool, sql_query_init) {
   plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
     geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
   
-  png("tab_panels/plot_init.png")
+  png(here::here("tab_panels/plot_init.png"))
   print(plot_init)
   dev.off()
   
@@ -208,7 +208,7 @@ initialize_data_and_plots <- function(pool, sql_query_init) {
   
   qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n=10)
   tmap_mode("plot")
-  map_init <- leaflet() %>% 
+  leaflet() %>% 
     addProviderTiles("Esri.NatGeoWorldMap") %>% 
     clearBounds() %>%
     addPolygons(data = a,
@@ -234,7 +234,7 @@ initialize_data_and_plots <- function(pool, sql_query_init) {
                        opacity = 1
     )
 }
-initialize_data_and_plots(pool, sql_query_init)
+map_init <- initialize_data_and_plots(data_init, pool, sql_query_init)
 
 #---------------------------------------------------------------------------------------
 source(here::here("ui.R"))

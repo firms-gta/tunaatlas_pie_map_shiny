@@ -6,7 +6,7 @@ main_panel_ui = function()
         "Global Tuna Atlas shiny app overview"
       ),
       card_body(fillable = TRUE,
-        tags$iframe(src = "rmd/Application_overview.html", width = "100%"),
+        tags$iframe(src = here::here("rmd/Application_overview.html"), width = "100%"),
         grid_container(
           layout = c(
             "howtouse datadisplayed",

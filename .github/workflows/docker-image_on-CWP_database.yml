@@ -1,4 +1,4 @@
-name: docker-build-image
+name: Build and push Docker image
 
 on:
   push:
@@ -6,19 +6,39 @@ on:
       - 'main'
     tags:
       - "v*"
-      
+
 env:
   RENV_PATHS_ROOT: ~/.cache/R/renv
 
 jobs:
   docker:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Cache Renv packages
+        id: cache-renv
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
+      - name: Install and activate renv
+        run: |
+          R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+          R -e "renv::activate()"
+          R -e "renv::restore()"
+
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v4
         with:
           images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
           flavor: latest=true
@@ -33,36 +53,17 @@ jobs:
             org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
             org.opencontainers.image.vendor=IRD
             org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>
+
       - name: Login to image repository
         if: github.ref_type == 'tag'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Set RENV_PATHS_ROOT
-        shell: bash
-        run: |
-          echo "RENV_PATHS_ROOT=${{ runner.temp }}/renv" >> $GITHUB_ENV
-      - name: Install and activate renv
-        run: |
-          install.packages('renv', repos='https://cran.r-project.org/', lib = '${{ runner.temp }}/renv')
-          renv::activate()
-        shell: Rscript {0}
-      - name: Get R and OS version
-        id: get-version
-        run: |
-          cat("##[set-output name=os-version;]", sessionInfo()$running, "\n", sep = "")
-          cat("##[set-output name=r-version;]", R.Version()$version.string, sep = "")
-        shell: Rscript {0}
-      - name: Restore Renv package cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.RENV_PATHS_ROOT }}
-          key: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{ inputs.cache-version }}-${{ hashFiles('renv.lock') }}
-          restore-keys: ${{ steps.get-version.outputs.os-version }}-${{ steps.get-version.outputs.r-version }}-${{inputs.cache-version }}-
-      - name: Build and push
-        uses: docker/build-push-action@v5
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
         with:
           context: .
           file: Dockerfile

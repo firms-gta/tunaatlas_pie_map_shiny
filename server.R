@@ -1,7 +1,7 @@
 server <- function(input, output, session) {
   
-  addResourcePath("rmd", here::here("rmd"))
-  serveRmdContents("rmd_docs", list_markdown_path)# to create rmd tabpanels
+  addResourcePath("www", here::here("www"))
+  serveRmdContents("rmd_docs", nav_bar_menu_html)# to create rmd tabpanels
   
   shinyjs::onclick("fishing_fleet_toggle", {
     shinyjs::toggle("fishing_fleet_panel");

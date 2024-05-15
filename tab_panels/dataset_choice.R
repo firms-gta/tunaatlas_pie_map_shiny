@@ -16,7 +16,7 @@ dataset_choice <- function(){
               gap_size = "10px",
               # grid_card_plot(area = "plot"),
               grid_card(area = "explenation",
-                card_body(tags$iframe(src = "rmd/Datasets.html", width = "100%", 
+                card_body(tags$iframe(src = "www/Datasets.html", width = "100%", 
                                       height = "100%"))
                 
               ),

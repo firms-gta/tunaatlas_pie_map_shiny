@@ -189,8 +189,10 @@ createSQLQuery <- function(dataset_name = default_dataset,
 
 # Initialize data and plots
 sql_query_init <- createSQLQuery()
-data_init <- st_read(pool, query = sql_query_init)
 
+flog.info("Reading big data")
+data_init <- st_read(pool, query = sql_query_init)
+flog.info("Finsihsed Reading big data")
 initialize_data_and_plots <- function(data_init, pool, sql_query_init) {
   flog.info("Initializing data and plots...")
 

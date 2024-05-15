@@ -11,7 +11,7 @@ The app is a component of the GlobalFisheriesAtlas Virtual Research Environment 
 
 ## Prerequisites
 
-A populated database with Global Tuna Atlas data and metadata is required. Instructions for database creation or connection setup are available on the project's GitHub page.
+A connection to a populated database with Global Tuna Atlas data and metadata is required. Instructions for database creation or connection setup are available on the project's GitHub page. The connection identifiers must be provided through a connection_tunaatlas_inv.txt file copied in the repository (or copied in the docker if using the docker image).
 
 ## Running from RStudio
 
@@ -24,7 +24,8 @@ Launch the `app.R` file in RStudio. The app uses the `renv` package for package 
 ```sh
 
 docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
-docker run --name tuna_atlas_i11 -p 3839:3838 ghcr.io/firms-gta/tunaatlas_pie_map_shiny
+docker run -p 4848:3838 -v /path/to/your/connection_tunaatlas_inv.txt:connection_tunaatlas_inv.txt ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latdocker image prune
+
 ```
 
 Access the app by navigating to http://localhost:3839 in your browser.
@@ -33,8 +34,9 @@ Access the app by navigating to http://localhost:3839 in your browser.
 
 ```sh
 
-sudo docker build -t tuna_atlas_i11 <Path to the Dockerfile>
-sudo docker run -p 3839:3838 tuna_atlas_i11
+docker build -t my-shiny-app .
+docker run -p 3838:3838 -v /path/to/your/connection_tunaatlas_inv.txt:/root/tunaatlas_pie_map_shiny/connection_tunaatlas_inv.txt my-shiny-app
+
 ```
 
-Access the app by navigating to http://localhost:3839.
+Access the app by navigating to http://localhost:3838.

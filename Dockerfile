@@ -21,45 +21,44 @@ RUN apt-get update && apt-get install -y \
     git \
     libnetcdf-dev
     
-# Update and upgrade the system
-RUN apt-get update && apt-get upgrade -y
-
-# Install cmake
-RUN apt-get update && apt-get -y install cmake
-
 # Install additional geospatial libraries
 RUN /rocker_scripts/install_geospatial.sh
 
 # Install R core package dependencies
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
-RUN R -e "install.packages(c('remotes','jsonlite','yaml'), repos='https://cran.r-project.org/')"
-
-# Set the working directory to /root
-WORKDIR /root
-# Copy everything from the current directory (project directory) to /root/tunaatlas_pie_map_shiny
-# ADD . /root/tunaatlas_pie_map_shiny
-# clone app
-RUN git clone -b main https://github.com/firms-gta/tunaatlas_pie_map_shiny.git /root/tunaatlas_pie_map_shiny && echo "OK!"
-# Create a symbolic link to the cloned repository
-RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
+RUN R -e "install.packages(c('remotes', 'jsonlite', 'yaml'), repos='https://cran.r-project.org/')"
 
 # Install renv package
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
-# Set the working directory to /root/tunaatlas_pie_map_shiny
+
+# Set the working directory
 WORKDIR /root/tunaatlas_pie_map_shiny
 
-RUN Rscript -e 'renv::activate()'
-RUN Rscript -e 'renv::repair()'
-RUN Rscript -e 'renv::restore()'
+RUN mkdir -p renv
+COPY renv.lock renv.lock
+COPY .Rprofile .Rprofile
+COPY renv/activate.R renv/activate.R
+COPY renv/settings.json renv/settings.json
 
+# change default location of cache to project folder
+RUN mkdir renv/.cache
+ENV RENV_PATHS_CACHE renv/.cache
+
+# restore 
+RUN R -e "renv::restore()"
+
+# Copy the rest of the application code
+COPY . /root/tunaatlas_pie_map_shiny
+
+# Create a symbolic link to the application directory
+RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 
-
-#etc dirs (for config)
+# Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
-
+  
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
 

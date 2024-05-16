@@ -1,5 +1,6 @@
 name: Build and Push Docker Image
 
+# Déclenche le workflow sur les push vers la branche 'main' et les tags qui commencent par 'v*'.
 on:
   push:
     branches:
@@ -18,31 +19,36 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
+
     steps:
+      # Étape de checkout du code source
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Récupère les versions de l'OS et de R
       - name: Get R and OS version
         id: get-version
         run: |
           echo "os-version=$(lsb_release -d | cut -f2)" >> $GITHUB_ENV
           echo "r-version=$(R --version | head -n 1)" >> $GITHUB_ENV
 
-      - name: Cache Renv packages # This is to cache restoring of renv prior to building docker
+      # Cache les packages Renv pour accélérer les builds futurs
+      - name: Cache Renv packages
         id: cache-renv
-        uses: r-lib/actions/setup-renv@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.RENV_PATHS_ROOT }}
           key: ${{ runner.os }}-renv-${{ hashFiles('renv.lock') }}
           restore-keys: |
             ${{ runner.os }}-renv-
 
-      - name: Install and activate renv #these is to test if all packages are up to date and can be installed not really usefull in this one but allows to run some test
+      # Installe et active renv pour restaurer les packages R
+      - name: Install and activate renv
         run: |
           Rscript -e "install.packages('renv', repos='https://cran.r-project.org')"
           Rscript -e "renv::restore()"
-          profile: '"shiny"'
 
+      # Se connecte au registre Docker si l'événement est un tag
       - name: Login to image repository
         if: github.ref_type == 'tag'
         uses: docker/login-action@v2
@@ -50,13 +56,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-          
+
+      # Crée et initialise le builder Docker
       - name: Create and bootstrap builder
         run: |
           docker buildx create --use --name builder
           docker buildx inspect builder --bootstrap
           
-       - name: Build and conditionally push Docker image
+      # Construit et pousse conditionnellement l'image Docker
+      - name: Build and conditionally push Docker image
         run: |
           docker buildx build \
             --cache-from type=registry,ref=$CACHE_IMAGE:latest \

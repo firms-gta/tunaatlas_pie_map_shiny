@@ -24,52 +24,6 @@ jobs:
       # Étape de checkout du code source
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
-          flavor: latest=true
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-          labels: |
-            org.opencontainers.image.url=${{ github.repository }}
-            org.opencontainers.image.source=${{ github.repository }}
-            org.opencontainers.image.title=tunaatlas_pie_map_shiny_CWP_database
-            org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
-            org.opencontainers.image.vendor=IRD
-            org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
-        
-      # Récupère les versions de l'OS et de R
-      # - name: Get R and OS version
-      #   id: get-version
-      #   run: |
-      #     echo "os-version=$(lsb_release -d | cut -f2)" >> $GITHUB_ENV
-      #     echo "r-version=$(R --version | head -n 1)" >> $GITHUB_ENV
-
-      # # Cache les packages Renv pour accélérer les builds futurs
-      # - name: Cache Renv packages
-      #   id: cache-renv
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ${{ env.RENV_PATHS_ROOT }}
-      #     key: ${{ runner.os }}-renv-${{ hashFiles('renv.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-renv-
-      
-      # # Installer les dépendances système requises pour le package Matrix
-      # - name: Install system dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y liblapack-dev libopenblas-dev
-
-      # # Installe et active renv pour restaurer les packages R
-      # - name: Install and activate renv
-      #   run: |
-      #     Rscript -e "install.packages('renv', repos='https://cran.r-project.org')"
-      #     Rscript -e "renv::restore()"
 
       # Se connecte au registre Docker si l'événement est un tag
       - name: Login to image repository
@@ -79,27 +33,58 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
+            
+      # Récupère les versions de l'OS et de R
+      # - name: Get R and OS version
+      #   id: get-version
+      #   run: |
+      #     echo "os-version=$(lsb_release -d | cut -f2)" >> $GITHUB_ENV
+      #     echo "r-version=$(R --version | head -n 1)" >> $GITHUB_ENV
+
+      # Cache les packages Renv pour accélérer les builds futurs
+      # - name: Cache Renv packages
+      #   id: cache-renv
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ${{ env.RENV_PATHS_ROOT }}
+      #     key: ${{ runner.os }}-renv-${{ hashFiles('renv.lock') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-renv-
+
+      # Installer les dépendances système requises pour le package Matrix
+      # - name: Install system dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y liblapack-dev libopenblas-dev
+
+      # Installe et active renv pour restaurer les packages R
+      # - name: Install and activate renv
+      #   run: |
+      #     Rscript -e "install.packages('renv', repos='https://cran.r-project.org')"
+      #     Rscript -e "renv::restore()"
 
       # Crée et initialise le builder Docker
       - name: Create and bootstrap builder
         run: |
           docker buildx create --use --name builder
           docker buildx inspect builder --bootstrap
-          
-      - name: Build and conditionally push Docker image # Construit et pousse conditionnellement l'image Docker
+
+      - name: Build and conditionally push Docker image
         run: |
           docker buildx build \
             --cache-from type=registry,ref=$CACHE_IMAGE:latest \
             --cache-to type=registry,ref=$CACHE_IMAGE:latest,mode=max \
             --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database:latest \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
-            # --label org.opencontainers.image.url=${{ github.repository }} \
-            # --label org.opencontainers.image.source=${{ github.repository }} \
-            # --label org.opencontainers.image.title=GlobalTunaAtlasExplorer \
-            # --label org.opencontainers.image.description="Interactive Shiny application for Tuna Atlas data visualization" \
-            # --label org.opencontainers.image.vendor=IRD \
-            # --label org.opencontainers.image.author="Bastien Grasset <bastien.grasset@ird.fr>" \
-            # --label org.opencontainers.image.revision=${{ github.sha }} \
+            --label org.opencontainers.image.url=${{ github.repository }} \
+            --label org.opencontainers.image.source=${{ github.repository }} \
+            --label org.opencontainers.image.title=GlobalTunaAtlasExplorer \
+            --label org.opencontainers.image.description="Interactive Shiny application for Tuna Atlas data visualization" \
+            --label org.opencontainers.image.vendor=IRD \
+            --label org.opencontainers.image.author="Bastien Grasset <bastien.grasset@ird.fr>" \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
             --file Dockerfile \
             . \
             $(if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then echo "--push --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database:${GITHUB_REF}"; fi)
+            
+

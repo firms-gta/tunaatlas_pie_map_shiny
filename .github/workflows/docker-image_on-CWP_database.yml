@@ -45,7 +45,7 @@ jobs:
       # Se connecte au registre Docker si l'événement est un tag
       - name: Login to image repository
         if: github.ref_type == 'tag'
-        uses: docker/login-action@v2
+        # uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

@@ -12,7 +12,7 @@ on:
       - 'main'
 
 env:
-  CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database-cache
+  CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache
   DOCKER_BUILDKIT: 1
   RENV_PATHS_ROOT: ~/.cache/R/renv
 
@@ -74,7 +74,7 @@ jobs:
           docker buildx build \
             --cache-from type=registry,ref=$CACHE_IMAGE:latest \
             --cache-to type=registry,ref=$CACHE_IMAGE:latest,mode=max \
-            --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database:latest \
+            --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
             --label org.opencontainers.image.url=${{ github.repository }} \
             --label org.opencontainers.image.source=${{ github.repository }} \
@@ -85,6 +85,6 @@ jobs:
             --label org.opencontainers.image.revision=${{ github.sha }} \
             --file Dockerfile \
             . \
-            $(if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then echo "--push --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database:${GITHUB_REF}"; fi)
+            $(if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then echo "--push --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${GITHUB_REF}"; fi)
             
 

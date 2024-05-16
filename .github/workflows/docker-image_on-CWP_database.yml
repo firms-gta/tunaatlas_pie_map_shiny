@@ -10,7 +10,7 @@ on:
   pull_request:
     branches:
       - 'main'
-      
+
 env:
   CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database-cache
   DOCKER_BUILDKIT: 1
@@ -24,6 +24,23 @@ jobs:
       # Étape de checkout du code source
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
+          flavor: latest=true
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+          labels: |
+            org.opencontainers.image.url=${{ github.repository }}
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.title=tunaatlas_pie_map_shiny_CWP_database
+            org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
+            org.opencontainers.image.vendor=IRD
+            org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
         
       # Récupère les versions de l'OS et de R
       # - name: Get R and OS version
@@ -76,13 +93,13 @@ jobs:
             --cache-to type=registry,ref=$CACHE_IMAGE:latest,mode=max \
             --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database:latest \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
-            --label org.opencontainers.image.url=${{ github.repository }} \
-            --label org.opencontainers.image.source=${{ github.repository }} \
-            --label org.opencontainers.image.title=GlobalTunaAtlasExplorer \
-            --label org.opencontainers.image.description="Interactive Shiny application for Tuna Atlas data visualization" \
-            --label org.opencontainers.image.vendor=IRD \
-            --label org.opencontainers.image.author="Bastien Grasset <bastien.grasset@ird.fr>" \
-            --label org.opencontainers.image.revision=${{ github.sha }} \
+            # --label org.opencontainers.image.url=${{ github.repository }} \
+            # --label org.opencontainers.image.source=${{ github.repository }} \
+            # --label org.opencontainers.image.title=GlobalTunaAtlasExplorer \
+            # --label org.opencontainers.image.description="Interactive Shiny application for Tuna Atlas data visualization" \
+            # --label org.opencontainers.image.vendor=IRD \
+            # --label org.opencontainers.image.author="Bastien Grasset <bastien.grasset@ird.fr>" \
+            # --label org.opencontainers.image.revision=${{ github.sha }} \
             --file Dockerfile \
             . \
             $(if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then echo "--push --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database:${GITHUB_REF}"; fi)

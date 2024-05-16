@@ -24,12 +24,26 @@ RUN apt-get update && apt-get install -y \
 # Install additional geospatial libraries
 RUN /rocker_scripts/install_geospatial.sh
 
+# Update and upgrade the system
+RUN apt-get update && apt-get upgrade -y
+
+# Install cmake
+RUN apt-get update && apt-get -y install cmake
+
 # Install R core package dependencies
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 RUN R -e "install.packages(c('remotes', 'jsonlite', 'yaml'), repos='https://cran.r-project.org/')"
 
 # Install renv package
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+
+ARG RENV_PATHS_ROOT=/root/tunaatlas_pie_map_shiny/renv/.cache
+# Set environment variables based on build arguments
+ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
+RUN mkdir -p RENV_PATHS_ROOT
+
+# Set the working directory
+WORKDIR /root/tunaatlas_pie_map_shiny
 
 # Set the working directory
 WORKDIR /root/tunaatlas_pie_map_shiny

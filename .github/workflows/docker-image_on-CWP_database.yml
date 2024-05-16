@@ -42,8 +42,7 @@ jobs:
             org.opencontainers.image.vendor=IRD
             org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
 
-      # Se connecte au registre Docker si l'événement est un tag
-      - name: Login to image repository
+      - name: Login to image repository # Se connecte au registre Docker si l'événement est un tag
         # if: github.ref_type == 'tag'
         uses: docker/login-action@v2
         with:
@@ -93,6 +92,6 @@ jobs:
             --cache-to type=registry,ref=$CACHE_IMAGE:latest,mode=max \
             --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
-            --push
+            --push .
             
 

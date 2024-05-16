@@ -83,6 +83,4 @@ jobs:
             --label org.opencontainers.image.vendor=IRD \
             --label org.opencontainers.image.author="Bastien Grasset <bastien.grasset@ird.fr>" \
             --label org.opencontainers.image.revision=${{ github.sha }} \
-            --file Dockerfile \
-            . \
-            $(if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then echo "--push --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:${GITHUB_REF}"; fi)
+            --push

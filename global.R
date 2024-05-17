@@ -156,7 +156,6 @@ getTarget <- function(category) {
 flog.info("Color palettes initialized.")
 
 
-# Define function to create SQL query
 createSQLQuery <- function(dataset_name = default_dataset,
                            species_name = default_species,
                            fishing_fleet_name = default_flag,
@@ -165,8 +164,9 @@ createSQLQuery <- function(dataset_name = default_dataset,
                            measurement_unit_name = default_measurement_unit,
                            fishing_mode_name = default_fishing_mode,
                            wkt = global_wkt,
-                           con = pool) {
-
+                           con = pool, 
+                           limit100 = FALSE) {
+  
   query <- glue::glue_sql(
     "SELECT geom_id, geom, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode,
     ST_asText(geom) AS geom_wkt, year FROM public.shinycatch
@@ -182,13 +182,21 @@ createSQLQuery <- function(dataset_name = default_dataset,
     ORDER BY species, fishing_fleet DESC",
     .con = pool
   )
-
+  
+  if (limit100) {
+    query <- glue::glue_sql(
+      "{query} LIMIT 100",
+      .con = pool
+    )
+  }
+  
   flog.info("SQL query created successfully.")
   return(query)
 }
 
+
 # Initialize data and plots
-sql_query_init <- createSQLQuery()
+sql_query_init <- createSQLQuery(limit100 = TRUE)
 
 flog.info("Reading big data")
 data_init <- st_read(pool, query = sql_query_init)
@@ -264,3 +272,4 @@ source(here::here("server.R"))
 
 # Log that the UI and server files have been sourced successfully
 flog.info("UI and server files sourced successfully.")
+

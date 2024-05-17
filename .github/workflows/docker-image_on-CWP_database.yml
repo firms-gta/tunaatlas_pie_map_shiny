@@ -43,7 +43,7 @@ jobs:
             org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
 
       - name: Login to image repository # Se connecte au registre Docker si l'événement est un tag
-        # if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -85,13 +85,26 @@ jobs:
           docker buildx create --use --name builder
           docker buildx inspect builder --bootstrap
 
-      - name: Build and conditionally push Docker image
+      - name: Build Docker image
         run: |
           docker buildx build \
             --cache-from type=registry,ref=$CACHE_IMAGE:latest \
             --cache-to type=registry,ref=$CACHE_IMAGE:latest,mode=max \
             --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
-            --push .
+            --output type=docker,dest=/tmp/docker-image.tar \
+            .
+
+      - name: Load Docker image
+        if: github.ref_type == 'tag'
+        run: |
+          docker load -i /tmp/docker-image.tar
+
+      - name: Conditional push Docker image
+        if: github.ref_type == 'tag'
+        run: |
+          docker tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:${GITHUB_REF}
+          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest
+          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:${GITHUB_REF}
             
 

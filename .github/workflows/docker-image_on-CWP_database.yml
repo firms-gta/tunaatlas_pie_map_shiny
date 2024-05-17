@@ -49,7 +49,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-            
+      
+      # Les lignes commentées sont pour créer un cache dans l'intégration continue au cas ou on 
+      # souahiterais run un renv::restore() pour tester le loading des packages avant le docker et/ou pour
+      # lancer un testthat() avant de créer le docker pour être sûr que tout fonctionne
       # Récupère les versions de l'OS et de R
       # - name: Get R and OS version
       #   id: get-version

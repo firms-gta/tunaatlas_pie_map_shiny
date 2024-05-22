@@ -42,15 +42,15 @@ jobs:
             org.opencontainers.image.vendor=IRD
             org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
 
-      - name: Login to image repository # Se connecte au registre Docker si l'événement est un tag
-        if: github.ref_type == 'tag'
+      - name: Login to image repository # Se connecte au registre Docker même si l'événement n'est pas un tag pour poster et/ou aller chercher le cache
+        # if: github.ref_type == 'tag'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
       
-      # Les lignes commentées sont pour créer un cache dans l'intégration continue au cas ou on 
+      # Les lignes commentées peuvent être utilisées pour créer un cache dans l'intégration continue au cas ou on 
       # souahiterais run un renv::restore() pour tester le loading des packages avant le docker et/ou pour
       # lancer un testthat() avant de créer le docker pour être sûr que tout fonctionne
       # Récupère les versions de l'OS et de R
@@ -110,4 +110,3 @@ jobs:
           docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest
           docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:${GITHUB_REF}
             
-

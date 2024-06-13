@@ -373,11 +373,22 @@ server <- function(input, output, session) {
   # output to download data
   output$downloadCsv <- downloadHandler(
     filename = function() {
-      paste("Tuna_data_", Sys.Date(), ".csv", sep="")
+      paste("GTA_species_dataset_", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
-      csv_tuna = data()
+      csv_tuna = DTi11()
       write.csv(csv_tuna, file)
+    }
+  )
+  
+  # output to download data
+  output$downloadCsvtableCWP <- downloadHandler(
+    filename = function() {
+      paste("GTA_CWP_dataset_", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      CWP_dataset = DT()
+      write.csv(CWP_dataset, file)
     }
   )
   

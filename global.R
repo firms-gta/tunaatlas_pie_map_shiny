@@ -156,7 +156,6 @@ getTarget <- function(category) {
 flog.info("Color palettes initialized.")
 
 
-# Define function to create SQL query
 createSQLQuery <- function(dataset_name = default_dataset,
                            species_name = default_species,
                            fishing_fleet_name = default_flag,
@@ -190,7 +189,6 @@ createSQLQuery <- function(dataset_name = default_dataset,
   return(query)
 }
 
-
 # Recreate overview details if not existing -------------------------------
 
 source(here::here("deploy/initialize_data_and_plots.R"))
@@ -205,3 +203,4 @@ source(here::here("server.R"))
 
 # Log that the UI and server files have been sourced successfully
 flog.info("UI and server files sourced successfully.")
+

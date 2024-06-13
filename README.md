@@ -17,10 +17,10 @@ Currently the shiny app use the renv package to record state of the packages use
 ```
 docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
 
-docker run --name tuna_atlas_i11 -p 3839:3838 ghcr.io/firms-gta/tunaatlas_pie_map_shiny
+docker run --name tuna_atlas_i11 -p 3838:3838 ghcr.io/firms-gta/tunaatlas_pie_map_shiny
 ```
 
-And then point your browser to http://localhost:3839
+And then point your browser to http://localhost:3838
 
 Note: In case of having an existing tunaatlas_indicators_pie_map_shiny app running on docker, and in order to update the docker app, it will be required to stop and remove the container prior to run the above commands to pull & run the app:
 
@@ -36,10 +36,10 @@ A Dockerfile is provided and can be used to build up containers with the applica
 To build and run the application issue the following commands
 ```
 sudo docker build -t tuna_atlas_i11 <Path of the Dockerfile>
-sudo docker run -p 3839:3838 tuna_atlas_i11
+sudo docker run -p 3838:3838 tuna_atlas_i11
 ```
 
-And then point your browser to http://localhost:3839
+And then point your browser to http://localhost:3838
 
 As well it can be runned using the command 
 

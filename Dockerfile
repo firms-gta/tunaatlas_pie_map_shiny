@@ -19,10 +19,17 @@ RUN apt-get update && apt-get install -y \
     libsodium-dev \
     libsecret-1-dev \
     git \
-    libnetcdf-dev
-    
+    libnetcdf-dev \
+    curl
+
 # Install additional geospatial libraries
 RUN /rocker_scripts/install_geospatial.sh
+
+# Update and upgrade the system
+RUN apt-get update && apt-get upgrade -y
+
+# Install cmake
+RUN apt-get update && apt-get -y install cmake
 
 # Install R core package dependencies
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
@@ -31,27 +38,29 @@ RUN R -e "install.packages(c('remotes', 'jsonlite', 'yaml'), repos='https://cran
 # Install renv package
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
+# Set environment variables for renv cache
+ARG RENV_PATHS_ROOT=/root/tunaatlas_pie_map_shiny/renv/.cache
+ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
+RUN mkdir -p ${RENV_PATHS_ROOT}
+
 # Set the working directory
 WORKDIR /root/tunaatlas_pie_map_shiny
 
-RUN mkdir -p renv
-COPY renv.lock renv.lock
-COPY .Rprofile .Rprofile
-COPY renv/activate.R renv/activate.R
-COPY renv/settings.json renv/settings.json
+# Copy renv configuration and lockfile
+COPY renv.lock ./
+COPY .Rprofile ./
+COPY renv/activate.R renv/
+COPY renv/settings.json renv/
 
-# change default location of cache to project folder
-RUN mkdir renv/.cache
+# Set renv cache location
 ENV RENV_PATHS_CACHE renv/.cache
 
-# restore 
+# Restore renv packages
+RUN R -e "renv::activate()"
 RUN R -e "renv::restore()"
 
 # Copy the rest of the application code
-COPY . /root/tunaatlas_pie_map_shiny
-
-# Create a symbolic link to the application directory
-RUN ln -s /root/tunaatlas_pie_map_shiny /srv/tunaatlas_pie_map_shiny
+COPY . .
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
@@ -61,7 +70,3 @@ RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
   
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
-
-# Update and install curl (if needed)
-RUN apt-get -y update
-RUN apt-get install -y curl

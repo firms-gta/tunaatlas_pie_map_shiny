@@ -191,7 +191,7 @@ createSQLQuery <- function(dataset_name = default_dataset,
 
 # Recreate overview details if not existing -------------------------------
 
-source(here::here("deploy/initialize_data_and_plots.R"))
+source(here::here("R/initialize_data_and_plots.R"))
 
 
 # Adding resource path to display html -------------------------------------

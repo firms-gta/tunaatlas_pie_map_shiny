@@ -104,7 +104,7 @@ load_ui_modules <- function() {
     'tab_panels/ggplot_indicator_11_ui.R',
     'tab_panels/additional_info_ui.R',
     'tab_panels/filterUI.R',
-    'tab_panels/data_explorer_overview_ui.R',
+    'tab_panels/data_explorer_combined_ui.R',
     'tab_panels/total_catch_plot.R',
     'tab_panels/sidebar_ui.R',
     'tab_panels/mapCatchesmodules.R',

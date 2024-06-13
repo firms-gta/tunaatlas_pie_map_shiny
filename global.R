@@ -18,14 +18,17 @@ try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 db_host <- Sys.getenv("DB_HOST")
 db_port <- as.integer(Sys.getenv("DB_PORT"))
 db_name <- Sys.getenv("DB_NAME")
-db_user <- Sys.getenv("DB_USER_READONLY")
+db_user_readonly <- Sys.getenv("DB_USER_READONLY")
 db_password <- Sys.getenv("DB_PASSWORD")
+# db_password_readonly <- Sys.getenv("DB_PASSWORD_READONLY")
+# db_user <- Sys.getenv("DB_USER")
+# metadata_dmi <- dbGetQuery(pool, "SELECT * FROM metadata.metadata_dcmi")
 
 pool <- dbPool(RPostgreSQL::PostgreSQL(),
                host = db_host,
                port = db_port,
                dbname = db_name,
-               user = db_user,
+               user = db_user_readonly,
                password = db_password)
 
 # Log the successful creation of the connection pool
@@ -46,6 +49,7 @@ target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.shiny
 target_gear_type <- dbGetQuery(pool, "SELECT DISTINCT(gear_type) FROM public.shinycatch ORDER BY gear_type;")
 target_measurement_unit <- dbGetQuery(pool, "SELECT DISTINCT(measurement_unit) FROM public.shinycatch ORDER BY measurement_unit;")
 target_fishing_mode <- dbGetQuery(pool, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
+
 
 # Log the successful retrieval of filter options
 flog.info("Filter options retrieved from database.")

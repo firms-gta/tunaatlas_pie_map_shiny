@@ -43,7 +43,7 @@ main_panel_ui = function()
                 grid_card(max_height = 250,
                   area = "map_example",
                   card_header(strong("Map")),
-                  card_body(class = "p-0",leafletOutput("total_catch_init"))
+                  card_body(class = "p-0",tags$iframe(src = "www/map_init.html"))
                 ),
                 grid_card(card_header(strong("Plot")),max_height = 250,area = "example_plot",card_image(
                   file = here::here("tab_panels/plot_init.png")

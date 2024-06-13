@@ -22,7 +22,10 @@ server <- function(input, output, session) {
   })
   submitTrigger <- reactiveVal(FALSE)
   
-  
+
+# Choose dataset and gridtype ---------------------------------------------
+
+
   output$select_dataset <- renderUI({
     datasets <- filters_combinations %>% dplyr::select(dataset) %>% distinct()
     selectizeInput('select_dataset', 'Select the Dataset', choices = datasets$dataset, selected = default_dataset)
@@ -43,6 +46,11 @@ server <- function(input, output, session) {
       distinct()
     selectizeInput('select_measurement_unit', 'Select the Measurement unit', choices = measurement_units$measurement_unit, selected = default_measurement_unit)
   })
+  
+
+# Filtering on the basis of dimension -------------------------------------
+
+  
   
   output$select_species <- renderUI({
     req(input$select_dataset, input$select_gridtype)
@@ -129,6 +137,10 @@ server <- function(input, output, session) {
     updateSelectInput(session, "select_fishing_mode", selected = fishing_modes$fishing_mode)
   })
   
+
+# Resetting filters -------------------------------------------------------
+
+  
   observeEvent(input$resetFilters, {
     updateSelectInput(session, "select_species", selected = default_species)
     updateSelectInput(session, "select_dataset", selected = default_dataset)
@@ -139,6 +151,9 @@ server <- function(input, output, session) {
   })
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
+  
+
+# SQL Query when submit ---------------------------------------------------
   
   sql_query = eventReactive(input$submit, {
     year_vector <- if(input$toggle_year) {
@@ -152,24 +167,6 @@ server <- function(input, output, session) {
                             gear_type_name = input$select_gear_type,
                             selected_years = year_vector,wkt = wkt(),
                             con = pool)
-    #   query <- glue::glue_sql(
-    #     "SELECT   geom_id, geom, species,gear_type, fishing_fleet, SUM(measurement_value) as measurement_value,
-    # ST_asText(geom) AS geom_wkt, year FROM public.shinycatch
-    #     WHERE dataset IN ({dataset_name})
-    #     AND ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
-    #     AND fishing_fleet IN ({fishing_fleet_name*})
-    #     AND species IN ({species_name*})
-    #     AND gear_type IN ({gear_type_name*})
-    #     AND year IN ({selected_years*})
-    #     GROUP BY species, fishing_fleet,geom_id, geom_wkt, geom , year, gear_type
-    #     ORDER BY species,fishing_fleet DESC", 
-    #     wkt = wkt(),
-    #     dataset_name = input$select_dataset, 
-    #     species_name = input$select_species,
-    #     fishing_fleet_name = input$select_fishing_fleet,
-    #     gear_type_name = input$select_gear_type,
-    #     selected_years = year_vector,
-    #     .con = pool)
   }, ignoreNULL = FALSE)
   
   
@@ -186,9 +183,7 @@ server <- function(input, output, session) {
     data_without_geom
   })
   
-  sum_all <- reactive({
-    st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY geom")) 
-  }) 
+
   
   sum_species <- reactive({
     st_read(pool, query = paste0("SELECT species, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY species, geom")) 
@@ -291,6 +286,10 @@ server <- function(input, output, session) {
     data_pie_map_species()  %>% st_drop_geometry()
   }) 
   
+
+# Global view --------------------------------------------
+
+  
   
   output$plot_by_time <- renderDygraph({
     df_i1 <- data_time_serie()
@@ -307,12 +306,17 @@ server <- function(input, output, session) {
     
     g1
   })
+
+# Total catch map ---------------------------------------------------------
+
+  sum_all <- reactive({
+    st_read(pool, query = paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY geom")) 
+  }) 
   
   mapCatchesServer("total_catch", sum_all, submitTrigger)
   
-  output$total_catch_init <- renderLeaflet({
-    map_init
-  })
+# Plot 11 to define -------------------------------------------------------
+
   
   output$plot11 <- renderImage({
     # https://semba-blog.netlify.app/06/13/2020/plots-in-interactive-maps-with-r/
@@ -337,6 +341,10 @@ server <- function(input, output, session) {
          alt = "This is alternate text")
   }, deleteFile = TRUE)
   
+
+# Tab panel for each dimension --------------------------------------------
+
+  
   categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", sql_query)
   categoryGlobalPieChartServer("species_chart", "species", sql_query)
   categoryGlobalPieChartServer("gear_type_chart", "gear_type", sql_query)
@@ -353,14 +361,14 @@ server <- function(input, output, session) {
     updateNavbarPage(session, "main", selected = "datasetchoicevalue")
   })
   
-  observeEvent(submitTrigger(), {
-    print("submittrigger")
-    if(submitTrigger()) {
-      print("submlit")
-      shinyjs::click("submit")  # Trigger the submit button click in the sidebar
-      submitTrigger(FALSE)
-    }
-  })
+  # observeEvent(submitTrigger(), {
+  #   print("submittrigger")
+  #   if(submitTrigger()) {
+  #     print("submlit")
+  #     shinyjs::click("submit")  # Trigger the submit button click in the sidebar
+  #     submitTrigger(FALSE)
+  #   }
+  # })
   
   # output to download data
   output$downloadCsv <- downloadHandler(
@@ -372,6 +380,7 @@ server <- function(input, output, session) {
       write.csv(csv_tuna, file)
     }
   )
+  
   output$head_table_init <- renderDataTable({
     head(data_init)
   })

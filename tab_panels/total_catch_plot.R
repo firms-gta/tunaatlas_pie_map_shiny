@@ -18,7 +18,7 @@ catches_by_variable_moduleUI <- function(id) {
                             "Fishing Fleet" = "fishing_fleet", 
                             "Gear Type" = "gear_type",
           "Fishing mode" = "fishing_mode")),
-plotOutput(ns("plot_year")),    plotOutput(ns("plot_month")), 
+plotOutput(ns("plot_year"))%>% withSpinner(),    plotOutput(ns("plot_month"))%>% withSpinner(), 
     sliderInput(ns("topn"),
                 label = "Number of this variable to display",
                 min = 0,

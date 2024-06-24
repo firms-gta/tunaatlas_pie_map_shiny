@@ -22,9 +22,6 @@ RUN apt-get update && apt-get install -y \
     libnetcdf-dev \
     curl
 
-# Install additional geospatial libraries
-RUN /rocker_scripts/install_geospatial.sh
-
 # Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y
 

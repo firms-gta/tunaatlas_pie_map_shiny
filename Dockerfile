@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y \
     libsecret-1-dev \
     git \
     libnetcdf-dev \
-    curl
+    curl \
+    libjq-dev
 
 # Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y

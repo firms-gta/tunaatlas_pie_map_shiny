@@ -16,23 +16,31 @@ try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 # try(dotenv::load_dot_env("connecion_tunaatlas_user.txt"))
 
 # Create database connection pool
+# Log environment variables
 db_host <- Sys.getenv("DB_HOST")
 db_port <- as.integer(Sys.getenv("DB_PORT"))
 db_name <- Sys.getenv("DB_NAME")
-db_user_readonly <- Sys.getenv("DB_USER_READONLY")
+db_user <- Sys.getenv("DB_USER_READONLY")
 db_password <- Sys.getenv("DB_PASSWORD")
 
+flog.info("Attempting to connect to the database with the following parameters:")
+flog.info("Host: %s", db_host)
+flog.info("Port: %d", db_port)
+flog.info("Database Name: %s", db_name)
+flog.info("User: %s", db_user)
 
-# db_password_readonly <- Sys.getenv("DB_PASSWORD_READONLY")
-# db_user <- Sys.getenv("DB_USER")
-# metadata_dmi <- dbGetQuery(pool, "SELECT * FROM metadata.metadata_dcmi")
-
-pool <- dbPool(RPostgreSQL::PostgreSQL(),
-               host = db_host,
-               port = db_port,
-               dbname = db_name,
-               user = db_user_readonly,
-               password = db_password)
+# Create database connection pool
+tryCatch({
+  pool <- dbPool(RPostgreSQL::PostgreSQL(),
+                 host = db_host,
+                 port = db_port,
+                 dbname = db_name,
+                 user = db_user,
+                 password = db_password)
+  log_info("Database connection pool created successfully.")
+}, error = function(e) {
+  log_error("Failed to create database connection pool: %s", e$message)
+})
 
 # Log the successful creation of the connection pool
 flog.info("Database connection pool to '%s' has been created successfully.", db_name)

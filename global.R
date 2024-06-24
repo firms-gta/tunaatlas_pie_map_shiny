@@ -20,6 +20,7 @@ db_host <- Sys.getenv("DB_HOST")
 db_port <- as.integer(Sys.getenv("DB_PORT"))
 db_name <- Sys.getenv("DB_NAME")
 db_user <- Sys.getenv("DB_USER")
+db_user_readonly <- Sys.getenv("DB_USER_READONLY")
 db_password <- Sys.getenv("DB_PASSWORD")
 
 flog.info("Attempting to connect to the database with the following parameters:")
@@ -27,6 +28,7 @@ flog.info("Host: %s", db_host)
 flog.info("Port: %d", db_port)
 flog.info("Database Name: %s", db_name)
 flog.info("User: %s", db_user)
+flog.info("User readonly: %s", db_user_readonly)
 
 # Create database connection pool
 tryCatch({
@@ -34,7 +36,7 @@ tryCatch({
                  host = db_host,
                  port = db_port,
                  dbname = db_name,
-                 user = db_user,
+                 user = db_user_readonly,
                  password = db_password)
   flog.info("Database connection pool created successfully.")
 }, error = function(e) {
@@ -91,7 +93,7 @@ flog.info(paste("Default dataset selected:", default_dataset))
 filters_combinations_query <- glue::glue_sql("SELECT dataset, measurement_unit, gridtype FROM public.shinycatch GROUP BY dataset, measurement_unit, gridtype;",
                                        .con = pool)
 
-filters_combinations <- dbGetQuery(pool, filters_combinations_query)
+filters_combinations <- DBI::dbGetQuery(pool, filters_combinations_query)
 
 # # Set default filter values based on combinations
 default_gridtype <- filters_combinations %>%
@@ -194,40 +196,40 @@ getTarget <- function(category) {
 flog.info("Color palettes initialized.")
 
 
-createSQLQuery <- function(dataset_name = default_dataset,
-                           species_name = default_species,
-                           fishing_fleet_name = default_flag,
-                           gear_type_name = default_gear_type,
-                           gridtype_name = default_gridtype,
-                           selected_years = target_year$year,
-                           measurement_unit_name = default_measurement_unit,
-                           fishing_mode_name = default_fishing_mode,
-                           wkt = global_wkt,
-                           con = pool,
-                           limit = NULL) {
-  
-  limit_clause <- if (!is.null(limit)) glue::glue_sql("LIMIT {limit}", .con = con) else SQL("")
-  
-  query <- glue::glue_sql(
-    "SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom,
-    ST_asText(geom) AS geom_wkt, year, month FROM public.shinycatch
-    WHERE dataset IN ({dataset_name})
-    AND ST_Within(geom, ST_GeomFromText(({wkt*}), 4326))
-    AND fishing_fleet IN ({fishing_fleet_name*})
-    AND species IN ({species_name*})
-    AND gear_type IN ({gear_type_name*})
-    AND gridtype IN ({gridtype_name*})
-    AND year IN ({selected_years*})
-    AND fishing_mode IN ({fishing_mode_name*})
-    AND measurement_unit IN ({measurement_unit_name*})
-    GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit
-    ORDER BY species, fishing_fleet DESC {limit_clause}",
-    .con = pool
-  )
-  
-  flog.info("SQL query created successfully.")
-  return(query)
-}
+# createSQLQuery <- function(dataset_name = default_dataset,
+#                            species_name = default_species,
+#                            fishing_fleet_name = default_flag,
+#                            gear_type_name = default_gear_type,
+#                            gridtype_name = default_gridtype,
+#                            selected_years = target_year$year,
+#                            measurement_unit_name = default_measurement_unit,
+#                            fishing_mode_name = default_fishing_mode,
+#                            wkt = global_wkt,
+#                            con = pool,
+#                            limit = NULL) {
+#   
+#   limit_clause <- if (!is.null(limit)) glue::glue_sql("LIMIT {limit}", .con = con) else SQL("")
+#   
+#   query <- glue::glue_sql(
+#     "SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom,
+#     ST_asText(geom) AS geom_wkt, year, month FROM public.shinycatch
+#     WHERE dataset IN ({dataset_name})
+#     AND ST_Within(geom, ST_GeomFromText(({wkt*}), 4326))
+#     AND fishing_fleet IN ({fishing_fleet_name*})
+#     AND species IN ({species_name*})
+#     AND gear_type IN ({gear_type_name*})
+#     AND gridtype IN ({gridtype_name*})
+#     AND year IN ({selected_years*})
+#     AND fishing_mode IN ({fishing_mode_name*})
+#     AND measurement_unit IN ({measurement_unit_name*})
+#     GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit
+#     ORDER BY species, fishing_fleet DESC {limit_clause}",
+#     .con = pool
+#   )
+#   
+#   flog.info("SQL query created successfully.")
+#   return(query)
+# }
 
 flog.info("loading inital data")
 

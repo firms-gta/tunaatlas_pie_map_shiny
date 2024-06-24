@@ -11,10 +11,13 @@ mapCatchesUI <- function(id) {
 # Module Server
 mapCatchesServer <- function(id, sum_all, submitTrigger) {
   moduleServer(id, function(input, output, session) {
-    
+    ns <- session$ns
+
     output$map_total_catch <- renderLeaflet({
+      flog.info("Rendering total catch map")
       a <- sum_all()
-      qpal <- colorQuantile(rev(viridis::viridis(10)),a$measurement_value, n=10)
+      flog.info("Sum all data: %s", head(a))
+      qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n=10)
       my_map <- leaflet() %>% 
         addProviderTiles("Esri.NatGeoWorldMap") %>% 
         clearBounds() %>%
@@ -24,7 +27,7 @@ mapCatchesServer <- function(id, sum_all, submitTrigger) {
                     fillColor = ~qpal(measurement_value),
                     fill = TRUE,
                     fillOpacity = 0.8,
-                    smoothFactor = 0.5) %>% 
+                    smoothFactor = 0.5, weight = 2) %>% 
         addDrawToolbar(
           targetGroup = "draw",
           editOptions = editToolbarOptions(
@@ -40,38 +43,36 @@ mapCatchesServer <- function(id, sum_all, submitTrigger) {
                            labFormat = labelFormat(prefix = "MT "),
                            opacity = 1
         )
+      flog.info("Total catch map rendered")
       return(my_map)
     })
     
     observeEvent(input$submit_draw_total, {
-      
+      flog.info("User requested to change spatial coverage")
       showModal(modalDialog(
         title = "Changing spatial coverage",
         "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
         footer = tagList(
           modalButton("No"),
-          actionButton("yes_button", "Yes")  
+          actionButton(ns("yes_button"), "Yes")
         ),
         easyClose = TRUE,
       ))
     })
     
     observeEvent(input$yes_button, {
+      flog.info("User confirmed changing spatial coverage")
       req(input$map_total_catch_draw_new_feature$geometry)
       req(input$map_total_catch_draw_stop)
       geojson <- input$map_total_catch_draw_new_feature$geometry
-      # Convert GeoJSON to sf object
       geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
       sf_obj <- geojsonsf::geojson_sf(geojson_text)
       
-      
-      # Convert to WKT
       wkt_val <- st_as_text(sf_obj$geometry)
-      wkt(wkt_val)  # Update the reactive value with the WKT representation
+      wkt(wkt_val)
       submitTrigger(TRUE)      
       removeModal()
+      flog.info("Spatial coverage changed")
     })
-    
-
-    })
+  })
 }

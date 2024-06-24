@@ -6,6 +6,7 @@ SELECT
 row_number() OVER () AS ogc_fid,
 metadata.identifier AS dataset,
 "time".year as year,
+"time".month as month,
 species_labels.codesource_species AS species,
 COALESCE(fishing_fleet_labels.codesource_fishing_fleet, 'NA') AS fishing_fleet,
 gear_type_labels.codesource_gear_type as gear_type,
@@ -38,5 +39,5 @@ LEFT JOIN fishing_mode.fishing_mode_labels USING (id_fishing_mode)
 LEFT JOIN fishing_mode.fishing_mode_mapping_view ON fishing_mode_mapping_view.db_idsource = fact.id_fishing_mode
 LEFT JOIN fishing_mode.fishing_mode_labels fishing_modegroup_label ON fishing_modegroup_label.id_fishing_mode = fishing_mode_mapping_view.db_idtarget
 
-WHERE (metadata.identifier = ANY (ARRAY['global_catch_5deg_1m_firms_level0'::text, 'global_catch_5deg_1m_firms_level1'::text, 'global_catch_5deg_1m_ird_level2'::text, 'global_catch_ird_level2'::text, 'global_catch_firms_level0'::text, 'global_nominal_catch_firms'::text])) AND metadata.id_metadata = fact.id_metadata
-GROUP BY metadata.identifier, fact.id_area, area.codesource_area, "time".year, species_labels.codesource_species, gear_type_labels.codesource_gear_type ,fishing_fleet_labels.codesource_fishing_fleet, cwp_grid.geom, cwp_grid.gridtype, measurement_unit_labels.codesource_measurement_unit, fishing_mode_labels.codesource_fishing_mode;
+WHERE metadata.identifier LIKE '%global%' AND metadata.id_metadata = fact.id_metadata AND metadata.id_metadata = fact.id_metadata
+GROUP BY metadata.identifier, fact.id_area, area.codesource_area, "time".year,time.month, species_labels.codesource_species, gear_type_labels.codesource_gear_type ,fishing_fleet_labels.codesource_fishing_fleet, cwp_grid.geom, cwp_grid.gridtype, measurement_unit_labels.codesource_measurement_unit, fishing_mode_labels.codesource_fishing_mode;

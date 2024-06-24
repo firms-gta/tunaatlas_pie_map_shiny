@@ -11,9 +11,9 @@ geographic_catches_ui <- function() {
           gap_size = "10px",
           grid_card(
             area = "mapcatches",
-            card_body(mapCatchesUI("total_catch"))
+            card_body(mapCatchesUI("total_catch")%>% withSpinner())
           ),
-          grid_card(area = "plot_catches", card_body(dygraphOutput("plot_by_time"))),             
+          grid_card(area = "plot_catches", card_body(dygraphOutput("plot_by_time")%>% withSpinner())),             
           grid_card(area = "by_month", card_body(catches_by_variable_moduleUI("catches_by_variable_month")))
 
         )

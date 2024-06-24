@@ -19,8 +19,7 @@ try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 db_host <- Sys.getenv("DB_HOST")
 db_port <- as.integer(Sys.getenv("DB_PORT"))
 db_name <- Sys.getenv("DB_NAME")
-db_user <- Sys.getenv("DB_USER_READONLY")
-db_user_test <- Sys.getenv("DB_USER")
+db_user <- Sys.getenv("DB_USER")
 db_password <- Sys.getenv("DB_PASSWORD")
 
 flog.info("Attempting to connect to the database with the following parameters:")
@@ -28,7 +27,6 @@ flog.info("Host: %s", db_host)
 flog.info("Port: %d", db_port)
 flog.info("Database Name: %s", db_name)
 flog.info("User: %s", db_user)
-flog.info("User: %s", db_user_test)
 
 # Create database connection pool
 tryCatch({

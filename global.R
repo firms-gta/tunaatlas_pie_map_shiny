@@ -231,28 +231,30 @@ flog.info("Color palettes initialized.")
 #   return(query)
 # }
 
-flog.info("loading inital data")
 
-if(exists("debug_mode") && debug_mode){
-default_dataset_preloaded <- readRDS(here::here("data/default_dataset_preloaded.rds"))
-} else {
-  default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
-}
-flog.info("inital data loaded")
+# if(exists("debug_mode") && debug_mode){
+# default_dataset_preloaded <- readRDS(here::here("data/default_dataset_preloaded.rds"))
+# } else {
+#   default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+# }
 
 # Recreate overview details if not existing -------------------------------
 
-source(here::here("R/initialize_data_and_plots.R"))
-
-
 # Adding resource path to display html -------------------------------------
 
-addResourcePath("www", here::here("www"))
+# addResourcePath("www", here::here("www"))
 # Source UI and server files
-source(here::here("ui.R"))
+# source(here::here("ui.R"))
 # source(here::here("server.R"))
-source(here::here("server.R"))
+# source(here::here("server.R"))
+addResourcePath("www", here::here("www"))
+
+sql_query_init <- readRDS(here::here("tab_panels/sql_query_init.rds"))
+flog.info("SQl query loaded")
+
+map_init <- read_html(here::here("www/map_init.html"))
+flog.info("Map init loaded")
 
 # Log that the UI and server files have been sourced successfully
-flog.info("UI and server files sourced successfully.")
+flog.info("Global.R file loaded")
 

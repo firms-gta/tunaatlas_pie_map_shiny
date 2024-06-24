@@ -13,7 +13,6 @@ server <- function(input, output, session) {
     shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
   })
   
-  shinyjs::delay(1, { shinyjs::click("submitDataset") })
   submitTrigger <- reactiveVal(FALSE)
   firstSubmit <- reactiveVal(TRUE)
   
@@ -50,12 +49,20 @@ server <- function(input, output, session) {
     }
   })
   
+  shinyjs::delay(1000, { shinyjs::click("submitDataset") })
+  
   observeEvent(input$submitDataset, {
     flog.info("Submit dataset clicked")
     
     #First submitting outside
     if(firstSubmit()){
       flog.info("First submit")
+      
+      flog.info("All initialization files already exist. Loading from files.")
+      flog.info("loading inital data")
+      
+      default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+      flog.info("Data sf loaded")
       
       if(exists("default_dataset_preloaded")){
         initial_data(default_dataset_preloaded)
@@ -116,7 +123,7 @@ server <- function(input, output, session) {
       
       flog.info("Clicking on submit")
       
-      shinyjs::delay(1000, { shinyjs::click("submit") })
+      shinyjs::delay(1, { shinyjs::click("submit") })
       
       showNotification("Dataframe loaded", type = "message", id="loadingbigdata")
       
@@ -353,7 +360,7 @@ server <- function(input, output, session) {
     data_time_serie_species()
   })
   
-
+  
   
   output$plot11 <- renderImage({
     df_i11_filtered <- as(final_filtered_data(), "Spatial")

@@ -19,7 +19,7 @@ try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 db_host <- Sys.getenv("DB_HOST")
 db_port <- as.integer(Sys.getenv("DB_PORT"))
 db_name <- Sys.getenv("DB_NAME")
-db_user_readonly <- Sys.getenv("DB_USER")
+db_user_readonly <- Sys.getenv("DB_USER_READONLY")
 db_password <- Sys.getenv("DB_PASSWORD")
 
 

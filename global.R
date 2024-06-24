@@ -13,7 +13,7 @@ flog.info("All libraries loaded successfully.")
 
 # Load environment variables from file
 try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
-try(dotenv::load_dot_env("connecion_tunaatlas_user.txt"))
+# try(dotenv::load_dot_env("connecion_tunaatlas_user.txt"))
 
 # Create database connection pool
 db_host <- Sys.getenv("DB_HOST")

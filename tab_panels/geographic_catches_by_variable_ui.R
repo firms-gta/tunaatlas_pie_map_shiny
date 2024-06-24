@@ -2,8 +2,8 @@ geographic_catches_by_variable_ui <- function(variable) {
   nav_panel(title = paste0("Indicators by ",  variable),
             grid_container(
               layout = c(
-                "map_pie_map_and_plot  pie_map",
-                "map_pie_map_and_plot logo"
+                "map  pie_map",
+                "plot logo"
               ),   
               row_sizes = c(
                 "1.48fr",
@@ -22,10 +22,15 @@ geographic_catches_by_variable_ui <- function(variable) {
                 area = "logo"
               ),
               grid_card(
-                area = "map_pie_map_and_plot",
+                area = "map",
                 card_body(pieMapTimeSeriesUI(paste0(variable,"_module")))
+              ),
+              grid_card(
+                area = "plot",
+                card_body(TimeSeriesbyDimensionUI(paste0(variable,"_timeseries")))
               ), 
-              grid_card(area = "pie_map", card_body(categoryGlobalPieChartUI(paste0(variable,"_chart"))))
+              grid_card(
+                area = "pie_map", card_body(categoryGlobalPieChartUI(paste0(variable,"_chart"))))
   )
   )
 }

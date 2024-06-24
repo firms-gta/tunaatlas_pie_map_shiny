@@ -26,7 +26,7 @@ initialize_data_and_plots <- function(data_init, pool, sql_query_init, output_di
     dplyr::group_by(.data[["fishing_fleet"]], year) %>%
     dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
   
-  plot_init <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
+  plot_init_by_dim_overview <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = "fishing_fleet", color = "fishing_fleet")) +
     geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
   
   png(here::here("tab_panels/plot_init.png"))

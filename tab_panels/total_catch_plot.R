@@ -18,7 +18,7 @@ catches_by_variable_moduleUI <- function(id) {
                             "Fishing Fleet" = "fishing_fleet", 
                             "Gear Type" = "gear_type",
           "Fishing mode" = "fishing_mode")),
-plotOutput(ns("plot_year")),    plotOutput(ns("plot_month")), 
+plotOutput(ns("plot_year"))%>% withSpinner(),    plotOutput(ns("plot_month"))%>% withSpinner(), 
     sliderInput(ns("topn"),
                 label = "Number of this variable to display",
                 min = 0,
@@ -53,6 +53,7 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
       
       # Get initial summarised data
       df <- data_without_geom() %>%
+        dplyr::mutate(year = round(year)) %>% 
         dplyr::group_by(.data[[input$variable]], year) %>%
         dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>% ungroup()
       
@@ -77,7 +78,6 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
       
       # Get initial summarised data
       df <- data_without_geom() %>%
-        dplyr::rename(month = year) %>% 
         dplyr::group_by(.data[[input$variable]], month) %>%
         dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
       
@@ -90,8 +90,8 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
       
       # Modify the dataset to group non-top n values
       df <- df %>%
-        dplyr::mutate(grouped_variable = if_else(.data[[input$variable]] %in% top_n_groups, as.character(.data[[input$variable]]), "Other")) %>%
-        dplyr::group_by(grouped_variable, month) %>%
+        dplyr::mutate(!!sym(input$variable) :=if_else(.data[[input$variable]] %in% top_n_groups, as.character(.data[[input$variable]]), "Other")) %>%
+        dplyr::group_by(.data[[input$variable]], month) %>%
         dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
       
       df
@@ -102,9 +102,10 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
     output$plot_month <- renderPlot({
       df <- data_month()  # Get the reactive monthly data
       
-     p <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = input$variable, fill = input$variable)) +
+     p <- ggplot(df, aes_string(x = "month", y = "measurement_value", group = input$variable, fill = input$variable)) +
         geom_bar(stat = "identity", position = "dodge") +
-        labs(title = "Monthly Data", x = "Month", y = "Measurement Value")
+        labs(title = "Monthly Data", x = "Month", y = "Measurement Value")+
+       scale_x_continuous(breaks = scales::pretty_breaks(n = 12), limits = c(1,12))
       
       
       p
@@ -113,9 +114,11 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
     # Plot for yearly data
     output$plot_year <- renderPlot({
       df <- data_year()  # Get the reactive yearly data
+      x_breaks <- seq(min(df$year), max(df$year), by = 1)
       
       p <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = input$variable, color = input$variable)) +
-        geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")
+        geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")+
+        scale_x_continuous(breaks = x_breaks)
       
       
       p

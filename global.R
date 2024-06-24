@@ -13,13 +13,16 @@ flog.info("All libraries loaded successfully.")
 
 # Load environment variables from file
 try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
+try(dotenv::load_dot_env("connecion_tunaatlas_user.txt"))
 
 # Create database connection pool
 db_host <- Sys.getenv("DB_HOST")
 db_port <- as.integer(Sys.getenv("DB_PORT"))
 db_name <- Sys.getenv("DB_NAME")
-db_user_readonly <- Sys.getenv("DB_USER_READONLY")
+db_user_readonly <- Sys.getenv("DB_USER")
 db_password <- Sys.getenv("DB_PASSWORD")
+
+
 # db_password_readonly <- Sys.getenv("DB_PASSWORD_READONLY")
 # db_user <- Sys.getenv("DB_USER")
 # metadata_dmi <- dbGetQuery(pool, "SELECT * FROM metadata.metadata_dcmi")
@@ -41,53 +44,74 @@ metadata <- reactiveVal()
 zoom <- reactiveVal(1)
 
 # Query distinct values from the database for filters
-target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")
-target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
-target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.shinycatch ORDER BY year;")
-target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.shinycatch ORDER BY fishing_fleet;")
-target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.shinycatch ORDER BY gridtype;")
-target_gear_type <- dbGetQuery(pool, "SELECT DISTINCT(gear_type) FROM public.shinycatch ORDER BY gear_type;")
-target_measurement_unit <- dbGetQuery(pool, "SELECT DISTINCT(measurement_unit) FROM public.shinycatch ORDER BY measurement_unit;")
-target_fishing_mode <- dbGetQuery(pool, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
+# target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")
+# target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
+# target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.shinycatch ORDER BY year;")
+# target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.shinycatch ORDER BY fishing_fleet;")
+# target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.shinycatch ORDER BY gridtype;")
+# target_gear_type <- dbGetQuery(pool, "SELECT DISTINCT(gear_type) FROM public.shinycatch ORDER BY gear_type;")
+# target_measurement_unit <- dbGetQuery(pool, "SELECT DISTINCT(measurement_unit) FROM public.shinycatch ORDER BY measurement_unit;")
+# target_fishing_mode <- dbGetQuery(pool, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
 
+# saveRDS(list(target_dataset = target_dataset, 
+#              target_species = target_species, 
+#              target_year = target_year, 
+#              target_flag = target_flag, 
+#              target_gridtype = target_gridtype, 
+#              target_gear_type = target_gear_type, 
+#              target_measurement_unit = target_measurement_unit, 
+#              target_fishing_mode = target_fishing_mode), 
+#         "data/target.rds")
+
+load_target_data <- function(file_path) {
+  target_data <- readRDS(file_path)
+  list2env(target_data, .GlobalEnv)
+}
+
+# Call the function to load data
+load_target_data("data/target.rds")
 
 # Log the successful retrieval of filter options
 flog.info("Filter options retrieved from database.")
 
 # Set default values for filters
-default_dataset <- ifelse('global_catch_firms_level0' %in% target_dataset$dataset, "global_catch_firms_level0", target_dataset[[1]][1])
+# default_dataset <- ifelse('global_catch_5deg_1m_firms_level1' %in% target$target_dataset$dataset, "global_catch_5deg_1m_firms_level1", target_dataset[[1]][1])
+default_dataset <- ifelse('global_catch_5deg_1m_firms_level1' %in% target_dataset$dataset, "global_catch_5deg_1m_firms_level1", target_dataset[[1]][1])
 
 # Log the default dataset selected
 flog.info(paste("Default dataset selected:", default_dataset))
 
-filters_combinations <- dbGetQuery(pool, "SELECT dataset, gear_type, gridtype, species, year, fishing_fleet, fishing_mode, measurement_unit FROM public.shinycatch GROUP BY dataset, gear_type, gridtype, species, year, fishing_fleet, fishing_mode, measurement_unit;")
+filters_combinations_query <- glue::glue_sql("SELECT dataset, measurement_unit, gridtype FROM public.shinycatch GROUP BY dataset, measurement_unit, gridtype;",
+                                       .con = pool)
 
-# Set default filter values based on combinations
+filters_combinations <- dbGetQuery(pool, filters_combinations_query)
+
+# # Set default filter values based on combinations
 default_gridtype <- filters_combinations %>%
   dplyr::filter(dataset == default_dataset) %>%
   head(1) %>%
   pull(gridtype)
 
 default_measurement_unit <- "t"
-
-default_species <- filters_combinations %>%
-  dplyr::filter(dataset == default_dataset) %>%
-  dplyr::filter(gridtype == default_gridtype) %>%
-  dplyr::filter(measurement_unit == default_measurement_unit) %>%
-  head(5) %>%
-  pull(species)
-
-filtered_combinations_default <- filters_combinations %>%
-  dplyr::filter(dataset == default_dataset) %>%
-  dplyr::filter(measurement_unit == default_measurement_unit) %>%
-  dplyr::filter(gridtype == default_gridtype)
-
-default_flag <- unique(filtered_combinations_default$fishing_fleet)
-default_gear_type <- unique(filtered_combinations_default$gear_type)
-default_fishing_mode <- unique(filtered_combinations_default$fishing_mode)
+# 
+# default_species <- filters_combinations %>%
+#   dplyr::filter(dataset == default_dataset) %>%
+#   dplyr::filter(gridtype == default_gridtype) %>%
+#   dplyr::filter(measurement_unit == default_measurement_unit) %>%
+#   head(5) %>%
+#   pull(species)
+# 
+# filtered_combinations_default <- filters_combinations %>%
+#   dplyr::filter(dataset == default_dataset) %>%
+#   dplyr::filter(measurement_unit == default_measurement_unit) %>%
+#   dplyr::filter(gridtype == default_gridtype)
+# 
+# default_flag <- unique(filtered_combinations_default$fishing_fleet)
+# default_gear_type <- unique(filtered_combinations_default$gear_type)
+# default_fishing_mode <- unique(filtered_combinations_default$fishing_mode)
 
 # Log default filter values
-flog.info(paste("Default filter values set: Gridtype:", default_gridtype, ", Measurement Unit:", default_measurement_unit))
+# flog.info(paste("Default filter values set: Gridtype:", default_gridtype, ", Measurement Unit:", default_measurement_unit))
 
 variable_to_display <- c("species", "fishing_fleet", "measurement_value", "gear_type", "fishing_mode")
 
@@ -119,8 +143,10 @@ load_ui_modules <- function() {
     'tab_panels/more_about.R',
     'rmd/rendering_rmd_files_to_html.R',
     'modules/generateRmdNavMenu.R',
+    'modules/TimeSeriesbyDimension.R',
     'modules/categoryGlobalPieChart.R',
     'modules/pieMapTimeSeriesUI.R',
+    'modules/plotTotalCatches.R',
     'R/get_html_title.R',
     'R/getPalette.R',
     'R/palette_settings.R'
@@ -147,7 +173,8 @@ palettes <- initialiserPalettes(targetVariables, seed = 2643598)
 targettes <- list(
   species = target_species,        
   fishing_fleet = target_flag, 
-  gear_type = target_gear_type, fishing_mode = target_fishing_mode
+  gear_type = target_gear_type, 
+  fishing_mode = target_fishing_mode
 )
 # Define function to get target values based on category
 getTarget <- function(category) {
@@ -164,6 +191,7 @@ createSQLQuery <- function(dataset_name = default_dataset,
                            species_name = default_species,
                            fishing_fleet_name = default_flag,
                            gear_type_name = default_gear_type,
+                           gridtype_name = default_gridtype,
                            selected_years = target_year$year,
                            measurement_unit_name = default_measurement_unit,
                            fishing_mode_name = default_fishing_mode,
@@ -174,17 +202,18 @@ createSQLQuery <- function(dataset_name = default_dataset,
   limit_clause <- if (!is.null(limit)) glue::glue_sql("LIMIT {limit}", .con = con) else SQL("")
   
   query <- glue::glue_sql(
-    "SELECT geom_id, geom, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode,
-    ST_asText(geom) AS geom_wkt, year FROM public.shinycatch
+    "SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom,
+    ST_asText(geom) AS geom_wkt, year, month FROM public.shinycatch
     WHERE dataset IN ({dataset_name})
     AND ST_Within(geom, ST_GeomFromText(({wkt*}), 4326))
     AND fishing_fleet IN ({fishing_fleet_name*})
     AND species IN ({species_name*})
     AND gear_type IN ({gear_type_name*})
+    AND gridtype IN ({gridtype_name*})
     AND year IN ({selected_years*})
-    AND measurement_unit IN ({measurement_unit_name*})
     AND fishing_mode IN ({fishing_mode_name*})
-    GROUP BY species, fishing_fleet, geom_id, geom_wkt, geom, year, gear_type, fishing_mode, measurement_unit
+    AND measurement_unit IN ({measurement_unit_name*})
+    GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit
     ORDER BY species, fishing_fleet DESC {limit_clause}",
     .con = pool
   )
@@ -192,6 +221,15 @@ createSQLQuery <- function(dataset_name = default_dataset,
   flog.info("SQL query created successfully.")
   return(query)
 }
+
+flog.info("loading inital data")
+
+if(exists("debug_mode") && debug_mode){
+default_dataset_preloaded <- readRDS(here::here("data/default_dataset_preloaded.rds"))
+} else {
+  default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+}
+flog.info("inital data loaded")
 
 # Recreate overview details if not existing -------------------------------
 
@@ -203,6 +241,7 @@ source(here::here("R/initialize_data_and_plots.R"))
 addResourcePath("www", here::here("www"))
 # Source UI and server files
 source(here::here("ui.R"))
+# source(here::here("server.R"))
 source(here::here("server.R"))
 
 # Log that the UI and server files have been sourced successfully

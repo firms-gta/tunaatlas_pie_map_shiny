@@ -32,7 +32,7 @@ data_explorer_combined_ui <- function() {
                   card_header(
                     h3("Data by Species")
                   ),
-                  DT::dataTableOutput("DTi11"),
+                  DT::dataTableOutput("Data_wide_species"),
                   downloadButton("downloadCsv", "Download as CSV"),
                   tags$br(), tags$br()
                 )

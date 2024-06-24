@@ -9,8 +9,8 @@ main_panel_ui = function()
         tags$iframe(src = "www/Application_overview.html", width = "100%"),
         grid_container(
           layout = c(
-            "howtouse datadisplayed",
-            "howtouse datadisplayed"
+            "datadisplayed datadisplayed",
+            "datadisplayed datadisplayed"
           ),
           row_sizes = c(
             "1.73fr",
@@ -58,45 +58,45 @@ main_panel_ui = function()
                 grid_card(card_header(strong("SQL Queries")),max_height = 250,area = "example_query", textOutput("sql_query_init"),fill = TRUE, height = "100%")
               )
             )
-          ),
-          grid_card(max_height = 500,
-            area = "howtouse",
-            full_screen = TRUE,
-            card_header("Example of use"),
-            card_body(
-              grid_container(
-                layout = c(
-                  "indicator1 indicator1",
-                  "button  button"
-                ),
-                row_sizes = c(
-                  "1fr",
-                  "1fr"
-                ),
-                col_sizes = c(
-                  "1fr",
-                  "1fr"
-                ),
-                gap_size = "5px",
-                grid_card(max_height = 250, fill = TRUE,
-                  area = "indicator1",
-                  card_body(fill = TRUE,
-                    "Indicators for major tuna in Indian ocean",
-                    actionButton(inputId = "buttoni7", label = "Geographes catches"),
-                    actionButton(inputId = "buttoni8", label = "Time series by fishing_fleet")
-                  )
-                ),
-                grid_card(fill = TRUE,
-                  area = "button",
-                  card_body(max_height = 250, fill = TRUE,
-                    "Indicators for Skipjack Tuna in 2000",
-                    actionButton(inputId = "buttoni7", label = "Geographes catches"),
-                    actionButton(inputId = "buttoni8", label = "Geographic catches by fishing_fleet")
-                  )
-                )
-              )
-            )
           )
+          # grid_card(max_height = 500,
+          #   area = "howtouse",
+          #   full_screen = TRUE,
+          #   card_header("Example of use"),
+          #   card_body(
+          #     grid_container(
+          #       layout = c(
+          #         "indicator1 indicator1",
+          #         "button  button"
+          #       ),
+          #       row_sizes = c(
+          #         "1fr",
+          #         "1fr"
+          #       ),
+          #       col_sizes = c(
+          #         "1fr",
+          #         "1fr"
+          #       ),
+          #       gap_size = "5px",
+          #       grid_card(max_height = 250, fill = TRUE,
+          #         area = "indicator1",
+          #         card_body(fill = TRUE,
+          #           "Indicators for major tuna in Indian ocean",
+          #           actionButton(inputId = "buttoni7", label = "Geographes catches"),
+          #           actionButton(inputId = "buttoni8", label = "Time series by fishing_fleet")
+          #         )
+          #       ),
+          #       grid_card(fill = TRUE,
+          #         area = "button",
+          #         card_body(max_height = 250, fill = TRUE,
+          #           "Indicators for Skipjack Tuna in 2000",
+          #           actionButton(inputId = "buttoni7", label = "Geographes catches"),
+          #           actionButton(inputId = "buttoni8", label = "Geographic catches by fishing_fleet")
+          #         )
+          #       )
+          #     )
+          #   )
+          # )
         )
       )
     )

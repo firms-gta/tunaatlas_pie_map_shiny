@@ -23,7 +23,7 @@ plotOutput(ns("plot_year"))%>% withSpinner(),    plotOutput(ns("plot_month"))%>%
                 label = "Number of this variable to display",
                 min = 0,
                 max = 10,
-                value = 5,
+                value = 5
     )
   )
 }
@@ -101,8 +101,10 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
     # Plot for monthly data
     output$plot_month <- renderPlot({
       df <- data_month()  # Get the reactive monthly data
+      # Replace NA values with 0
+      df_clean <- df %>% dplyr::mutate(measurement_value = ifelse(is.na(measurement_value), 0, measurement_value))
       
-     p <- ggplot(df, aes_string(x = "month", y = "measurement_value", group = input$variable, fill = input$variable)) +
+     p <- ggplot(df_clean, aes_string(x = "month", y = "measurement_value", group = input$variable, fill = input$variable)) +
         geom_bar(stat = "identity", position = "dodge") +
         labs(title = "Monthly Data", x = "Month", y = "Measurement Value")+
        scale_x_continuous(breaks = scales::pretty_breaks(n = 12), limits = c(1,12))
@@ -114,9 +116,11 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
     # Plot for yearly data
     output$plot_year <- renderPlot({
       df <- data_year()  # Get the reactive yearly data
-      x_breaks <- seq(min(df$year), max(df$year), by = 1)
+      df_clean <- df %>% dplyr::mutate(measurement_value = ifelse(is.na(measurement_value), 0, measurement_value))
       
-      p <- ggplot(df, aes_string(x = "year", y = "measurement_value", group = input$variable, color = input$variable)) +
+      x_breaks <- seq(min(df_clean$year), max(df_clean$year), by = 10)
+      
+      p <- ggplot(df_clean, aes_string(x = "year", y = "measurement_value", group = input$variable, color = input$variable)) +
         geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")+
         scale_x_continuous(breaks = x_breaks)
       

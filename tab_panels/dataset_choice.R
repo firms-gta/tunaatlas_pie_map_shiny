@@ -7,7 +7,6 @@ dataset_choice <- function(){
               ),
               row_sizes = c(
                 "1.5fr",
-                "0.5fr",
                 "0.5fr"
               ),
               col_sizes = c(

@@ -45,11 +45,12 @@ server <- function(input, output, session) {
     if (show()) {
       shinyjs::hide("loading_page")
       shinyjs::show("main_content")
-      updateNavbarPage(session, "main", selected = "mainpanel")
+      updateNavbarPage(session, "main", selected = "generaloverview")
+        
     }
   })
   
-  shinyjs::delay(1000, { shinyjs::click("submitDataset") })
+  shinyjs::delay(1, { shinyjs::click("submitDataset") })
   
   observeEvent(input$submitDataset, {
     flog.info("Submit dataset clicked")
@@ -71,13 +72,11 @@ server <- function(input, output, session) {
         default_dataset_preloaded_without_geom$geom_wkt <- NULL
         data_for_filters(default_dataset_preloaded_without_geom)
         show(TRUE)
+        
         observeEvent(TRUE, {
           show(FALSE)
           shinyjs::show("loading_page")
-          
         })
-        
-        
       }
     } else {
       
@@ -139,7 +138,7 @@ server <- function(input, output, session) {
     flog.info("Species data after distinct: %s", head(species_data))
     
     output$select_species <- renderUI({
-      selectizeInput('select_species', 'Select Species', choices = species_data$species, multiple = TRUE, selected = species_data$species[1])
+      selectizeInput('select_species', 'Select Species', choices = species_data$species, multiple = TRUE, selected = species_data$species)
     })
     flog.info("Initialising gears")
     gear_type <- data_for_filters %>% dplyr::select(gear_type) %>% dplyr::distinct()
@@ -226,7 +225,6 @@ server <- function(input, output, session) {
     data_loaded(TRUE)  
   })
   
-  catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
   
   final_filtered_data <- eventReactive(input$submit, {
     flog.info("Submit button cliqued")
@@ -272,15 +270,13 @@ server <- function(input, output, session) {
       showNotification("Filtering finished", type = "message", id = "filtrage")
     }
     flog.info("Filtrage terminé")
-    flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
     firstSubmit(FALSE)
-    show(TRUE)
-    # data_loaded(FALSE)
+    flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
+
     
     final_filtered_data
   }, ignoreNULL = FALSE)
   
-  # this one is not working
   data_without_geom <- reactive({
     req(final_filtered_data())
     
@@ -383,26 +379,55 @@ server <- function(input, output, session) {
          alt = "This is alternate text")
   }, deleteFile = TRUE)
   
+  # Global pie chart
   categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", data_without_geom)
   categoryGlobalPieChartServer("species_chart", "species", data_without_geom)
   categoryGlobalPieChartServer("gear_type_chart", "gear_type", data_without_geom)
   categoryGlobalPieChartServer("fishing_mode_chart", "fishing_mode", data_without_geom)
   
+  #Pie map and time series
   pieMapTimeSeriesServer("species_module", category_var = "species", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
   pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
   pieMapTimeSeriesServer("gear_type_module", category_var = "gear_type", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
   pieMapTimeSeriesServer("fishing_mode_module", category_var = "fishing_mode", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
   
+  # Time series by dimension
   TimeSeriesbyDimensionServer("species_timeseries", category_var = "species", data = data_without_geom)
   TimeSeriesbyDimensionServer("fishing_fleet_timeseries", category_var = "fishing_fleet", data = data_without_geom)
   TimeSeriesbyDimensionServer("gear_type_timeseries", category_var = "gear_type", data = data_without_geom)
   TimeSeriesbyDimensionServer("fishing_mode_timeseries", category_var = "fishing_mode", data = data_without_geom)
   
+  # Global overview
+  catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
   mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
+  
+  
+  observeEvent(firstSubmit() ,{
+    if(!firstSubmit()){
+    flog.info("delay")
+    catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
+    mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
+    
+    shinyjs::delay(3000, {   
+      show(TRUE)
+      flog.info("delay finished")
+    })
+    }
+    
+  })
+  
+  
+
+  
+  # Time series by year
   plotTotalCatchesServer("catch_by_year", data = data_without_geom)
   
   observeEvent(input$change_dataset, {
+    print("Button clicked")
+    shinyjs::hide("main_content")
+    shinyjs::show("main_content")
     updateNavbarPage(session, "main", selected = "datasetchoicevalue")
+    print("Navbar page updated")
   })
   
   output$downloadCsv <- downloadHandler(

@@ -1,6 +1,6 @@
 geographic_catches_ui <- function() {
   nav_panel(
-    title = "General overview",
+    title = "General overview", value = "generaloverview",
         grid_container(
           layout = c(
             "mapcatches   by_month  ",

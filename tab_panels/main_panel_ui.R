@@ -1,6 +1,6 @@
 main_panel_ui = function()
   {
-  nav_panel(title = "GTA Shiny App", value = "mainpanel",
+  nav_panel(title = "How to use this Global Tuna Atlas shiny app ?", value = "mainpanel",
     card(fill = TRUE,
       card_header(
         "Global Tuna Atlas shiny app overview"

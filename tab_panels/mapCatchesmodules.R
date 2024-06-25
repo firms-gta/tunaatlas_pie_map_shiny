@@ -86,6 +86,8 @@ mapCatchesServer <- function(id, data, submitTrigger) {
       removeModal()
       flog.info("Spatial coverage changed")
     })
+    
+    
   })
 }
 

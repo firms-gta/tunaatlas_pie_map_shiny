@@ -64,16 +64,10 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
       
-      if (!debug || is.null("default_dataset_preloaded")) {
-        default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
-        flog.info("Data sf loaded")
-      }
+      data <- load_initial_data(debug, default_dataset_preloaded, pool)
+      initial_data(data$initial_data)
+      data_for_filters(data$data_for_filters)
       
-      initial_data(default_dataset_preloaded)
-      default_dataset_preloaded_without_geom <- default_dataset_preloaded
-      default_dataset_preloaded_without_geom$geom <- NULL
-      default_dataset_preloaded_without_geom$geom_wkt <- NULL
-      data_for_filters(default_dataset_preloaded_without_geom)
       show(TRUE)
       observeEvent(TRUE, {
         show(FALSE)
@@ -82,56 +76,18 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       
     } else {
       shinyjs::show(selector = "#side_panel")
-      showNotification("Loading big dataset, please wait", type = "message", duration = NULL, id="loadingbigdata")
+      showNotification("Loading big dataset, please wait", type = "message", duration = NULL, id = "loadingbigdata")
+      shinyjs::hide(selector = "#side_panel")
       
-      selected_dataset(input$select_dataset)
-      selected_gridtype(input$select_gridtype)
-      selected_measurement_unit(input$select_measurement_unit)
+      data <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, debug, pool)
+      initial_data(data$initial_data)
+      data_for_filters(data$data_for_filters)
       
-      base_query <- "
-  SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom, ST_AsText(geom) AS geom_wkt, year, month 
-  FROM public.shinycatch 
-  WHERE dataset = {selected_dataset} AND gridtype = {selected_gridtype} AND measurement_unit = {selected_measurement_unit}
-  GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit"
+      flog.info("Dataset created. You can now filter it.")
       
-      if (debug) {
-        base_query <- paste(base_query, "LIMIT 10000")
-      }
+      showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
+      shinyjs::show(selector = "#side_panel")
       
-      query <- glue::glue_sql(base_query, 
-                              selected_dataset = selected_dataset(), 
-                              selected_gridtype = selected_gridtype(), 
-                              selected_measurement_unit = selected_measurement_unit(), 
-                              .con = pool)
-      
-      tryCatch({
-        flog.info("query is %s" ,query)
-        flog.info("debug is %s", debug)
-        
-        data <- dbGetQuery(pool, query)
-        flog.info("Data loaded from database")
-        flog.info("Class data: %s", class(data))  
-        
-        data_sf <- as.data.frame(st_as_sf(data, wkt = "geom_wkt", crs = 4326))
-        flog.info("beginning intersection")
-        flog.info("Class data_sf: %s", class(data_sf)) 
-        
-        initial_data(data_sf)
-        flog.info("Class initial_data: %s", class(initial_data())) 
-        initial_data_without_geom <- data_sf
-        initial_data_without_geom$geom <- NULL
-        data_for_filters(initial_data_without_geom)
-        
-        flog.info("Dataset created. You can now filter it.")
-      }, error = function(e) {
-        showNotification("Error retrieving data: Please check your selections and try again.", type = "error")
-        flog.error("Error executing query: %s", e$message)
-      })
-      
-      data_loaded(TRUE)
-      # Initial observeEvent for data_for_filters
-      
-      showNotification("Dataframe loaded", type = "message", id="loadingbigdata")
     }
     data_for_filters_trigger(data_for_filters_trigger() + 1)
     updateNavbarPage(session, "main", selected = "generaloverview")

@@ -81,10 +81,8 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       })
       
     } else {
-      # shinyjs::show(selector = "#side_panel")
       showNotification("Loading big dataset, please wait", type = "message", duration = NULL, id = "loadingbigdata")
-      # shinyjs::hide(selector = "#side_panel")
-      
+        
       data <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, debug, pool)
       initial_data(data$initial_data)
       data_for_filters(data$data_for_filters)
@@ -92,12 +90,15 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       flog.info("Dataset created. You can now filter it.")
       
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
-      shinyjs::show(selector = "#side_panel")
-      
     }
-    data_for_filters_trigger(data_for_filters_trigger() + 1)
-    updateNavbarPage(session, "main", selected = "generaloverview")
     
+    shinyjs::click("submit")
+    shinyjs::delay(1000,{
+    
+    data_for_filters_trigger(data_for_filters_trigger() + 1)
+      updateNavbarPage(session, "main", selected = "generaloverview")
+    
+  })
   })
   
   shinyjs::delay(1, { shinyjs::click("dataset_choice-submitDataset") })

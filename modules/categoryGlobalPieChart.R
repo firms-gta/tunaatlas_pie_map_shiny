@@ -21,6 +21,7 @@ categoryGlobalPieChartServer <- function(id, category, reactive_data, sql_query 
     
     # Reactive expression to fetch and prepare data
     data_for_chart <- reactive({
+      req(reactive_data())
       flog.info("Preparing data for pie chart for category: %s", category)
       df <- reactive_data() %>%
         dplyr::group_by(!!sym(category)) %>%

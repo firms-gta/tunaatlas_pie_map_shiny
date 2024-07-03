@@ -54,11 +54,17 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
     }
   })
   
-  shinyjs::delay(1, { shinyjs::click("submitDataset") })
+  dataset_choices <- dataset_choice_server("dataset_choice", filters_combinations, default_dataset, default_gridtype, default_measurement_unit)
+  
   
   # Initial dataset submission
-  observeEvent(input$submitDataset, {
+  observeEvent(dataset_choices$submit(), {
     flog.info("Submit dataset clicked")
+    selected_dataset <- dataset_choices$selected_dataset()
+    selected_gridtype <- dataset_choices$selected_gridtype()
+    selected_measurement_unit <- dataset_choices$selected_measurement_unit()
+    
+    
     if (firstSubmit()) {
       flog.info("First submit")
       flog.info("All initialization files already exist. Loading from files.")
@@ -75,9 +81,9 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       })
       
     } else {
-      shinyjs::show(selector = "#side_panel")
+      # shinyjs::show(selector = "#side_panel")
       showNotification("Loading big dataset, please wait", type = "message", duration = NULL, id = "loadingbigdata")
-      shinyjs::hide(selector = "#side_panel")
+      # shinyjs::hide(selector = "#side_panel")
       
       data <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, debug, pool)
       initial_data(data$initial_data)
@@ -93,6 +99,9 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
     updateNavbarPage(session, "main", selected = "generaloverview")
     
   })
+  
+  shinyjs::delay(1, { shinyjs::click("dataset_choice-submitDataset") })
+  
   
   
   # Filtering the final data

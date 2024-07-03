@@ -167,6 +167,13 @@ load_ui_modules <- function() {
 }
 load_ui_modules()
 
+dimensions <- list(
+  list(input_id = "select_species", column_name = "species"),
+  list(input_id = "select_fishing_fleet", column_name = "fishing_fleet"),
+  list(input_id = "select_gear_type", column_name = "gear_type"),
+  list(input_id = "select_fishing_mode", column_name = "fishing_mode")
+)
+
 # Prepare target variables list
 targetVariables <- list(
   species = target_species,

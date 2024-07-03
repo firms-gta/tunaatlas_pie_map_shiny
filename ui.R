@@ -15,23 +15,34 @@ ui <- tagList(
   ),
   hidden(
     div(id = "main_content",
-        page_navbar(id = "main",
-                    title = "Tuna Atlas: Interactive Indicator",
-                    selected = "datasetchoicevalue",
-                    collapsible = TRUE,
-                    theme = bslib::bs_theme(),
-                    sidebar = sidebar_ui(),
-                    geographic_catches_ui(),
-                    nav_menu(title = "Indicators for each variable", 
-                             geographic_catches_by_variable_ui("species"),
-                             geographic_catches_by_variable_ui("fishing_fleet"),
-                             geographic_catches_by_variable_ui("gear_type"),
-                             geographic_catches_by_variable_ui("fishing_mode")),
-                    data_explorer_combined_ui(),  
-                    dataset_choice(), 
-                    main_panel_ui(),
-                    more_about()
+        page_navbar(
+          id = "main",
+          title = "Tuna Atlas: Interactive Indicator",
+          selected = "datasetchoicevalue",
+          collapsible = TRUE,
+          theme = bslib::bs_theme(),
+          sidebar = sidebar_ui(),
+          
+            geographic_catches_ui(),
+          
+          nav_menu(
+            title = "Indicators for each variable",
+            !!!lapply(dimensions, function(dimension) {
+              nav_panel(
+                title = dimension$column_name,
+                geographic_catches_by_variable_ui(dimension$column_name)
+              )
+            })
+          ),
+          
+            data_explorer_combined_ui(),
+          
+          dataset_choice_ui("dataset_choice"),
+            main_panel_ui(),
+          
+            more_about()
+          )
         )
     )
-  )
+  
 )

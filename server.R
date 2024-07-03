@@ -1,8 +1,10 @@
-server <- function(input, output, session) {
+server <- function(input, output, session, debug = FALSE, default_dataset_preloaded = NULL) {
   
+  # Initialize resource paths and modules
   addResourcePath("www", here::here("www"))
-  serveRmdContents("rmd_docs", nav_bar_menu_html) # to create rmd tabpanels
+  serveRmdContents("rmd_docs", nav_bar_menu_html)
   
+  # Handle UI elements with shinyjs
   shinyjs::onclick("fishing_fleet_toggle", {
     shinyjs::toggle("fishing_fleet_panel")
     shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
@@ -13,9 +15,9 @@ server <- function(input, output, session) {
     shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
   })
   
+  # Initialize reactive values
   submitTrigger <- reactiveVal(FALSE)
   firstSubmit <- reactiveVal(TRUE)
-  
   selected_dataset <- reactiveVal()
   selected_gridtype <- reactiveVal()
   selected_measurement_unit <- reactiveVal()
@@ -23,7 +25,9 @@ server <- function(input, output, session) {
   data_for_filters <- reactiveVal()
   data_loaded <- reactiveVal(FALSE)
   show <- reactiveVal(FALSE)
+  data_for_filters_trigger <- reactiveVal(0)
   
+  # Render UI selectors
   output$select_dataset <- renderUI({
     datasets <- filters_combinations %>% dplyr::select(dataset) %>% dplyr::distinct()
     selectizeInput('select_dataset', 'Select the Dataset', choices = datasets$dataset, selected = default_dataset)
@@ -38,64 +42,72 @@ server <- function(input, output, session) {
   output$select_measurement_unit <- renderUI({
     req(input$select_dataset)
     measurement_units <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% dplyr::select(measurement_unit) %>% dplyr::distinct()
-    selectizeInput('select_measurement_unit', 'Select the Measurement unit', choices = measurement_units$measurement_unit, selected = default_measurement_unit)
+    selectizeInput('select_measurement_unit', 'Select the Measurement Unit', choices = measurement_units$measurement_unit, selected = default_measurement_unit)
   })
   
+  # Show main content after loading
   observeEvent(show(), {
     if (show()) {
       shinyjs::hide("loading_page")
       shinyjs::show("main_content")
       updateNavbarPage(session, "main", selected = "generaloverview")
-        
     }
   })
   
   shinyjs::delay(1, { shinyjs::click("submitDataset") })
   
+  # Initial dataset submission
   observeEvent(input$submitDataset, {
     flog.info("Submit dataset clicked")
-    
-    #First submitting outside
-    if(firstSubmit()){
+    if (firstSubmit()) {
       flog.info("First submit")
-      
       flog.info("All initialization files already exist. Loading from files.")
-      flog.info("loading inital data")
+      flog.info("loading initial data")
       
-      default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
-      flog.info("Data sf loaded")
-      
-      if(exists("default_dataset_preloaded")){
-        initial_data(default_dataset_preloaded)
-        default_dataset_preloaded_without_geom <- default_dataset_preloaded
-        default_dataset_preloaded_without_geom$geom <- NULL
-        default_dataset_preloaded_without_geom$geom_wkt <- NULL
-        data_for_filters(default_dataset_preloaded_without_geom)
-        show(TRUE)
-        
-        observeEvent(TRUE, {
-          show(FALSE)
-          shinyjs::show("loading_page")
-        })
+      if (!debug || is.null("default_dataset_preloaded")) {
+        default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+        flog.info("Data sf loaded")
       }
+      
+      initial_data(default_dataset_preloaded)
+      default_dataset_preloaded_without_geom <- default_dataset_preloaded
+      default_dataset_preloaded_without_geom$geom <- NULL
+      default_dataset_preloaded_without_geom$geom_wkt <- NULL
+      data_for_filters(default_dataset_preloaded_without_geom)
+      show(TRUE)
+      observeEvent(TRUE, {
+        show(FALSE)
+        shinyjs::show("loading_page")
+      })
+      
     } else {
-      
       shinyjs::show(selector = "#side_panel")
-      
-      showNotification("Loading big dataset please wait", type = "message", duration = NULL, id="loadingbigdata")
+      showNotification("Loading big dataset, please wait", type = "message", duration = NULL, id="loadingbigdata")
       
       selected_dataset(input$select_dataset)
       selected_gridtype(input$select_gridtype)
       selected_measurement_unit(input$select_measurement_unit)
       
-      query <- glue::glue_sql(
-        "SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom, ST_AsText(geom) AS geom_wkt, year, month FROM public.shinycatch 
-      WHERE dataset = {selected_dataset()} AND gridtype = {selected_gridtype()} AND measurement_unit = {selected_measurement_unit()}
-      GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit",
-        .con = pool
-      )
+      base_query <- "
+  SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom, ST_AsText(geom) AS geom_wkt, year, month 
+  FROM public.shinycatch 
+  WHERE dataset = {selected_dataset} AND gridtype = {selected_gridtype} AND measurement_unit = {selected_measurement_unit}
+  GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit"
+      
+      if (debug) {
+        base_query <- paste(base_query, "LIMIT 10000")
+      }
+      
+      query <- glue::glue_sql(base_query, 
+                              selected_dataset = selected_dataset(), 
+                              selected_gridtype = selected_gridtype(), 
+                              selected_measurement_unit = selected_measurement_unit(), 
+                              .con = pool)
       
       tryCatch({
+        flog.info("query is %s" ,query)
+        flog.info("debug is %s", debug)
+        
         data <- dbGetQuery(pool, query)
         flog.info("Data loaded from database")
         flog.info("Class data: %s", class(data))  
@@ -111,26 +123,112 @@ server <- function(input, output, session) {
         data_for_filters(initial_data_without_geom)
         
         flog.info("Dataset created. You can now filter it.")
-        
       }, error = function(e) {
         showNotification("Error retrieving data: Please check your selections and try again.", type = "error")
         flog.error("Error executing query: %s", e$message)
       })
       
       data_loaded(TRUE)
-      
-      
-      flog.info("Clicking on submit")
-      
-      shinyjs::delay(1, { shinyjs::click("submit") })
+      # Initial observeEvent for data_for_filters
       
       showNotification("Dataframe loaded", type = "message", id="loadingbigdata")
-      
     }
+    data_for_filters_trigger(data_for_filters_trigger() + 1)
+    updateNavbarPage(session, "main", selected = "generaloverview")
     
   })
   
-  observe({
+  
+  # Filtering the final data
+  final_filtered_data <- eventReactive(input$submit, {
+    flog.info("Submit button clicked")
+    
+    req(initial_data())
+    req(data_for_filters())
+    
+    if (!firstSubmit()) {
+      showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
+    }
+    
+    flog.info("Filtering")
+    
+    final_filtered_data <- initial_data()
+    
+    if (!is.null(input$select_species)) {
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(species %in% input$select_species)
+    }
+    
+    if (!is.null(input$select_gear_type)) {
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(gear_type %in% input$select_gear_type)
+    }
+    
+    if (!is.null(input$select_fishing_fleet)) {
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(fishing_fleet %in% input$select_fishing_fleet)
+    }
+    
+    if (!is.null(input$select_gridtype)) {
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(gridtype %in% input$select_gridtype)
+    }
+    
+    if (!is.null(input$select_fishing_mode)) {
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(fishing_mode %in% input$select_fishing_mode)
+    }
+    
+    if (!is.null(input$toggle_year) && !is.null(input$years)) {
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
+    }
+    
+    if (!firstSubmit()) {
+      showNotification("Filtering finished", type = "message", id = "filtrage")
+    }
+    flog.info("Filtering finished")
+    firstSubmit(FALSE)
+    flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
+    
+    final_filtered_data
+  }, ignoreNULL = FALSE)
+  
+  # Reactive function for data without geometry
+  data_without_geom <- reactive({
+    req(final_filtered_data())
+    flog.info("Removing geometry column from data")
+    data_without_geom <- as.data.frame(final_filtered_data())
+    data_without_geom$geom_wkt <- NULL
+    if ("geom" %in% colnames(data_without_geom)) {
+      data_without_geom <- data_without_geom %>% dplyr::select(-geom)
+    }
+    flog.info("Data without geometry: %s", head(data_without_geom))
+    data_without_geom
+  })
+  
+  # Calculate the centroid of the map
+  centroid <- reactive({
+    flog.info("Calculating centroid")
+    bbox <- st_as_sf(final_filtered_data()) %>% 
+      st_bbox()
+    center_lon <- (bbox["xmin"] + bbox["xmax"]) / 2
+    center_lat <- (bbox["ymin"] + bbox["ymax"]) / 2
+    result <- st_point(c(center_lon, center_lat)) %>% 
+      st_sfc(crs = st_crs(final_filtered_data()))
+    flog.info("Centroid: %s", st_as_text(result))
+    result
+  })
+  
+  # Update selectors and reactivity
+  
+  # ObserveEvent for the resetFilters button
+  observeEvent(input$resetFilters, {
+    flog.info("Resetting filters")
+    data_for_filters_trigger(data_for_filters_trigger() + 1)
+  })
+  
+  observeEvent(data_for_filters_trigger(), {
     req(data_for_filters())
     data_for_filters <- data_for_filters()
     flog.info("Initialising species")
@@ -162,18 +260,13 @@ server <- function(input, output, session) {
       selectizeInput('select_fishing_mode', 'Select the Fishing mode', choices = fishing_modes$fishing_mode, multiple = TRUE, selected = fishing_modes$fishing_mode)
     })
     flog.info("Fishing mode selected")
-    
-    flog.info("Initialising years")
-    
   })
   
   output$year_input <- renderUI({
     req(data_for_filters())
-    
     years_for_filtering <- data_for_filters() %>%
       dplyr::summarise(min_year = min(year), max_year = max(year))
     flog.info("Year range: %d - %d", years_for_filtering$min_year, years_for_filtering$max_year)
-    
     if (years_for_filtering$min_year == years_for_filtering$max_year) {
       selectInput("years", "Year", choices = years_for_filtering$min_year, selected = years_for_filtering$min_year)
     } else if (input$toggle_year) {
@@ -221,96 +314,6 @@ server <- function(input, output, session) {
     updateSelectInput(session, "select_fishing_mode", selected = fishing_modes)
   })
   
-  observeEvent(input$resetFilters, {
-    data_loaded(TRUE)  
-  })
-  
-  
-  final_filtered_data <- eventReactive(input$submit, {
-    flog.info("Submit button cliqued")
-    req(initial_data())
-    req(data_for_filters())
-    if(!firstSubmit()){
-      showNotification("Filtering of the data", type = "message", duration = NULL, id = "filtrage")}
-    
-    flog.info("Filtrage")
-    
-    final_filtered_data <- initial_data()
-    
-    if (!is.null(input$select_species)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(species %in% input$select_species)
-    }
-    
-    if (!is.null(input$select_gear_type)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(gear_type %in% input$select_gear_type)
-    }
-    
-    if (!is.null(input$select_fishing_fleet)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(fishing_fleet %in% input$select_fishing_fleet)
-    }
-    
-    if (!is.null(input$select_gridtype)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(gridtype %in% input$select_gridtype)
-    }
-    
-    if (!is.null(input$select_fishing_mode)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(fishing_mode %in% input$select_fishing_mode)
-    }
-    
-    if (!is.null(input$toggle_year) && !is.null(input$years)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
-    }
-    if(!firstSubmit()){
-      showNotification("Filtering finished", type = "message", id = "filtrage")
-    }
-    flog.info("Filtrage terminé")
-    firstSubmit(FALSE)
-    flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
-
-    
-    final_filtered_data
-  }, ignoreNULL = FALSE)
-  
-  data_without_geom <- reactive({
-    req(final_filtered_data())
-    
-    flog.info("Removing geometry column from data")
-    
-    data_without_geom <- as.data.frame(final_filtered_data())
-    
-    data_without_geom$geom_wkt <- NULL
-    
-    if("geom"%in% colnames(data_without_geom)){
-      data_without_geom <- data_without_geom %>% dplyr::select(-geom)
-    }
-    
-    flog.info("Data without geometry: %s", head(data_without_geom))
-    data_without_geom
-  })
-  
-  centroid <- reactive({
-    flog.info("Calculating centroid")
-    bbox <- st_as_sf(final_filtered_data()) %>% 
-      st_bbox()  # Get the bounding box
-    
-    # Calculate the center of the bounding box
-    center_lon <- (bbox["xmin"] + bbox["xmax"]) / 2
-    center_lat <- (bbox["ymin"] + bbox["ymax"]) / 2
-    
-    # Create a POINT geometry for the centroid
-    result <- st_point(c(center_lon, center_lat)) %>% 
-      st_sfc(crs = st_crs(final_filtered_data()))  # Ensure the same CRS
-    
-    flog.info("Centroid: %s", st_as_text(result))
-    result
-  })
-  
   observeEvent(input$resetWkt, {
     showModal(modalDialog(
       title = "Changing spatial coverage",
@@ -329,8 +332,7 @@ server <- function(input, output, session) {
     removeModal()
   })
   
-  ############################################################# OUTPUTS ############################################################# 
-  
+  # Data and graphics outputs
   output$sql_query_init <- renderText({ 
     paste(sql_query_init)
   })
@@ -356,22 +358,17 @@ server <- function(input, output, session) {
     data_time_serie_species()
   })
   
-  
-  
   output$plot11 <- renderImage({
     df_i11_filtered <- as(final_filtered_data(), "Spatial")
-    
     i11 <- Atlas_i11_CatchesByCountry(df=df_i11_filtered,
                                       geomIdAttributeName="geom_id",
                                       countryAttributeName="fishing_fleet",
                                       speciesAttributeName="species",
                                       valueAttributeName="measurement_value",
                                       withSparql=FALSE)
-    
     i11
     png(i11, width = 400, height = 300)
     dev.off()
-    
     list(src = i11,
          contentType = 'image/png',
          width = 1600,
@@ -379,13 +376,13 @@ server <- function(input, output, session) {
          alt = "This is alternate text")
   }, deleteFile = TRUE)
   
-  # Global pie chart
+  # Pie charts
   categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", data_without_geom)
   categoryGlobalPieChartServer("species_chart", "species", data_without_geom)
   categoryGlobalPieChartServer("gear_type_chart", "gear_type", data_without_geom)
   categoryGlobalPieChartServer("fishing_mode_chart", "fishing_mode", data_without_geom)
   
-  #Pie map and time series
+  # Map and time series
   pieMapTimeSeriesServer("species_module", category_var = "species", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
   pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
   pieMapTimeSeriesServer("gear_type_module", category_var = "gear_type", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
@@ -401,25 +398,18 @@ server <- function(input, output, session) {
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
   mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
   
-  
-  observeEvent(firstSubmit() ,{
-    if(!firstSubmit()){
-    flog.info("delay")
-    catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
-    mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
-    
-    shinyjs::delay(3000, {   
-      show(TRUE)
-      flog.info("delay finished")
-    })
+  observeEvent(firstSubmit(), {
+    if (!firstSubmit()) {
+      flog.info("delay")
+      catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
+      mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
+      shinyjs::delay(3000, {   
+        show(TRUE)
+        flog.info("delay finished")
+      })
     }
-    
   })
   
-  
-
-  
-  # Time series by year
   plotTotalCatchesServer("catch_by_year", data = data_without_geom)
   
   observeEvent(input$change_dataset, {

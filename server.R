@@ -81,15 +81,21 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       })
       
     } else {
-      showNotification("Loading big dataset, please wait", type = "message", duration = NULL, id = "loadingbigdata")
-        
+      # shinyjs::hide("main_content")
+      showNotification("Loading big dataset, please wait. Do not hesitate to use this laoding time to read the documentation on the app, the data and the metadata associated. ", type = "message", duration = NULL, id = "loadingbigdata")
+      # shinyjs::show("loading_page")
+      
       data <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, debug, pool)
       initial_data(data$initial_data)
       data_for_filters(data$data_for_filters)
       
       flog.info("Dataset created. You can now filter it.")
+      shinyjs::hide("loading_page")
       
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
+      shinyjs::show("main_content")
+      wkt(global_wkt)
+      
     }
     
     shinyjs::click("submit")
@@ -107,8 +113,11 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
   
   # Filtering the final data
   final_filtered_data <- eventReactive(input$submit, {
+    
     flog.info("Submit button clicked")
     
+    req(wkt())
+    wkt <- wkt()
     req(initial_data())
     req(data_for_filters())
     
@@ -150,15 +159,26 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
     }
     
+    
+    if(wkt != global_wkt){
+      sf_wkt <- st_as_sfc(wkt, crs = 4326)
+      final_filtered_data <- st_as_sf(final_filtered_data)
+      final_filtered_data <- final_filtered_data[st_within(final_filtered_data, sf_wkt, sparse = FALSE), ]
+    }
+    
     if (!firstSubmit()) {
       showNotification("Filtering finished", type = "message", id = "filtrage")
     }
+
+    
     flog.info("Filtering finished")
     firstSubmit(FALSE)
     flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
     
     final_filtered_data
   }, ignoreNULL = FALSE)
+  
+  
   
   # Reactive function for data without geometry
   data_without_geom <- reactive({
@@ -298,6 +318,15 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
     removeModal()
   })
   
+  
+  observeEvent(submitTrigger(), {
+    print("submittrigger")
+    if(submitTrigger()) {
+      print("submit")
+      shinyjs::click("submit")  # Trigger the submit button click in the sidebar
+      submitTrigger(FALSE)
+    }
+  })
   # Data and graphics outputs
   output$sql_query_init <- renderText({ 
     paste(sql_query_init)

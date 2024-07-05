@@ -158,7 +158,8 @@ load_ui_modules <- function() {
     'modules/plotTotalCatches.R',
     'R/get_html_title.R',
     'R/getPalette.R',
-    'R/palette_settings.R'
+    'R/palette_settings.R', 
+    "modules/dataset_choice.R"
   )
   lapply(ui_files, function(file) {
     source(here::here(file))

@@ -106,13 +106,16 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     })
     
     observeEvent(input$submit_draw, {
-      flog.info("User requested to change spatial coverage")
+      
+      flog.info("Submitting draw")
+      
+      
       showModal(modalDialog(
         title = "Changing spatial coverage",
-        "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
+        "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure? \n(You have to draw the shape before clicking this button)",
         footer = tagList(
           modalButton("No"),
-          actionButton(ns("yes_button"), "Yes")
+          actionButton(ns("yes_button"), "Yes")  # Ensure ns is used
         ),
         easyClose = TRUE,
         id = ns("confirmation_modal")  
@@ -120,17 +123,21 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     })
     
     observeEvent(input$yes_button, {
-      flog.info("User confirmed changing spatial coverage")
+      flog.info("Yes button clicked cahnign the wkt")
       req(input$pie_map_draw_new_feature$geometry)
       req(input$pie_map_draw_stop)
       geojson <- input$pie_map_draw_new_feature$geometry
+      # Convert GeoJSON to sf object
       geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
       sf_obj <- geojsonsf::geojson_sf(geojson_text)
+      
+      
+      # Convert to WKT
       wkt_val <- st_as_text(sf_obj$geometry)
-      wkt(wkt_val)
+      wkt(wkt_val)  # Update the reactive value with the WKT representation
       submitTrigger(TRUE)      
       removeModal()
-      flog.info("Spatial coverage changed")
     })
+    
   })
 }

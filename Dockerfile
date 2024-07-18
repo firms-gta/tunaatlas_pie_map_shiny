@@ -64,7 +64,7 @@ RUN mkdir -p data
 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
-COPY data/DOI2.csv ./data/DOI2.csv 
+COPY data/DOI.csv ./data/DOI.csv 
 COPY update_data.R ./update_data.R 
 
 # Run the data update script Downloading the data (cached if data/DOI.csv did not change).

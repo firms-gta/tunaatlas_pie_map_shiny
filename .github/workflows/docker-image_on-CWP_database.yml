@@ -18,10 +18,19 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 140
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Calculate renv.lock hash
+        id: renv_lock
+        run: echo "renv_lock_hash=$(sha256sum renv.lock | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Calculate DOI.csv hash
+        id: doi_csv
+        run: echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
 
       - name: Docker meta
         id: meta
@@ -53,21 +62,22 @@ jobs:
         with:
           driver-opts: image=moby/buildkit:master,network=host
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+      - name: Verify Docker images
+        run: docker images
+
+      - name: Inspect Docker cache
+        run: docker buildx du
 
       - name: Build Docker image
         run: |
           docker buildx build \
+            --progress=plain \
             --cache-from type=registry,ref=$CACHE_IMAGE:latest \
             --cache-to type=registry,ref=$CACHE_IMAGE:latest,mode=max \
-            --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+            --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+            --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
+            --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest \
             --output type=docker,dest=/tmp/docker-image.tar \
             .
 

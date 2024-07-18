@@ -10,13 +10,14 @@ pool <- dbPool(
 )
 
 # Charger le serveur et l'UI
-source("server_test.R")
+source("server.R")
 source("ui.R")
 
 # Lancer l'application avec le paramètre debug
 shinyApp(
   ui = ui,
   server = function(input, output, session) {
-    server(input, output, session, debug = TRUE, default_dataset_preloaded = default_dataset_preloaded)
+    server(input, output, session, debug = TRUE, default_dataset_preloaded = global_catch_tunaatlasird_level2)
   }
 )
+

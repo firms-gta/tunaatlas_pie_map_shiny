@@ -1,7 +1,7 @@
 FROM rocker/r-ver:4.2.3
 
 # Maintainer information
-MAINTAINER Julien Barde "julien.barde@ird.fr"
+LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
 
 # Install system libraries of general use
 RUN apt-get update && apt-get install -y \
@@ -21,41 +21,85 @@ RUN apt-get update && apt-get install -y \
     git \
     libnetcdf-dev \
     curl \
-    libjq-dev
+    libjq-dev \
+    cmake
+    
+# Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates somme errors
+
+# Install additional libraries for redland
+RUN apt-get update && apt-get install -y \
+    librdf0 \
+    librdf0-dev \
+    redland-utils && \
+    apt-get clean
 
 # Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y
 
-# Install cmake
-RUN apt-get update && apt-get -y install cmake
-
-# Install R core package dependencies
+# Install R core package dependencies the following line install httpuv that is usually used in shiny apps
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
-RUN R -e "install.packages(c('remotes', 'jsonlite', 'yaml'), repos='https://cran.r-project.org/')"
 
-# Install renv package
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+# Set the working directory
+WORKDIR /root/testpublishingdockerimages
 
 # Set environment variables for renv cache
-ARG RENV_PATHS_ROOT=/root/tunaatlas_pie_map_shiny/renv/.cache
-ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
+# ARG RENV_PATHS_ROOT=/root/tunaatlas_pie_map_shiny/renv/.cache
+ARG RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
 RUN mkdir -p ${RENV_PATHS_ROOT}
 
 # Set the working directory
 WORKDIR /root/tunaatlas_pie_map_shiny
 
+#those packages are essential to download the data in update_data.R, they are ran before renv because the renv.lock would change more than the DOI2.csv
+RUN R -e "install.packages('remotes', repos='https://cran.r-project.org/')" 
+RUN R -e "remotes::install_version('zen4R', version = '0.10', upgrade = 'never', repos = 'https://cran.r-project.org/')"
+RUN R -e "remotes::install_version('readr', version = '2.1.5', upgrade = 'never',  repos = 'https://cran.r-project.org/')"
+
+# Echo the DOI_CSV_HASH for debugging and to to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
+ARG DOI_CSV_HASH
+RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}"
+
+# Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
+RUN mkdir -p data 
+
+# Copy the CSV containing the data to download
+# Copy the script downloading the data from the CSV
+COPY data/DOI2.csv ./data/DOI2.csv 
+COPY update_data.R ./update_data.R 
+
+# Run the data update script Downloading the data (cached if data/DOI.csv did not change).
+RUN Rscript update_data.R 
+# Some errors due to the timeout may appear, for now fixex by raising the  timeout in yml file
+
+# ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
+ARG RENV_PATHS_ROOT=/root/.cache/R/renv
+
+# Set environment variables for renv cache
+ENV RENV_PATHS_CACHE=${RENV_PATHS_ROOT}
+
+# Echo the RENV_PATHS_ROOT and RENV_PATHS_CACHE to stop cache if renv.lock has changed
+RUN echo "RENV_PATHS_ROOT=${RENV_PATHS_ROOT}"
+RUN echo "RENV_PATHS_CACHE=${RENV_PATHS_CACHE}"
+
+# Define the build argument for the hash of renv.lock
+ARG RENV_LOCK_HASH
+RUN echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}"
+
+# Create the renv cache directory
+RUN mkdir -p ${RENV_PATHS_ROOT}
+
+# Install renv package that records the packages used in the shiny app
+RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+
 # Copy renv configuration and lockfile
 COPY renv.lock ./
-COPY .Rprofile ./
 COPY renv/activate.R renv/
 COPY renv/settings.json renv/
 
-# Set renv cache location
-ENV RENV_PATHS_CACHE renv/.cache
-
 # Restore renv packages
-RUN R -e "renv::activate()"
-RUN R -e "renv::restore()"
+RUN R -e "renv::activate()" 
+# Used to setup the environment (with the path cache)
+RUN R -e "renv::restore()" 
 
 # Copy the rest of the application code
 COPY . .
@@ -65,6 +109,9 @@ EXPOSE 3838
 
 # Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
+
+# Run the global script to load packages and data prior to runnning the shiny app
+RUN Rscript global.R
   
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]

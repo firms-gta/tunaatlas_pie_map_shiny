@@ -11,6 +11,42 @@ source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtl
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 
+flog.info("Loading data ")
+# Read the DOI CSV file
+DOI <- read_csv('data/DOI.csv')
+# DOI$Filename <- "global_catch_tunaatlasird_level2.csv"
+load_data <- function() {
+  loaded_data <- list()
+  
+  for (filename in DOI$Filename) {
+    if(!exists(tools::file_path_sans_ext(filename))){
+      
+      flog.info("Loading dataset: %s", filename)
+      
+      base_filename <- tools::file_path_sans_ext(filename) # Remove any existing extension
+      csv_file_path <- file.path('data', paste0(base_filename, '.csv'))
+      rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
+      
+      if (file.exists(csv_file_path)) {
+        assign(base_filename, fread(csv_file_path), envir = .GlobalEnv)
+        loaded_data[[base_filename]] <- read_csv(csv_file_path)
+      } else if (file.exists(rds_file_path)) {
+        assign(base_filename, readRDS(rds_file_path), envir = .GlobalEnv)
+        loaded_data[[base_filename]] <- readRDS(rds_file_path)
+      } else {
+        warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
+      }
+    } else {
+      flog.info("Dataset %s already existing, no need to load it", tools::file_path_sans_ext(filename))
+      
+    }
+  }
+  
+  # return(loaded_data)
+}
+
+load_data()
+
 # Load environment variables from file
 try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 
@@ -122,15 +158,40 @@ default_measurement_unit <- "t"
 # Log default filter values
 # flog.info(paste("Default filter values set: Gridtype:", default_gridtype, ", Measurement Unit:", default_measurement_unit))
 
-variable_to_display <- c("species", "fishing_fleet", "measurement_value", "gear_type", "fishing_mode")
+# Get all column names
+global_catch_tunaatlasird_level2 <- fread("data/global_catch_tunaatlasird_level2.csv")
 
-# Define analysis options
-analysis_options <- list(
-  list(title = "Species Analysis", id = "species_analysis"),
-  list(title = "Fishing Fleet Analysis", id = "fleet_analysis"),
-  list(title = "Gear Type Analysis", id = "gear_analysis"),
-  list(title = "Fishing Mode Analysis", id = "fishing_mode_analysis")
-)
+if(value%in%colnames(global_catch_tunaatlasird_level2)){
+global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>% dplyr::rename(#measurement_value = value,
+                                                                                       fishing_fleet = flag,
+                                                                                       gear_type = gear,
+                                                                                       fishing_mode = schooltype,
+                                                                                      measurement_unit = catchunit) %>%
+  dplyr::select(species, measurement_value, fishing_fleet, year, month, gear_type, fishing_mode, geom, geom_wkt, measurement_unit)
+
+global_catch_tunaatlasird_level2$gridtype <- "5deg_x_5deg"
+}
+
+non_numeric_columns <- names(global_catch_tunaatlasird_level2)[sapply(global_catch_tunaatlasird_level2, is.character)]
+
+# Create target_* variables for each non-numeric column
+for (col in non_numeric_columns) {
+  assign(paste0("target_", col), unique(global_catch_tunaatlasird_level2[[col]]))
+}
+variable_to_display <- non_numeric_columns
+variable_to_display <- c("gear","fishing_fleet", "species", "fishing_mode"# , "species_label", "flag_label", "measurement_value" # "gear_type",
+                    #     "gear_label","fishing_mode", "schooltype_label", "catchtype_label", "species_group_labels", "gear_group_label"
+                    )
+
+# Fonction pour générer les titres et IDs d'analyse
+generate_analysis_option <- function(variable) {
+  title <- paste0(toupper(substring(variable, 1, 1)), substring(variable, 2), " Analysis")
+  id <- paste0(variable, "_analysis")
+  list(title = title, id = id)
+}
+
+# Générer les options d'analyse
+analysis_options <- lapply(variable_to_display, generate_analysis_option)
 
 # Load UI modules
 load_ui_modules <- function() {
@@ -168,31 +229,40 @@ load_ui_modules <- function() {
 }
 load_ui_modules()
 
-dimensions <- list(
-  list(input_id = "select_species", column_name = "species"),
-  list(input_id = "select_fishing_fleet", column_name = "fishing_fleet"),
-  list(input_id = "select_gear_type", column_name = "gear_type"),
-  list(input_id = "select_fishing_mode", column_name = "fishing_mode")
-)
+# Fonction pour générer les dimensions
+generate_dimension <- function(variable) {
+  input_id <- paste0("select_", variable)
+  column_name <- variable
+  list(input_id = input_id, column_name = column_name)
+}
 
-# Prepare target variables list
-targetVariables <- list(
-  species = target_species,
-  fishing_fleet = target_flag,
-  gear_type = target_gear_type,
-  fishing_mode = target_fishing_mode
-)
+# Générer les dimensions
+dimensions <- lapply(variable_to_display, generate_dimension)
+
+generate_target_variables <- function(variable) {
+  target_name <- paste0("target_", variable)
+  if (exists(target_name, envir = .GlobalEnv)) {
+    return(base::get(target_name, envir = .GlobalEnv))
+  } else {
+    warning(paste("Target variable", target_name, "does not exist"))
+    return(NULL)
+  }
+}
+
+# Function to generate data frame for each column
+generate_data_frame <- function(data) {
+}
+
+# Générer targetVariables et targettes
+targetVariables <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
+
+targetVariables2 <- lapply(targetVariables, as.data.frame)
+
+targettes <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
 
 # Initialize color palettes with a fixed seed for reproducibility
-palettes <- initialiserPalettes(targetVariables, seed = 2643598)
+palettes <- initialiserPalettes(targetVariables2, seed = 2643598)
 
-
-targettes <- list(
-  species = target_species,        
-  fishing_fleet = target_flag, 
-  gear_type = target_gear_type, 
-  fishing_mode = target_fishing_mode
-)
 # Define function to get target values based on category
 getTarget <- function(category) {
   target <- targettes[[category]]
@@ -262,6 +332,14 @@ flog.info("SQl query loaded")
 
 map_init <- read_html(here::here("www/map_init.html"))
 flog.info("Map init loaded")
+
+# call_modules <- function(variable_to_display, data_without_geom, final_filtered_data, centroid, submitTrigger) {
+#   lapply(variable_to_display, function(variable) {
+#     categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
+#     pieMapTimeSeriesServer(paste0(variable, "_module"), variable, final_filtered_data, centroid, submitTrigger)
+#     TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), variable, data_without_geom)
+#   })
+# } marche pas bien
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")

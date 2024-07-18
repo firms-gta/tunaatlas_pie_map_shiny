@@ -40,14 +40,6 @@ RUN apt-get update && apt-get upgrade -y
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 
 # Set the working directory
-WORKDIR /root/testpublishingdockerimages
-
-# Set environment variables for renv cache
-# ARG RENV_PATHS_ROOT=/root/tunaatlas_pie_map_shiny/renv/.cache
-ARG RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
-RUN mkdir -p ${RENV_PATHS_ROOT}
-
-# Set the working directory
 WORKDIR /root/tunaatlas_pie_map_shiny
 
 #those packages are essential to download the data in update_data.R, they are ran before renv because the renv.lock would change more than the DOI2.csv
@@ -69,19 +61,20 @@ COPY update_data.R ./update_data.R
 
 # Run the data update script Downloading the data (cached if data/DOI.csv did not change).
 RUN Rscript update_data.R 
-# Some errors due to the timeout may appear, for now fixex by raising the  timeout in yml file
+# Some errors due to the timeout may appear, for now fixed by raising the  timeout in yml file
 
 # ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
 ARG RENV_PATHS_ROOT=/root/.cache/R/renv
+ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
 
 # Set environment variables for renv cache
 ENV RENV_PATHS_CACHE=${RENV_PATHS_ROOT}
 
-# Echo the RENV_PATHS_ROOT and RENV_PATHS_CACHE to stop cache if renv.lock has changed
+# Echo the RENV_PATHS_ROOT for logging
 RUN echo "RENV_PATHS_ROOT=${RENV_PATHS_ROOT}"
 RUN echo "RENV_PATHS_CACHE=${RENV_PATHS_CACHE}"
 
-# Define the build argument for the hash of renv.lock
+# Define the build argument for the hash of renv.lock to stop cache if renv.lock has changed
 ARG RENV_LOCK_HASH
 RUN echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}"
 
@@ -110,7 +103,7 @@ EXPOSE 3838
 # Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
-# Run the global script to load packages and data prior to runnning the shiny app
+# Run the global script to load packages and data prior to running the shiny app
 RUN Rscript global.R
   
 # Define the entry point to run the Shiny app

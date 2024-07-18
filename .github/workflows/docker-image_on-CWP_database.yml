@@ -13,7 +13,7 @@ on:
 env:
   CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database-cache
   DOCKER_BUILDKIT: 1
-  RENV_PATHS_ROOT: ~/.cache/R/renv
+  RENV_PATHS_ROOT: /root/.cache/R/renv
 
 jobs:
   docker:

@@ -77,7 +77,7 @@ tryCatch({
   flog.info("Database connection pool created successfully.")
 }, error = function(e) {
   flog.error("Failed to create database connection pool: %s", e$message)
-})
+
 
 # Log the successful creation of the connection pool
 flog.info("Database connection pool to '%s' has been created successfully.", db_name)
@@ -343,4 +343,4 @@ flog.info("Map init loaded")
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")
-
+})

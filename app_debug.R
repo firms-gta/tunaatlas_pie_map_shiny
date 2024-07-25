@@ -17,7 +17,7 @@ source("ui.R")
 shinyApp(
   ui = ui,
   server = function(input, output, session) {
-    server(input, output, session, debug = TRUE, default_dataset_preloaded = global_catch_tunaatlasird_level2)
+    server(input, output, session, debug = TRUE, default_dataset_preloaded = global_catch_firms_level0_public %>% head(10000))
   }
 )
 

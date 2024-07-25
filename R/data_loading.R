@@ -7,7 +7,9 @@ load_initial_data <- function(debug, default_dataset_preloaded, pool) {
   }
   
   default_dataset_preloaded_without_geom <- default_dataset_preloaded
-  default_dataset_preloaded_without_geom$geom <- NULL
+  if ("geom" %in% colnames(default_dataset_preloaded_without_geom)) {
+    default_dataset_preloaded_without_geom <- default_dataset_preloaded_without_geom %>% dplyr::select(-geom)
+  }
   default_dataset_preloaded_without_geom$geom_wkt <- NULL
   
   list(

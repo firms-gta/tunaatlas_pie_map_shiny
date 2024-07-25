@@ -16,6 +16,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     zoom_level <- reactiveVal(1)
+    
     target_var <- getTarget(category_var)
     
     data_pie_map <- reactive({
@@ -26,7 +27,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
         dplyr::group_by(!!sym(category_var), geom_wkt) %>%
         dplyr::summarise(measurement_value = sum(measurement_value)) %>%
         tidyr::spread(key = !!sym(category_var), value = measurement_value, fill = 0) %>%
-        dplyr::mutate(total = rowSums(across(any_of(target_var[[category_var]]))))
+        dplyr::mutate(total = rowSums(across(any_of(target_var))))
       flog.info("Pie map data: %s", head(df))
       df
     })

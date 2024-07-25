@@ -69,7 +69,7 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       flog.info("First submit")
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
-      
+
       data <- load_initial_data(debug, default_dataset_preloaded, pool)
       initial_data(data$initial_data)
       data_for_filters(data$data_for_filters)
@@ -251,7 +251,7 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
   output$year_input <- renderUI({
     req(data_for_filters())
     years_for_filtering <- data_for_filters() %>%
-      dplyr::summarise(min_year = min(year), max_year = max(year))
+      dplyr::summarise(min_year = min(year, na.rm = TRUE), max_year = max(year, na.rm = TRUE))
     flog.info("Year range: %d - %d", years_for_filtering$min_year, years_for_filtering$max_year)
     if (years_for_filtering$min_year == years_for_filtering$max_year) {
       selectInput("years", "Year", choices = years_for_filtering$min_year, selected = years_for_filtering$min_year)

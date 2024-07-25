@@ -15,7 +15,7 @@ flog.info("Loading data ")
 # Read the DOI CSV file
 DOI <- read_csv('data/DOI.csv')
 # DOI$Filename <- "global_catch_tunaatlasird_level2.csv"
-load_data <- function() {
+load_data <- function(DOI) {
   loaded_data <- list()
   
   for (filename in DOI$Filename) {
@@ -45,7 +45,7 @@ load_data <- function() {
   # return(loaded_data)
 }
 
-load_data()
+load_data(DOI)
 
 # Load environment variables from file
 try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
@@ -77,7 +77,7 @@ tryCatch({
   flog.info("Database connection pool created successfully.")
 }, error = function(e) {
   flog.error("Failed to create database connection pool: %s", e$message)
-
+})
 
 # Log the successful creation of the connection pool
 flog.info("Database connection pool to '%s' has been created successfully.", db_name)
@@ -159,27 +159,41 @@ default_measurement_unit <- "t"
 # flog.info(paste("Default filter values set: Gridtype:", default_gridtype, ", Measurement Unit:", default_measurement_unit))
 
 # Get all column names
-global_catch_tunaatlasird_level2 <- fread("data/global_catch_tunaatlasird_level2.csv")
+# global_catch_firms_level0_public <- fread("global_catch_firms_level0_public.csv") %>% dplyr::mutate(gear_type = as.character(gear_type))
+global_catch_firms_level0_public <- global_catch_firms_level0_public %>% dplyr::mutate(gear_type = as.character(gear_type))
 
-if(value%in%colnames(global_catch_tunaatlasird_level2)){
-global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>% dplyr::rename(#measurement_value = value,
+shapefile.fix <- st_read(pool,query = "SELECT * from area.cwp_grid") 
+
+if("value"%in%colnames(global_catch_firms_level0_public)){
+  global_catch_firms_level0_public <- global_catch_firms_level0_public %>% dplyr::rename(#measurement_value = value,
                                                                                        fishing_fleet = flag,
                                                                                        gear_type = gear,
                                                                                        fishing_mode = schooltype,
                                                                                       measurement_unit = catchunit) %>%
   dplyr::select(species, measurement_value, fishing_fleet, year, month, gear_type, fishing_mode, geom, geom_wkt, measurement_unit)
 
-global_catch_tunaatlasird_level2$gridtype <- "5deg_x_5deg"
+# global_catch_tunaatlasird_level2$gridtype <- "5deg_x_5deg"
 }
+global_catch_firms_level0_public_ancient <- global_catch_firms_level0_public
+global_catch_firms_level0_public <- global_catch_firms_level0_public_ancient %>% 
+  dplyr::filter(measurement_unit == "t") %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
+  full_join(shapefile.fix %>% dplyr::select(cwp_code, gridtype) , by = c("geographic_identifier" = "cwp_code")) %>% 
+  dplyr::rename(geom_wkt = geom) %>% 
+  dplyr::mutate(year = lubridate::year(time_start)) %>% 
+  dplyr::mutate(month = lubridate::month(time_start)) %>% 
+  dplyr::filter(!is.na(measurement_value)) %>% dplyr::rename(geom_id = geographic_identifier)%>%
+  dplyr::select(-c(time_start, time_end, measurement, measurement_type, quarter)) 
 
-non_numeric_columns <- names(global_catch_tunaatlasird_level2)[sapply(global_catch_tunaatlasird_level2, is.character)]
+global_catch_firms_level0_public <- as.data.frame(global_catch_firms_level0_public)
+
+non_numeric_columns <- names(global_catch_firms_level0_public)[sapply(global_catch_firms_level0_public, is.character)]
 
 # Create target_* variables for each non-numeric column
 for (col in non_numeric_columns) {
-  assign(paste0("target_", col), unique(global_catch_tunaatlasird_level2[[col]]))
+  assign(paste0("target_", col), unique(global_catch_firms_level0_public[[col]]))
 }
 variable_to_display <- non_numeric_columns
-variable_to_display <- c("gear","fishing_fleet", "species", "fishing_mode"# , "species_label", "flag_label", "measurement_value" # "gear_type",
+variable_to_display <- c("gear_type","fishing_fleet", "species", "fishing_mode"# , "species_label", "flag_label", "measurement_value" # "gear_type",
                     #     "gear_label","fishing_mode", "schooltype_label", "catchtype_label", "species_group_labels", "gear_group_label"
                     )
 
@@ -220,7 +234,8 @@ load_ui_modules <- function() {
     'R/get_html_title.R',
     'R/getPalette.R',
     'R/palette_settings.R', 
-    "modules/dataset_choice.R"
+    "modules/dataset_choice.R", 
+    "R/data_loading.R"
   )
   lapply(ui_files, function(file) {
     source(here::here(file))
@@ -247,10 +262,6 @@ generate_target_variables <- function(variable) {
     warning(paste("Target variable", target_name, "does not exist"))
     return(NULL)
   }
-}
-
-# Function to generate data frame for each column
-generate_data_frame <- function(data) {
 }
 
 # Générer targetVariables et targettes
@@ -343,4 +354,4 @@ flog.info("Map init loaded")
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")
-})
+

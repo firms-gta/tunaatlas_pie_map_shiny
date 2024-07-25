@@ -103,8 +103,9 @@ EXPOSE 3838
 # Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
-# Run the global script to load packages and data prior to running the shiny app
-RUN Rscript global.R
+# Run the global script to load packages and data prior to running the shiny app 
+# Removed as global.R need connection to DB for now to implement everything
+# RUN Rscript global.R
   
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]

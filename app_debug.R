@@ -19,8 +19,7 @@ global_catch_5deg_1m_firms_level0_public_debug <- global_catch_5deg_1m_firms_lev
 shinyApp(
   ui = ui,
   server = function(input, output, session) {
-    server(input, output, session, debug = TRUE, default_dataset_preloaded = global_catch_5deg_1m_firms_level0_public_debug, 
-           variable_to_display = variable_to_display)
+    server(input, output, session)
   }
 )
 

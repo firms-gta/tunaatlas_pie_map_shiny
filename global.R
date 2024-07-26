@@ -15,34 +15,40 @@ flog.info("Loading data ")
 # Read the DOI CSV file
 DOI <- read_csv('data/DOI.csv')
 # DOI$Filename <- "global_catch_tunaatlasird_level2.csv"
+library(data.table)
+library(readr)
+library(futile.logger)
+
+library(data.table)
+library(readr)
+library(futile.logger)
+
 load_data <- function(DOI) {
   loaded_data <- list()
   
   for (filename in DOI$Filename) {
-    # if(!exists(tools::file_path_sans_ext(filename))){
-      
-      flog.info("Loading dataset: %s", filename)
-      
-      base_filename <- tools::file_path_sans_ext(filename) # Remove any existing extension
-      csv_file_path <- file.path('data', paste0(base_filename, '.csv'))
-      rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
-      
-      if (file.exists(csv_file_path)) {
-        assign(base_filename, fread(csv_file_path), envir = .GlobalEnv)
-        loaded_data[[base_filename]] <- read_csv(csv_file_path)
-      } else if (file.exists(rds_file_path)) {
-        assign(base_filename, readRDS(rds_file_path), envir = .GlobalEnv)
-        loaded_data[[base_filename]] <- readRDS(rds_file_path)
-      } else {
-        warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
+    flog.info("Loading dataset: %s", filename)
+    
+    base_filename <- tools::file_path_sans_ext(filename) # Remove any existing extension
+    csv_file_path <- file.path('data', paste0(base_filename, '.csv'))
+    rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
+    
+    if (file.exists(csv_file_path)) {
+      # Read CSV file with specific column type for gear_type
+      loaded_data[[base_filename]] <- read_csv(csv_file_path, 
+                                               col_types = cols(gear_type = col_character()))
+      assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
+    } else if (file.exists(rds_file_path)) {
+      loaded_data[[base_filename]] <- readRDS(rds_file_path)
+      # Ensure gear_type is character after reading from RDS
+      if ("gear_type" %in% names(loaded_data[[base_filename]])) {
+        loaded_data[[base_filename]]$gear_type <- as.character(loaded_data[[base_filename]]$gear_type)
       }
-    # } else {
-    #   flog.info("Dataset %s already existing, no need to load it", tools::file_path_sans_ext(filename))
-    #   
-    # }
+      assign(base_filename, loaded_data[[base_filename]], envir = .GlobalEnv)
+    } else {
+      warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
+    }
   }
-  
-  # return(loaded_data)
 }
 
 load_data(DOI)
@@ -89,14 +95,6 @@ metadata <- reactiveVal()
 zoom <- reactiveVal(1)
 
 # Query distinct values from the database for filters
-# target_dataset <- dbGetQuery(pool, "SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")
-# target_species <- dbGetQuery(pool, "SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
-# target_year <- dbGetQuery(pool, "SELECT DISTINCT(year) FROM public.shinycatch ORDER BY year;")
-# target_flag <- dbGetQuery(pool, "SELECT DISTINCT(fishing_fleet) FROM public.shinycatch ORDER BY fishing_fleet;")
-# target_gridtype <- dbGetQuery(pool, "SELECT DISTINCT(gridtype) FROM public.shinycatch ORDER BY gridtype;")
-# target_gear_type <- dbGetQuery(pool, "SELECT DISTINCT(gear_type) FROM public.shinycatch ORDER BY gear_type;")
-# target_measurement_unit <- dbGetQuery(pool, "SELECT DISTINCT(measurement_unit) FROM public.shinycatch ORDER BY measurement_unit;")
-# target_fishing_mode <- dbGetQuery(pool, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
 
 # saveRDS(list(target_dataset = target_dataset, 
 #              target_species = target_species, 
@@ -121,10 +119,10 @@ flog.info("Filter options retrieved from database.")
 
 # Set default values for filters
 # default_dataset <- ifelse('global_catch_5deg_1m_firms_level1' %in% target$target_dataset$dataset, "global_catch_5deg_1m_firms_level1", target_dataset[[1]][1])
-default_dataset <- ifelse('global_catch_5deg_1m_firms_level1' %in% target_dataset$dataset, "global_catch_5deg_1m_firms_level1", target_dataset[[1]][1])
+default_dataset_DB <- ifelse('global_catch_5deg_1m_firms_level1' %in% target_dataset$dataset, "global_catch_5deg_1m_firms_level1", target_dataset[[1]][1])
 
 # Log the default dataset selected
-flog.info(paste("Default dataset selected:", default_dataset))
+flog.info(paste("Default dataset DB selected:", default_dataset_DB))
 
 filters_combinations_query <- glue::glue_sql("SELECT dataset, measurement_unit, gridtype FROM public.shinycatch GROUP BY dataset, measurement_unit, gridtype;",
                                        .con = pool)
@@ -133,66 +131,51 @@ filters_combinations <- DBI::dbGetQuery(pool, filters_combinations_query)
 
 # # Set default filter values based on combinations
 default_gridtype <- filters_combinations %>%
-  dplyr::filter(dataset == default_dataset) %>%
+  dplyr::filter(dataset == default_dataset_DB) %>%
   head(1) %>%
   pull(gridtype)
 
 default_measurement_unit <- "t"
-# 
-# default_species <- filters_combinations %>%
-#   dplyr::filter(dataset == default_dataset) %>%
-#   dplyr::filter(gridtype == default_gridtype) %>%
-#   dplyr::filter(measurement_unit == default_measurement_unit) %>%
-#   head(5) %>%
-#   pull(species)
-# 
-# filtered_combinations_default <- filters_combinations %>%
-#   dplyr::filter(dataset == default_dataset) %>%
-#   dplyr::filter(measurement_unit == default_measurement_unit) %>%
-#   dplyr::filter(gridtype == default_gridtype)
-# 
-# default_flag <- unique(filtered_combinations_default$fishing_fleet)
-# default_gear_type <- unique(filtered_combinations_default$gear_type)
-# default_fishing_mode <- unique(filtered_combinations_default$fishing_mode)
-
-# Log default filter values
-# flog.info(paste("Default filter values set: Gridtype:", default_gridtype, ", Measurement Unit:", default_measurement_unit))
-
-# Get all column names
-# global_catch_5deg_1m_firms_level0_public <- fread("global_catch_5deg_1m_firms_level0_public.csv") %>% dplyr::mutate(gear_type = as.character(gear_type))
 
 shapefile.fix <- st_read(pool,query = "SELECT * from area.cwp_grid") 
 
-# if("value"%in%colnames(global_catch_5deg_1m_firms_level0_public)){
-#   global_catch_5deg_1m_firms_level0_public <- global_catch_5deg_1m_firms_level0_public %>% dplyr::rename(#measurement_value = value,
-#                                                                                        fishing_fleet = flag,
-#                                                                                        gear_type = gear,
-#                                                                                        fishing_mode = schooltype,
-#                                                                                       measurement_unit = catchunit) %>%
-#   dplyr::select(species, measurement_value, fishing_fleet, year, month, gear_type, fishing_mode, geom, geom_wkt, measurement_unit)
-# 
-# # global_catch_tunaatlasird_level2$gridtype <- "5deg_x_5deg"
-# }
-global_catch_5deg_1m_firms_level0_public <- global_catch_5deg_1m_firms_level0_public%>% dplyr::mutate(gear_type = as.character(gear_type)) %>% 
+species_group <- st_read(pool, query = "SELECT taxa_order, code FROM species.species_asfis") %>%
+  dplyr::select(species_group = taxa_order, species = code)%>% dplyr::distinct()
+flog.info("Loaded species_group data")
+
+cl_cwp_gear_level2 <- st_read(pool, query = "SELECT * FROM gear_type.isscfg_revision_1") %>%
+  dplyr::select(Code = code, Gear = label)%>% dplyr::distinct()
+flog.info("Loaded cl_cwp_gear_level2 data")
+
+object <- tools::file_path_sans_ext(DOI$Filename[1])
+default_dataset <- base::get(object)
+default_dataset <- default_dataset%>% dplyr::mutate(gear_type = as.character(gear_type)) %>% 
   dplyr::filter(measurement_unit == "t") %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
   full_join(shapefile.fix %>% dplyr::select(cwp_code, gridtype) , by = c("geographic_identifier" = "cwp_code")) %>% 
   dplyr::rename(geom_wkt = geom) %>% 
   dplyr::mutate(year = lubridate::year(time_start)) %>% 
   dplyr::mutate(month = lubridate::month(time_start)) %>% 
   dplyr::filter(!is.na(measurement_value))%>%
-  dplyr::select(-c(time_start, time_end,  quarter)) 
+  dplyr::select(-c(time_start, time_end,  quarter)) %>% 
+  dplyr::left_join(species_group, by = c("species")) %>% 
+  dplyr::left_join(cl_cwp_gear_level2, by = c("gear_type" = "Code"))
 
-global_catch_5deg_1m_firms_level0_public <- as.data.frame(global_catch_5deg_1m_firms_level0_public)
 
-non_numeric_columns <- names(global_catch_5deg_1m_firms_level0_public)[sapply(global_catch_5deg_1m_firms_level0_public, is.character)]
+default_dataset <- as.data.frame(default_dataset)
+
+non_numeric_columns <- names(default_dataset)[sapply(default_dataset, is.character)]
 
 # Create target_* variables for each non-numeric column
 for (col in non_numeric_columns) {
-  assign(paste0("target_", col), unique(global_catch_5deg_1m_firms_level0_public[[col]]))
+  assign(paste0("target_", col), unique(default_dataset[[col]]))
 }
 
 variable_to_display <- non_numeric_columns
-variable_to_display <- c("gear_type","fishing_fleet", "species", "fishing_mode", "source_authority", "measurement", "measurement_type")
+variable_to_display <- c("fishing_fleet", "species", "fishing_mode",
+                         "source_authority", "measurement", "measurement_type", 
+                         "gridtype", "species_group", 
+                         "gear_type",
+                         "Gear" )
 
 # variable_to_display1 <- c("gear_type","fishing_fleet", "species", "fishing_mode"#, "source_authority",
 #                          #"measurement_unit", "measurement","fishing_mode" , "measurement_type"
@@ -265,7 +248,7 @@ generate_target_variables <- function(variable) {
     return(base::get(target_name, envir = .GlobalEnv))
   } else {
     target_name <- paste0("target_", variable)
-    target <- global_catch_5deg_1m_firms_level0_public%>%
+    target <- default_dataset%>%
       dplyr::select(!!sym(variable)) %>% 
       distinct()
     return(base::set(target_name, value = target))
@@ -350,17 +333,8 @@ flog.info("SQl query loaded")
 map_init <- read_html(here::here("www/map_init.html"))
 flog.info("Map init loaded")
 
-# call_modules <- function(variable_to_display, data_without_geom, final_filtered_data, centroid, submitTrigger) {
-#   lapply(variable_to_display, function(variable) {
-#     categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
-#     pieMapTimeSeriesServer(paste0(variable, "_module"), variable, final_filtered_data, centroid, submitTrigger)
-#     TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), variable, data_without_geom)
-#   })
-# } marche pas bien
+default_dataset_preloaded <- default_dataset
+
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")
-
-
-default_dataset_preloaded <- global_catch_5deg_1m_firms_level0_public
-

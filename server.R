@@ -1,6 +1,5 @@
 server <- function(input, output, session) {
   
-  flog.info("Server function called with debug = %s", TRUE)
   flog.info("Default dataset preloaded: %s", !is.null(default_dataset_preloaded))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
   
@@ -70,7 +69,6 @@ server <- function(input, output, session) {
   
   dataset_choices <- dataset_choice_server("dataset_choice", filters_combinations, default_dataset, default_gridtype, default_measurement_unit)
   
-  
   # Initial dataset submission
   observeEvent(dataset_choices$submit(), {
     flog.info("Submit dataset clicked")
@@ -84,9 +82,15 @@ server <- function(input, output, session) {
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
 
-      data <- load_initial_data(debug = TRUE, default_dataset_preloaded, pool)
+      data <- load_initial_data(default_dataset_preloaded, pool)
+      
+      flog.info("Data loaded")
+      
       initial_data(data$initial_data)
+      flog.info("Inital data loaded")
+      
       data_for_filters(data$data_for_filters)
+      flog.info("Filters loaded")
       
       show(TRUE)
       observeEvent(TRUE, {

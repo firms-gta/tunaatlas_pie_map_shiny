@@ -1,11 +1,16 @@
 # R/data_loading.R
 
-load_initial_data <- function(debug, default_dataset_preloaded, pool) {
-  if (!debug || is.null(default_dataset_preloaded)) {
+load_initial_data <- function(default_dataset_preloaded, pool) {
+  if (is.null(default_dataset_preloaded)) {
+    flog.info("No default dataset preloaded using datasf.rds")
+    
     default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
     flog.info("Data sf loaded")
   } else {
+    flog.info("Default dataset preloaded using this one")
+    
     default_dataset_preloaded <- default_dataset_preloaded
+    
   }
   flog.info("Removing geometry of preloaded data")
   
@@ -16,8 +21,7 @@ load_initial_data <- function(debug, default_dataset_preloaded, pool) {
   default_dataset_preloaded_without_geom$geom_wkt <- NULL
   flog.info("geometry of preloaded data removed")
   
-  list(
-    initial_data = default_dataset_preloaded,
+  list(initial_data = default_dataset_preloaded,
     data_for_filters = default_dataset_preloaded_without_geom
   )
 }

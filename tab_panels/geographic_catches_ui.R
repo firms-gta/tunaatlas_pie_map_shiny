@@ -14,7 +14,7 @@ geographic_catches_ui <- function() {
             card_body(mapCatchesUI("total_catch"))
           ),
           grid_card(area = "plot_catches", card_body(plotTotalCatchesUI("catch_by_year"))),             
-          grid_card(area = "by_month", card_body(catches_by_variable_moduleUI("catches_by_variable_month")))
+          grid_card(area = "by_month", card_body(catches_by_variable_moduleUI("catches_by_variable_month", variable_to_display)))
 
         )
       )

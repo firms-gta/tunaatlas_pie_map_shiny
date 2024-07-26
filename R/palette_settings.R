@@ -17,7 +17,7 @@
 #' palettes <- initialiserPalettes(targetVariables, seed=2643598)
 #' getPalette("species")
 #' @export
-initialiserPalettes <- function(targetVariables, seed=2643598) {
+initialiserPalettes <- function(targetVariables, seed = 2643598) {
   # Fixer la graine pour la reproductibilité
   set.seed(seed)
   
@@ -39,9 +39,31 @@ initialiserPalettes <- function(targetVariables, seed=2643598) {
     # Générer toutes les couleurs possibles pour les palettes qualitatives
     paletteAll <- unlist(mapply(brewer.pal, paletteInfo$maxcolors, rownames(paletteInfo)))
     
+    flog.info("Generating palette for %s with %d unique values", variableName, nUnique)
+    flog.info("Total available colors: %d", length(paletteAll))
+    
+    # Vérifier que nUnique est un entier positif
+    if (!is.numeric(nUnique) || nUnique <= 0) {
+      stop(sprintf("Invalid number of unique values for %s: %s", variableName, nUnique))
+    }
+    
+    # Vérifier que length(paletteAll) est un entier positif
+    if (!is.numeric(length(paletteAll)) || length(paletteAll) <= 0) {
+      stop("Invalid length of available colors")
+    }
+    
+    # S'assurer que nUnique ne dépasse pas la longueur de paletteAll
+    if (nUnique > length(paletteAll)) {
+      warning(sprintf("The number of unique values in %s exceeds the available palette size. Colors will be recycled.", variableName))
+    }
+    
     # Échantillonner parmi toutes les couleurs pour créer la palette spécifique
-    palette <- sample(paletteAll, nUnique, replace=TRUE)
+    palette <- sample(paletteAll, nUnique, replace = TRUE)
+    # Ajuster la longueur de palette à celle de dataframe[[columnName]]
+    palette <- rep(palette, length.out = nUnique)
     names(palette) <- dataframe[[columnName]]
+    
+    flog.info("Generated palette for %s: %s", variableName, paste(palette, collapse = ", "))
     
     # Stocker la palette dans la liste des palettes
     palettes[[variableName]] <- palette
@@ -49,6 +71,10 @@ initialiserPalettes <- function(targetVariables, seed=2643598) {
   
   return(palettes)
 }
+
+
+
+
 
 
 

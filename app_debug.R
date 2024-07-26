@@ -13,11 +13,14 @@ pool <- dbPool(
 source("server.R")
 source("ui.R")
 
+global_catch_5deg_1m_firms_level0_public_debug <- global_catch_5deg_1m_firms_level0_public %>% head(1000)
+
 # Lancer l'application avec le paramètre debug
 shinyApp(
   ui = ui,
   server = function(input, output, session) {
-    server(input, output, session, debug = TRUE, default_dataset_preloaded = global_catch_firms_level0_public %>% head(10000))
+    server(input, output, session, debug = TRUE, default_dataset_preloaded = global_catch_5deg_1m_firms_level0_public_debug, 
+           variable_to_display = variable_to_display)
   }
 )
 

@@ -1,4 +1,9 @@
-server <- function(input, output, session, debug = FALSE, default_dataset_preloaded = NULL) {
+server <- function(input, output, session) {
+  
+  flog.info("Server function called with debug = %s", TRUE)
+  flog.info("Default dataset preloaded: %s", !is.null(default_dataset_preloaded))
+  flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
+  
   
   # Initialize resource paths and modules
   addResourcePath("www", here::here("www"))
@@ -14,7 +19,16 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
     shinyjs::toggle("gear_type_panel")
     shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
   })
+  # Handle UI elements with shinyjs
+  shinyjs::onclick("fishing_mode_toggle", {
+    shinyjs::toggle("fishing_mode_panel")
+    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
+  })
   
+  shinyjs::onclick("species_toggle", {
+    shinyjs::toggle("species_panel")
+    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
+  })
   # Initialize reactive values
   submitTrigger <- reactiveVal(FALSE)
   firstSubmit <- reactiveVal(TRUE)
@@ -70,7 +84,7 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
 
-      data <- load_initial_data(debug, default_dataset_preloaded, pool)
+      data <- load_initial_data(debug = TRUE, default_dataset_preloaded, pool)
       initial_data(data$initial_data)
       data_for_filters(data$data_for_filters)
       
@@ -109,75 +123,54 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
   
   shinyjs::delay(1, { shinyjs::click("dataset_choice-submitDataset") })
   
-  
-  
   # Filtering the final data
   final_filtered_data <- eventReactive(input$submit, {
-    
+
     flog.info("Submit button clicked")
-    
+
     req(wkt())
     wkt <- wkt()
     req(initial_data())
     req(data_for_filters())
-    
+
     if (!firstSubmit()) {
       showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
     }
-    
+
     flog.info("Filtering")
-    
+
     final_filtered_data <- initial_data()
-    
-    if (!is.null(input$select_species)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(species %in% input$select_species)
+
+    for (variable in variable_to_display) {
+      select_input <- paste0("select_", variable)
+      if (!is.null(input[[select_input]])) {
+        final_filtered_data <- final_filtered_data %>%
+          dplyr::filter(!!sym(variable) %in% input[[select_input]])
+      }
     }
-    
-    if (!is.null(input$select_gear_type)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(gear_type %in% input$select_gear_type)
-    }
-    
-    if (!is.null(input$select_fishing_fleet)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(fishing_fleet %in% input$select_fishing_fleet)
-    }
-    
-    if (!is.null(input$select_gridtype)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(gridtype %in% input$select_gridtype)
-    }
-    
-    if (!is.null(input$select_fishing_mode)) {
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(fishing_mode %in% input$select_fishing_mode)
-    }
-    
+
     if (!is.null(input$toggle_year) && !is.null(input$years)) {
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
     }
-    
-    
+
     if(wkt != global_wkt){
       sf_wkt <- st_as_sfc(wkt, crs = 4326)
       final_filtered_data <- st_as_sf(final_filtered_data)
       final_filtered_data <- final_filtered_data[st_within(final_filtered_data, sf_wkt, sparse = FALSE), ]
     }
-    
+
     if (!firstSubmit()) {
       showNotification("Filtering finished", type = "message", id = "filtrage")
     }
 
-    
+
     flog.info("Filtering finished")
     firstSubmit(FALSE)
     flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
-    
+
     final_filtered_data
   }, ignoreNULL = FALSE)
-  
   
   
   # Reactive function for data without geometry
@@ -217,36 +210,28 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
   observeEvent(data_for_filters_trigger(), {
     req(data_for_filters())
     data_for_filters <- data_for_filters()
-    flog.info("Initialising species")
-    species_data <- data_for_filters %>% dplyr::select(species) %>% dplyr::distinct()
-    flog.info("Species data after distinct: %s", head(species_data))
     
-    output$select_species <- renderUI({
-      selectizeInput('select_species', 'Select Species', choices = species_data$species, multiple = TRUE, selected = species_data$species)
+    lapply(variable_to_display, function(variable) {
+      local({
+        variable <- variable
+        flog.info(paste("Initialising", variable))
+        
+        variable_data <- data_for_filters %>% dplyr::select(all_of(variable)) %>% dplyr::distinct()
+        flog.info(paste(variable, "data after distinct:", paste(head(variable_data), collapse = ", ")))
+        
+        output[[paste0("select_", variable)]] <- renderUI({
+          selectizeInput(paste0('select_', variable), 
+                         paste('Select', gsub("_", " ", variable)), 
+                         choices = variable_data[[variable]], 
+                         multiple = TRUE, 
+                         selected = variable_data[[variable]])
+        })
+        
+        flog.info(paste(variable, "UI element initialized"))
+      })
     })
-    flog.info("Initialising gears")
-    gear_type <- data_for_filters %>% dplyr::select(gear_type) %>% dplyr::distinct()
-    flog.info("Gear type data: %s", head(gear_type))
-    
-    output$select_gear_type <- renderUI({
-      selectizeInput('select_gear_type', 'Select Gear', choices = gear_type$gear_type, multiple = TRUE, selected = gear_type$gear_type)
-    })
-    flog.info("Initialising fleets")
-    fleets <- data_for_filters %>% dplyr::select(fishing_fleet) %>% dplyr::distinct()
-    flog.info("Fishing fleet data: %s", head(fleets))
-    
-    output$select_fishing_fleet <- renderUI({
-      selectizeInput('select_fishing_fleet', 'Select the Fishing Fleet', choices = fleets$fishing_fleet, multiple = TRUE, selected = fleets$fishing_fleet)
-    })
-    flog.info("Initialising fishing modes")
-    fishing_modes <- data_for_filters %>% dplyr::select(fishing_mode) %>% dplyr::distinct()
-    flog.info("Fishing mode data: %s", head(fishing_modes))
-    
-    output$select_fishing_mode <- renderUI({
-      selectizeInput('select_fishing_mode', 'Select the Fishing mode', choices = fishing_modes$fishing_mode, multiple = TRUE, selected = fishing_modes$fishing_mode)
-    })
-    flog.info("Fishing mode selected")
   })
+  
   
   output$year_input <- renderUI({
     req(data_for_filters())
@@ -264,41 +249,22 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
     }
   })
   
-  observeEvent(input$all_species, {
-    flog.info("Select all species")
-    req(data_for_filters())
-    species <- data_for_filters() %>% dplyr::select(species) %>% dplyr::distinct() %>% pull(species)
-    flog.info("Select all species: %s", paste(species, collapse = ", "))
-    updateSelectInput(session, "select_species", selected = species)
-  })
-  
-  observeEvent(input$major_tunas, {
+    observeEvent(input$major_tunas, {
     flog.info("Select major tunas")
     req(data_for_filters())
     species <- data_for_filters() %>% dplyr::filter(species %in% c("YFT", "SKJ", "ALB", "BET", "SBF")) %>% dplyr::select(species) %>% dplyr::distinct() %>% pull(species)
     updateSelectInput(session, "select_species", selected = species)
   })
   
-  observeEvent(input$all_fishing_fleet, {
-    flog.info("Select all fishing fleets")
-    req(data_for_filters())
-    fleets <- data_for_filters() %>% dplyr::select(fishing_fleet) %>% dplyr::distinct() %>% pull(fishing_fleet)
-    updateSelectInput(session, "select_fishing_fleet", selected = fleets)
+  lapply(variable_to_display, function(variable) {
+    observeEvent(input[[paste0("all_", variable)]], {
+      flog.info(paste("Select all", variable))
+      req(data_for_filters())
+      all_values <- data_for_filters() %>% dplyr::select(!!sym(variable)) %>% dplyr::distinct() %>% pull(!!sym(variable))
+      updateSelectInput(session, paste0("select_", variable), selected = all_values)
+    })
   })
   
-  observeEvent(input$all_gear_type, {
-    flog.info("Select all gear types")
-    req(data_for_filters())
-    gear_type <- data_for_filters() %>% dplyr::select(gear_type) %>% dplyr::distinct() %>% pull(gear_type)
-    updateSelectInput(session, "select_gear_type", selected = gear_type)
-  })
-  
-  observeEvent(input$all_fishing_mode, {
-    flog.info("Select all fishing modes")
-    req(data_for_filters())
-    fishing_modes <- data_for_filters() %>% dplyr::select(fishing_mode) %>% dplyr::distinct() %>% pull(fishing_mode)
-    updateSelectInput(session, "select_fishing_mode", selected = fishing_modes)
-  })
   
   observeEvent(input$resetWkt, {
     showModal(modalDialog(
@@ -372,22 +338,28 @@ server <- function(input, output, session, debug = FALSE, default_dataset_preloa
   }, deleteFile = TRUE)
   
   # Pie charts
-  categoryGlobalPieChartServer("fishing_fleet_chart", "fishing_fleet", data_without_geom)
-  categoryGlobalPieChartServer("species_chart", "species", data_without_geom)
-  categoryGlobalPieChartServer("gear_type_chart", "gear_type", data_without_geom)
-  categoryGlobalPieChartServer("fishing_mode_chart", "fishing_mode", data_without_geom)
+  lapply(variable_to_display, function(variable) {
+    local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
+      variable <- variable
+      categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
+    })
+  })
   
   # Map and time series
-  pieMapTimeSeriesServer("species_module", category_var = "species", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
-  pieMapTimeSeriesServer("fishing_fleet_module", category_var = "fishing_fleet", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
-  pieMapTimeSeriesServer("gear_type_module", category_var = "gear_type", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
-  pieMapTimeSeriesServer("fishing_mode_module", category_var = "fishing_mode", data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
+  lapply(variable_to_display, function(variable) {
+    local({
+      variable <- variable
+      pieMapTimeSeriesServer(paste0(variable, "_module"), category_var = variable, data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
+    })
+  })
   
   # Time series by dimension
-  TimeSeriesbyDimensionServer("species_timeseries", category_var = "species", data = data_without_geom)
-  TimeSeriesbyDimensionServer("fishing_fleet_timeseries", category_var = "fishing_fleet", data = data_without_geom)
-  TimeSeriesbyDimensionServer("gear_type_timeseries", category_var = "gear_type", data = data_without_geom)
-  TimeSeriesbyDimensionServer("fishing_mode_timeseries", category_var = "fishing_mode", data = data_without_geom)
+  lapply(variable_to_display, function(variable) {
+    local({
+      variable <- variable
+      TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom)
+    })
+  })
   
   # Global overview
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)

@@ -19,7 +19,7 @@ load_data <- function(DOI) {
   loaded_data <- list()
   
   for (filename in DOI$Filename) {
-    if(!exists(tools::file_path_sans_ext(filename))){
+    # if(!exists(tools::file_path_sans_ext(filename))){
       
       flog.info("Loading dataset: %s", filename)
       
@@ -36,10 +36,10 @@ load_data <- function(DOI) {
       } else {
         warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
       }
-    } else {
-      flog.info("Dataset %s already existing, no need to load it", tools::file_path_sans_ext(filename))
-      
-    }
+    # } else {
+    #   flog.info("Dataset %s already existing, no need to load it", tools::file_path_sans_ext(filename))
+    #   
+    # }
   }
   
   # return(loaded_data)
@@ -159,43 +159,44 @@ default_measurement_unit <- "t"
 # flog.info(paste("Default filter values set: Gridtype:", default_gridtype, ", Measurement Unit:", default_measurement_unit))
 
 # Get all column names
-# global_catch_firms_level0_public <- fread("global_catch_firms_level0_public.csv") %>% dplyr::mutate(gear_type = as.character(gear_type))
-global_catch_firms_level0_public <- global_catch_firms_level0_public %>% dplyr::mutate(gear_type = as.character(gear_type))
+# global_catch_5deg_1m_firms_level0_public <- fread("global_catch_5deg_1m_firms_level0_public.csv") %>% dplyr::mutate(gear_type = as.character(gear_type))
 
 shapefile.fix <- st_read(pool,query = "SELECT * from area.cwp_grid") 
 
-if("value"%in%colnames(global_catch_firms_level0_public)){
-  global_catch_firms_level0_public <- global_catch_firms_level0_public %>% dplyr::rename(#measurement_value = value,
-                                                                                       fishing_fleet = flag,
-                                                                                       gear_type = gear,
-                                                                                       fishing_mode = schooltype,
-                                                                                      measurement_unit = catchunit) %>%
-  dplyr::select(species, measurement_value, fishing_fleet, year, month, gear_type, fishing_mode, geom, geom_wkt, measurement_unit)
-
-# global_catch_tunaatlasird_level2$gridtype <- "5deg_x_5deg"
-}
-global_catch_firms_level0_public_ancient <- global_catch_firms_level0_public
-global_catch_firms_level0_public <- global_catch_firms_level0_public_ancient %>% 
+# if("value"%in%colnames(global_catch_5deg_1m_firms_level0_public)){
+#   global_catch_5deg_1m_firms_level0_public <- global_catch_5deg_1m_firms_level0_public %>% dplyr::rename(#measurement_value = value,
+#                                                                                        fishing_fleet = flag,
+#                                                                                        gear_type = gear,
+#                                                                                        fishing_mode = schooltype,
+#                                                                                       measurement_unit = catchunit) %>%
+#   dplyr::select(species, measurement_value, fishing_fleet, year, month, gear_type, fishing_mode, geom, geom_wkt, measurement_unit)
+# 
+# # global_catch_tunaatlasird_level2$gridtype <- "5deg_x_5deg"
+# }
+global_catch_5deg_1m_firms_level0_public <- global_catch_5deg_1m_firms_level0_public%>% dplyr::mutate(gear_type = as.character(gear_type)) %>% 
   dplyr::filter(measurement_unit == "t") %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
   full_join(shapefile.fix %>% dplyr::select(cwp_code, gridtype) , by = c("geographic_identifier" = "cwp_code")) %>% 
   dplyr::rename(geom_wkt = geom) %>% 
   dplyr::mutate(year = lubridate::year(time_start)) %>% 
   dplyr::mutate(month = lubridate::month(time_start)) %>% 
-  dplyr::filter(!is.na(measurement_value)) %>% dplyr::rename(geom_id = geographic_identifier)%>%
-  dplyr::select(-c(time_start, time_end, measurement, measurement_type, quarter)) 
+  dplyr::filter(!is.na(measurement_value))%>%
+  dplyr::select(-c(time_start, time_end,  quarter)) 
 
-global_catch_firms_level0_public <- as.data.frame(global_catch_firms_level0_public)
+global_catch_5deg_1m_firms_level0_public <- as.data.frame(global_catch_5deg_1m_firms_level0_public)
 
-non_numeric_columns <- names(global_catch_firms_level0_public)[sapply(global_catch_firms_level0_public, is.character)]
+non_numeric_columns <- names(global_catch_5deg_1m_firms_level0_public)[sapply(global_catch_5deg_1m_firms_level0_public, is.character)]
 
 # Create target_* variables for each non-numeric column
 for (col in non_numeric_columns) {
-  assign(paste0("target_", col), unique(global_catch_firms_level0_public[[col]]))
+  assign(paste0("target_", col), unique(global_catch_5deg_1m_firms_level0_public[[col]]))
 }
+
 variable_to_display <- non_numeric_columns
-variable_to_display <- c("gear_type","fishing_fleet", "species", "fishing_mode"# , "species_label", "flag_label", "measurement_value" # "gear_type",
-                    #     "gear_label","fishing_mode", "schooltype_label", "catchtype_label", "species_group_labels", "gear_group_label"
-                    )
+variable_to_display <- c("gear_type","fishing_fleet", "species", "fishing_mode", "source_authority", "measurement", "measurement_type")
+
+# variable_to_display1 <- c("gear_type","fishing_fleet", "species", "fishing_mode"#, "source_authority",
+#                          #"measurement_unit", "measurement","fishing_mode" , "measurement_type"
+#                     )
 
 # Fonction pour générer les titres et IDs d'analyse
 generate_analysis_option <- function(variable) {
@@ -235,7 +236,8 @@ load_ui_modules <- function() {
     'R/getPalette.R',
     'R/palette_settings.R', 
     "modules/dataset_choice.R", 
-    "R/data_loading.R"
+    "R/data_loading.R", 
+    "tab_panels/sidebar_ui_with_variable_to_display.R"
   )
   lapply(ui_files, function(file) {
     source(here::here(file))
@@ -254,13 +256,19 @@ generate_dimension <- function(variable) {
 # Générer les dimensions
 dimensions <- lapply(variable_to_display, generate_dimension)
 
+# #dimensions 
+# dimensions <- lapply(variable_to_display1, generate_dimension)
+
 generate_target_variables <- function(variable) {
   target_name <- paste0("target_", variable)
   if (exists(target_name, envir = .GlobalEnv)) {
     return(base::get(target_name, envir = .GlobalEnv))
   } else {
-    warning(paste("Target variable", target_name, "does not exist"))
-    return(NULL)
+    target_name <- paste0("target_", variable)
+    target <- global_catch_5deg_1m_firms_level0_public%>%
+      dplyr::select(!!sym(variable)) %>% 
+      distinct()
+    return(base::set(target_name, value = target))
   }
 }
 
@@ -280,10 +288,8 @@ getTarget <- function(category) {
   return(target)
 }
 
-
 # Log the initialization of palettes
 flog.info("Color palettes initialized.")
-
 
 # createSQLQuery <- function(dataset_name = default_dataset,
 #                            species_name = default_species,
@@ -354,4 +360,7 @@ flog.info("Map init loaded")
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")
+
+
+default_dataset_preloaded <- global_catch_5deg_1m_firms_level0_public
 

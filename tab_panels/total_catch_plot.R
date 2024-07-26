@@ -10,23 +10,26 @@
 #' @export
 
 # Module UI
-catches_by_variable_moduleUI <- function(id) {
+catches_by_variable_moduleUI <- function(id, variable_choices) {
   ns <- NS(id)
-  tagList(selectInput(ns("variable"), 
-                "Variable to Display", 
-                choices = c("Species" = "species", 
-                            "Fishing Fleet" = "fishing_fleet", 
-                            "Gear Type" = "gear_type",
-          "Fishing mode" = "fishing_mode")),
-plotOutput(ns("plot_year"))%>% withSpinner(),    plotOutput(ns("plot_month"))%>% withSpinner(), 
-    sliderInput(ns("topn"),
-                label = "Number of this variable to display",
-                min = 0,
-                max = 10,
-                value = 5
+  tagList(
+    selectInput(
+      ns("variable"), 
+      "Variable to Display", 
+      choices = setNames(variable_choices, gsub("_", " ", variable_choices))
+    ),
+    plotOutput(ns("plot_year")) %>% withSpinner(),
+    plotOutput(ns("plot_month")) %>% withSpinner(),
+    sliderInput(
+      ns("topn"),
+      label = "Number of this variable to display",
+      min = 0,
+      max = 10,
+      value = 5
     )
   )
 }
+
 
 
 #' Server Logic for Catch Data by Variable Module

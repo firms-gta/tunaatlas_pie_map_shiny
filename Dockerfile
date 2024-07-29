@@ -42,6 +42,11 @@ RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 # Set the working directory
 WORKDIR /root/tunaatlas_pie_map_shiny
 
+COPY download_GTA_data.R ./download_GTA_data.R
+
+# Run the data to donwload GTA data for species label, species group, cwp_shape
+RUN Rscript download_GTA_data.R
+
 #those packages are essential to download the data in update_data.R, they are ran before renv because the renv.lock would change more than the DOI2.csv
 RUN R -e "install.packages('remotes', repos='https://cran.r-project.org/')" 
 RUN R -e "remotes::install_version('zen4R', version = '0.10', upgrade = 'never', repos = 'https://cran.r-project.org/')"

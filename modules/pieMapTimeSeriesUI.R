@@ -28,7 +28,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
         dplyr::summarise(measurement_value = sum(measurement_value)) %>%
         tidyr::spread(key = !!sym(category_var), value = measurement_value, fill = 0) %>%
         dplyr::mutate(total = rowSums(across(any_of(target_var))))
-      flog.info("Pie map data: %s", head(df))
+      flog.info("Pie map data created: %s")
       df
     })
     

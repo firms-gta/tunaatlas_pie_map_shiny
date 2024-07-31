@@ -6,12 +6,13 @@ LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
 # Install system libraries of general use
 # Install protobuf libraries
 # Install additional libraries for redland
-
+# libcurl4-openssl-dev is to install libraptor2-dev ued to install protobuf
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
     pandoc-citeproc \
     libssl-dev \
+    libcurl4-gnutls-dev \
     libcurl4-openssl-dev \
     libxml2-dev \
     libudunits2-dev \

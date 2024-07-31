@@ -4,6 +4,9 @@ FROM rocker/r-ver:4.2.3
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
 
 # Install system libraries of general use
+# Install protobuf libraries
+# Install additional libraries for redland
+
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
@@ -22,18 +25,15 @@ RUN apt-get update && apt-get install -y \
     libnetcdf-dev \
     curl \
     libjq-dev \
-    cmake
-    
-# Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates somme errors
-
-# Install additional libraries for redland and protobuf for protolite
-RUN apt-get update && apt-get install -y \
+    cmake \
     protobuf-compiler \
-    libprotobuf-dev
+    libprotobuf-dev \
     librdf0 \
     librdf0-dev \
     redland-utils && \
     apt-get clean
+    
+# Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates somme errors
 
 # Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y

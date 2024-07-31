@@ -26,8 +26,10 @@ RUN apt-get update && apt-get install -y \
     
 # Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates somme errors
 
-# Install additional libraries for redland
+# Install additional libraries for redland and protobuf for protolite
 RUN apt-get update && apt-get install -y \
+    protobuf-compiler \
+    libprotobuf-dev
     librdf0 \
     librdf0-dev \
     redland-utils && \

@@ -21,8 +21,23 @@ sidebar_ui_with_variable_to_display <- function(){
           ),
           tags$br(),
           tags$br()
-        )
-      } else {
+        )} else if(variable == "species_name") {
+          tagList(
+            div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
+                HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),
+            div(uiOutput("select_species_name")),
+            div(class = "row", 
+                div(class = "col-6", 
+                    actionButton("all_species_name", "Select All Species")
+                ),
+                div(class = "col-6", 
+                    actionButton("major_tunas_name", "Select Major Tunas")
+                )
+            ),
+            tags$br(),
+            tags$br()
+          )
+        } else {
         tagList(
           div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
               HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),

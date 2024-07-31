@@ -1,6 +1,6 @@
 server <- function(input, output, session) {
   
-  flog.info("Default dataset preloaded: %s", !is.null(default_dataset_preloaded))
+  flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
   
   
@@ -82,7 +82,7 @@ server <- function(input, output, session) {
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
 
-      data <- load_initial_data(default_dataset_preloaded, pool)
+      data <- load_initial_data(default_dataset, pool)
       
       flog.info("Data loaded")
       
@@ -256,9 +256,17 @@ server <- function(input, output, session) {
     observeEvent(input$major_tunas, {
     flog.info("Select major tunas")
     req(data_for_filters())
-    species <- data_for_filters() %>% dplyr::filter(species %in% c("YFT", "SKJ", "ALB", "BET", "SBF")) %>% dplyr::select(species) %>% dplyr::distinct() %>% pull(species)
+    species <- data_for_filters() %>% dplyr::select(species)%>% dplyr::filter(species %in% c("YFT", "SKJ", "ALB", "BET", "SBF"))  %>% dplyr::distinct() %>% pull(species)
     updateSelectInput(session, "select_species", selected = species)
   })
+    
+    observeEvent(input$major_tunas_name, {
+      flog.info("Select major tunas")
+      req(data_for_filters())
+      species_name <- data_for_filters()%>% dplyr::select(species_name) %>% dplyr::filter(species_name %in% c("Albacore", "Bigeye tuna", "Skipjack tuna", "Yellowfin tuna", "Southern bluefin tuna"))  %>% 
+        dplyr::distinct() %>% pull(species_name)
+      updateSelectInput(session, "select_species_name", selected = species_name)
+    })
   
   lapply(variable_to_display, function(variable) {
     observeEvent(input[[paste0("all_", variable)]], {

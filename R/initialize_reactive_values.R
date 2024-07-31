@@ -5,7 +5,7 @@ metadata <- reactiveVal()
 zoom <- reactiveVal(1)
 
 datafromDOI <- TRUE
-if(!pool::dbIsValid(pool) | !datafromDOI){
+if(exists("pool") && !pool::dbIsValid(pool) | !datafromDOI){
   load_target_data <- function(file_path) {
     target_data <- readRDS(file_path)
     list2env(target_data, .GlobalEnv)
@@ -74,8 +74,10 @@ variable_to_display <- intersect(colnames(default_dataset),variable)
   tmap_options(check.and.fix = TRUE)
   
   shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]
-  shapefile.fix <- shapefile.fix %>% dplyr::rename(cwp_code = CWP_CODE, gridtype = GRIDTYPE, geom = geom_wkt)%>% dplyr::select(cwp_code, gridtype, geom) %>% 
+  shapefile.fix <- shapefile.fix %>% dplyr::rename(cwp_code = CWP_CODE, gridtype = GRIDTYPE, geom = geom_wkt)%>% 
+    dplyr::select(cwp_code, gridtype, geom) %>%
     dplyr::mutate(cwp_code = as.character(cwp_code))
+  shapefile.fix <- as.data.table(shapefile.fix)
   
   species <- read_csv(here::here("data/cl_species.csv")) %>% dplyr::select(code, label, taxa_order) %>% 
     dplyr::rename(code_species = code, species_name = label, species_group = taxa_order) %>% distinct()#https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cl_asfis_species.csv
@@ -84,29 +86,63 @@ variable_to_display <- intersect(colnames(default_dataset),variable)
   cl_cwp_gear_level2 <- read_csv(here::here("data/cl_cwp_gear_level2.csv")) %>% #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv
   dplyr::select(Code = code, Gear = label)%>% dplyr::distinct()
   flog.info("Loaded cl_cwp_gear_level2 data")
+  flog.info(sprintf("Time %s:", Sys.time()))
   
   default_dataset <- base::get(object)
-  default_dataset <- default_dataset%>% dplyr::mutate(gear_type = as.character(gear_type)) %>% 
-    dplyr::filter(measurement_unit == "t") %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
-    full_join(shapefile.fix , by = c("geographic_identifier" = "cwp_code")) %>% 
-    dplyr::rename(geom_wkt = geom) %>% 
-    dplyr::mutate(year = lubridate::year(time_start)) %>% 
-    dplyr::mutate(month = lubridate::month(time_start)) %>% 
-    dplyr::filter(!is.na(measurement_value))%>%
-    dplyr::select(-c(time_start, time_end,  quarter)) %>% 
-    dplyr::left_join(species, by = c("species" = "code_species")) %>%
-    dplyr::left_join(cl_cwp_gear_level2, by = c("gear_type" = "Code"))
   
-  variable <- c("fishing_fleet",
-                "species",
-                "fishing_mode",
-                "source_authority",
+  # Convertir species et cl_cwp_gear_level2 en data.table
+  species <- as.data.table(species)
+  cl_cwp_gear_level2 <- as.data.table(cl_cwp_gear_level2)
+  
+  # Convertir default_dataset en data.table pour passer de 33 secondes à environ 16 secondes
+  setDT(default_dataset)
+  
+  # Effectuer les opérations avec data.table
+  default_dataset <- default_dataset[
+    !is.na(measurement_value), 
+    .(year = year(time_start), 
+      month = month(time_start), 
+      measurement_value, 
+      measurement_unit, 
+      species, 
+      gear_type, 
+      source_authority,
+      measurement,
+      measurement_type,
+      geographic_identifier, 
+      fishing_mode, 
+      fishing_fleet)
+  ]
+  
+  default_dataset <- merge(default_dataset, species, by.x = "species", by.y = "code_species", all.x = TRUE)
+  default_dataset <- merge(default_dataset, cl_cwp_gear_level2, by.x = "gear_type", by.y = "Code", all.x = TRUE)
+  default_dataset[, gear_type := as.character(gear_type)]
+  default_dataset <- default_dataset[measurement_unit == "t"]
+  default_dataset[, geographic_identifier := as.character(geographic_identifier)]
+  
+  # Effectuer la jointure pour ajouter la colonne de géométrie de shapefile.fix
+  
+  # Faire la jointure en utilisant data.table
+  default_dataset <- merge(default_dataset, shapefile.fix, by.x = "geographic_identifier", by.y = "cwp_code", all.x = TRUE)
+  default_dataset <- as.data.frame(default_dataset) %>% dplyr::rename(geom_wkt = geom)
+  #   
+  flog.info(sprintf("Time %s:", Sys.time()))
+  flog.info(sprintf("Colnames %s:", paste0(colnames(default_dataset))))
+  variable <- c("source_authority",
+                "fishing_fleet",
+                "species_group", 
+                "Gear",
+                # "species",
+                "species_name",
+                "fishing_mode"
                 # "measurement",
                 # "gridtype",
-                # "measurement_type", 
-                "species_group", 
-                "Gear" )
+                # "measurement_type"
+                                      )
   
   variable_to_display <- intersect(colnames(default_dataset),variable)
+  
+  flog.info(sprintf("Variable to display %s:", variable_to_display))
+  
   
 }

@@ -80,7 +80,10 @@ tryCatch({
 # Log the successful creation of the connection pool
 flog.info("Database connection pool to '%s' has been created successfully.", db_name)
 
-source("~/tunaatlas_pie_map_shiny/R/initialize_reactive_values.R")
+if(!exists("default_dataset")){
+  
+source(here::here("R/initialize_reactive_values.R"))
+
 # Query distinct values from the database for filters
 
 # saveRDS(list(target_dataset = target_dataset, 
@@ -94,9 +97,9 @@ source("~/tunaatlas_pie_map_shiny/R/initialize_reactive_values.R")
 #         "data/target.rds")
 
 # Log the successful retrieval of filter options
-flog.info("Filter options retrieved from database.")
+flog.info("Reactive values initialized")
 
-source(here::here("R/initialize_data_and_plots.R"))
+# source(here::here("R/initialize_data_and_plots.R"))
 
 default_dataset <- as.data.frame(default_dataset)
 
@@ -111,7 +114,7 @@ generate_analysis_option <- function(variable) {
   id <- paste0(variable, "_analysis")
   list(title = title, id = id)
 }
-
+}
 # Générer les options d'analyse
 analysis_options <- lapply(variable_to_display, generate_analysis_option)
 load_ui_modules <- function() {
@@ -188,9 +191,6 @@ flog.info("Map init loaded")
 # Load UI modules
 source(here::here("R/load_ui_modules.R"))
 load_ui_modules()
-
-default_dataset_preloaded <- default_dataset
-
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")

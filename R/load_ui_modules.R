@@ -21,7 +21,11 @@ load_ui_modules <- function() {
     'modules/categoryGlobalPieChart.R',
     'modules/pieMapTimeSeriesUI.R',
     'modules/plotTotalCatches.R',
-    "modules/dataset_choice.R"
+    "modules/dataset_choice.R",
+    "R/data_loading.R", 
+    'R/get_html_title.R',
+    'R/getPalette.R',
+    'R/palette_settings.R' 
   )
   lapply(ui_files, function(file) {
     source(here::here(file))

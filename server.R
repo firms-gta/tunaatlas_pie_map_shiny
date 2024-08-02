@@ -3,7 +3,9 @@ server <- function(input, output, session) {
   flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
   
-  
+  if(!exists("debug")){
+    debug = FALSE
+  }
   # Initialize resource paths and modules
   addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
@@ -39,24 +41,24 @@ server <- function(input, output, session) {
   data_loaded <- reactiveVal(FALSE)
   show <- reactiveVal(FALSE)
   data_for_filters_trigger <- reactiveVal(0)
-  
-  # Render UI selectors
-  output$select_dataset <- renderUI({
-    datasets <- filters_combinations %>% dplyr::select(dataset) %>% dplyr::distinct()
-    selectizeInput('select_dataset', 'Select the Dataset', choices = datasets$dataset, selected = default_dataset)
-  })
-  
-  output$select_gridtype <- renderUI({
-    req(input$select_dataset)
-    gridtypes <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% dplyr::select(gridtype) %>% dplyr::distinct()
-    selectizeInput('select_gridtype', 'Select the Grid Type', choices = gridtypes$gridtype, selected = default_gridtype)
-  })
-  
-  output$select_measurement_unit <- renderUI({
-    req(input$select_dataset)
-    measurement_units <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% dplyr::select(measurement_unit) %>% dplyr::distinct()
-    selectizeInput('select_measurement_unit', 'Select the Measurement Unit', choices = measurement_units$measurement_unit, selected = default_measurement_unit)
-  })
+  # 
+  # # Render UI selectors
+  # output$select_dataset <- renderUI({
+  #   datasets <- filters_combinations %>% dplyr::select(dataset) %>% dplyr::distinct()
+  #   selectizeInput('select_dataset', 'Select the Dataset', choices = datasets$dataset, selected = default_dataset)
+  # })
+  # 
+  # output$select_gridtype <- renderUI({
+  #   req(input$select_dataset)
+  #   gridtypes <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% dplyr::select(gridtype) %>% dplyr::distinct()
+  #   selectizeInput('select_gridtype', 'Select the Grid Type', choices = gridtypes$gridtype, selected = default_gridtype)
+  # })
+  # 
+  # output$select_measurement_unit <- renderUI({
+  #   req(input$select_dataset)
+  #   measurement_units <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% dplyr::select(measurement_unit) %>% dplyr::distinct()
+  #   selectizeInput('select_measurement_unit', 'Select the Measurement Unit', choices = measurement_units$measurement_unit, selected = default_measurement_unit)
+  # })
   
   # Show main content after loading
   observeEvent(show(), {
@@ -67,7 +69,7 @@ server <- function(input, output, session) {
     }
   })
   
-  dataset_choices <- dataset_choice_server("dataset_choice", filters_combinations, default_dataset, default_gridtype, default_measurement_unit)
+  dataset_choices <- dataset_choice_server("dataset_choice", filters_combinations, "global_catch_5deg_1m_firms_level1", default_gridtype, default_measurement_unit)
   
   # Initial dataset submission
   observeEvent(dataset_choices$submit(), {
@@ -81,7 +83,6 @@ server <- function(input, output, session) {
       flog.info("First submit")
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
-
       data <- load_initial_data(default_dataset, pool)
       
       flog.info("Data loaded")
@@ -99,20 +100,37 @@ server <- function(input, output, session) {
       })
       
     } else {
+      showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
+      
+      flog.info("Loading dataset")
+      
       # shinyjs::hide("main_content")
-      showNotification("Loading big dataset, please wait. Do not hesitate to use this laoding time to read the documentation on the app, the data and the metadata associated. ", type = "message", duration = NULL, id = "loadingbigdata")
       # shinyjs::show("loading_page")
       
-      data <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, debug, pool)
-      initial_data(data$initial_data)
-      data_for_filters(data$data_for_filters)
+      default_dataset <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = TRUE, pool)
+      default_dataset <- as.data.frame(default_dataset)
+      source(here::here("R/generate_dimensions_palettes.R"))
+      flog.info("Palettes initialised session")
       
-      flog.info("Dataset created. You can now filter it.")
-      shinyjs::hide("loading_page")
       
-      showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
-      shinyjs::show("main_content")
-      wkt(global_wkt)
+      # initial_data(default_dataset$initial_data)
+      # data_for_filters(default_dataset$data_for_filters)
+      flog.info("Data reinitialized")
+      
+      
+      flog.info("Reloading session")
+      
+      shinyjs::refresh()
+      # session$reload()
+      
+      
+      
+      # flog.info("Dataset created. You can now filter it.")
+      # shinyjs::hide("loading_page")
+      # 
+      # showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
+      # shinyjs::show("main_content")
+      # wkt(global_wkt)
       
     }
     

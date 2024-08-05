@@ -1,13 +1,12 @@
 # Restore the renv environment, excluding shinyuieditor
 # renv::restore(exclude = c("shinyuieditor"))
-
+# try(pool::dbDisconnect(pool))
 # Source install script
 source(here::here('install.R'))
-
 # Load functions from external sources
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
-
+flog.info(sprintf("current env:",current_env()))
 # Load UI modules
 source(here::here("R/load_ui_modules.R"))
 load_ui_modules()
@@ -15,9 +14,8 @@ load_ui_modules()
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 
-
 # Load environment variables from file
-try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
+try(dotenv::load_dot_env("connection_tunnatlas_inv.txt"))
 
 # Create database connection pool
 # Log environment variables
@@ -89,14 +87,12 @@ if(!exists("default_dataset")){
   
 load_data(DOI)
   
-source(here::here("R/initialize_reactive_values.R"))
-
 flog.info("Reactive values initialized")
 
+
+source(here::here("R/initialize_reactive_values.R"))
+
 # source(here::here("R/initialize_data_and_plots.R"))
-
-
-
 default_dataset <- as.data.frame(default_dataset)
 
 # Define function to get target values based on category
@@ -111,7 +107,6 @@ flog.info("Color palettes initialized.")
 }
 
 source(here::here("R/generate_dimensions_palettes.R"))
-
 
 # Adding resource path to display html -------------------------------------
 addResourcePath("www", here::here("www"))
@@ -133,7 +128,7 @@ source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
 #   default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
 # }
 
-
+source(here::here("R/data_loading.R"))
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")

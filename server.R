@@ -1,35 +1,17 @@
 server <- function(input, output, session) {
-  
   flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
-  
+  flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset$initial_data)))
   if(!exists("debug")){
     debug = FALSE
   }
+  
+  flog.info(sprintf("current env:",current_env()))
+  
   # Initialize resource paths and modules
   addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
   
-  # Handle UI elements with shinyjs
-  shinyjs::onclick("fishing_fleet_toggle", {
-    shinyjs::toggle("fishing_fleet_panel")
-    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
-  })
-  
-  shinyjs::onclick("gear_type_toggle", {
-    shinyjs::toggle("gear_type_panel")
-    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
-  })
-  # Handle UI elements with shinyjs
-  shinyjs::onclick("fishing_mode_toggle", {
-    shinyjs::toggle("fishing_mode_panel")
-    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
-  })
-  
-  shinyjs::onclick("species_toggle", {
-    shinyjs::toggle("species_panel")
-    shinyjs::runjs('$("#arrow_indicator").html() == "&#9660;" ? $("#arrow_indicator").html("&#9650;") : $("#arrow_indicator").html("&#9660;");')
-  })
   # Initialize reactive values
   submitTrigger <- reactiveVal(FALSE)
   firstSubmit <- reactiveVal(TRUE)
@@ -41,24 +23,6 @@ server <- function(input, output, session) {
   data_loaded <- reactiveVal(FALSE)
   show <- reactiveVal(FALSE)
   data_for_filters_trigger <- reactiveVal(0)
-  # 
-  # # Render UI selectors
-  # output$select_dataset <- renderUI({
-  #   datasets <- filters_combinations %>% dplyr::select(dataset) %>% dplyr::distinct()
-  #   selectizeInput('select_dataset', 'Select the Dataset', choices = datasets$dataset, selected = default_dataset)
-  # })
-  # 
-  # output$select_gridtype <- renderUI({
-  #   req(input$select_dataset)
-  #   gridtypes <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% dplyr::select(gridtype) %>% dplyr::distinct()
-  #   selectizeInput('select_gridtype', 'Select the Grid Type', choices = gridtypes$gridtype, selected = default_gridtype)
-  # })
-  # 
-  # output$select_measurement_unit <- renderUI({
-  #   req(input$select_dataset)
-  #   measurement_units <- filters_combinations %>% dplyr::filter(dataset == input$select_dataset) %>% dplyr::select(measurement_unit) %>% dplyr::distinct()
-  #   selectizeInput('select_measurement_unit', 'Select the Measurement Unit', choices = measurement_units$measurement_unit, selected = default_measurement_unit)
-  # })
   
   # Show main content after loading
   observeEvent(show(), {
@@ -79,13 +43,13 @@ server <- function(input, output, session) {
     selected_measurement_unit <- dataset_choices$selected_measurement_unit()
     
     
-    if (firstSubmit()) {
+      if (firstSubmit()) {
       flog.info("First submit")
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
-      data <- load_initial_data(default_dataset, pool)
+      data <- load_initial_data(default_dataset)
       
-      flog.info("Data loaded")
+      flog.info("Initial Data loaded")
       
       initial_data(data$initial_data)
       flog.info("Inital data loaded")
@@ -101,30 +65,60 @@ server <- function(input, output, session) {
       
     } else {
       showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
-      
+
       flog.info("Loading dataset")
-      
+
       # shinyjs::hide("main_content")
       # shinyjs::show("loading_page")
+      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = TRUE, pool)
+      flog.info("Default dataset loaded")
+      default_dataset <- dataset_not_init$initial_data
+      flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
+      # saveRDS(default_dataset, file = "default_dataset.rds")
+      variable_to_display_ancient <- variable_to_display
+      variable_to_display <- intersect(variable,colnames(default_dataset))
+      # saveRDS(variable_to_display, file = "variable_to_display")
+
+      flog.info(sprintf("Variable to display %s:", variable_to_display))
+      for (col in variable_to_display) {
+        assign(paste0("target_", col), unique(default_dataset[[col]]), envir = .GlobalEnv)
+        flog.info(sprintf("Target assigned %s:", col))
+        
+      }
+      analysis_options <- lapply(variable_to_display, generate_analysis_option)
+      dimensions <- lapply(variable_to_display, generate_dimension)
+      targetVariables <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
       
-      default_dataset <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = TRUE, pool)
-      default_dataset <- as.data.frame(default_dataset)
-      source(here::here("R/generate_dimensions_palettes.R"))
+      targetVariables2 <- lapply(targetVariables, as.data.frame)
+      
+      targettes <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
+      # Initialize color palettes with a fixed seed for reproducibility
+      palettes <- initialiserPalettes(targetVariables2, seed = 2643598)
+
+      assign("default_dataset", default_dataset, envir =  .GlobalEnv)
+      assign("dimensions", dimensions, envir =  .GlobalEnv)
+      assign("variable_to_display", variable_to_display, envir =  .GlobalEnv)
+      assign("palettes", palettes, envir =  .GlobalEnv)
+      assign("palettes", palettes, envir =  .GlobalEnv)
       flog.info("Palettes initialised session")
-      
-      
+      flog.info("Reloading session")
+      assign("default_dataset", default_dataset, envir = current_env())
+      assign("dimensions", dimensions, envir =   current_env())
+      assign("variable_to_display", variable_to_display, envir =   current_env())
+      assign("palettes", palettes, envir =   current_env())
+      assign("palettes", palettes, envir =   current_env())
+      flog.info("Palettes initialised session")
+      flog.info("Reloading session")
+      source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
+
       # initial_data(default_dataset$initial_data)
       # data_for_filters(default_dataset$data_for_filters)
-      flog.info("Data reinitialized")
-      
-      
-      flog.info("Reloading session")
-      
-      shinyjs::refresh()
-      # session$reload()
-      
-      
-      
+      # if(variable_to_display != variable_to_display_ancient){
+      flog.info(sprintf("colnames %s", colnames(default_dataset)))
+      session$reload() # ne relance pas global.R
+      # }
+      # shinyjs::refresh() #relance global.R
+      # 
       # flog.info("Dataset created. You can now filter it.")
       # shinyjs::hide("loading_page")
       # 
@@ -134,12 +128,12 @@ server <- function(input, output, session) {
       
     }
     
-    shinyjs::click("submit")
+   
     shinyjs::delay(1000,{
-    
+    shinyjs::click("submit")
     data_for_filters_trigger(data_for_filters_trigger() + 1)
       updateNavbarPage(session, "main", selected = "generaloverview")
-    
+
   })
   })
   
@@ -445,4 +439,5 @@ server <- function(input, output, session) {
   onStop(function() {
     poolClose(pool)
   })
+  session$onSessionEnded(stopApp)
 }

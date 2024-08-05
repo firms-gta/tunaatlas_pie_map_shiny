@@ -1,6 +1,6 @@
 # R/data_loading.R
 
-load_initial_data <- function(default_dataset_preloaded, pool) {
+load_initial_data <- function(default_dataset_preloaded) {
   if (is.null(default_dataset_preloaded)) {
     flog.info("No default dataset preloaded using datasf.rds")
     

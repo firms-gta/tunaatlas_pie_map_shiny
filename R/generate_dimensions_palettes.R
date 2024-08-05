@@ -1,6 +1,12 @@
+flog.info(sprintf("Colnames default dataset%s:", colnames(default_dataset)))
+# initialising variable to display
+variable_to_display <- intersect(variable,colnames(default_dataset))
+
 # Create target_* variables for each non-numeric column
 for (col in variable_to_display) {
   assign(paste0("target_", col), unique(default_dataset[[col]]))
+  flog.info(sprintf("Target assigned %s:", col))
+  
 }
 
 # Fonction pour générer les titres et IDs d'analyse

@@ -77,17 +77,15 @@ variable <- c("source_authority",
               "fishing_fleet",
               "species_group", 
               "Gear",
-              # "species",
+              "gear_type", 
+              "species",
               "species_name",
               "fishing_mode"
               # "measurement",
               # "gridtype",
               # "measurement_type"
 )
-
-variable_to_display <- intersect(variable,colnames(default_dataset))
-
-flog.info(sprintf("Variable to display %s:", variable_to_display))
+flog.info(sprintf("variable %s:", paste0(variable)))
 
 if(exists("pool") && pool::dbIsValid(pool)){
   # load_target_data <- function(file_path) {

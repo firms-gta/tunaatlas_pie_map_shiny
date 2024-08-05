@@ -10,7 +10,7 @@ ui <- tagList(
     div(
       style = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.8); padding: 20px; border-radius: 10px;",
       tags$h1("Welcome to the GlobalTunaAtlas shiny app"),
-      tags$p("Please wait for initial data to load")
+      tags$p("Please wait for data to load")
     )
   ),
   hidden(
@@ -21,6 +21,7 @@ ui <- tagList(
           selected = "datasetchoicevalue",
           collapsible = TRUE,
           theme = bslib::bs_theme(),
+          # sidebar = uiOutput("sidebar"),
           sidebar = sidebar_ui_with_variable_to_display(),
           # sidebar = sidebar_ui(), # to make work the toggle little fleche
           geographic_catches_ui(),

@@ -8,8 +8,8 @@ sidebar_ui_with_variable_to_display <- function(){
     do.call(tagList, lapply(variable_to_display, function(variable) {
       if(variable == "species"){
         tagList(
-          div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
-              HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),
+          # div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
+          #     HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),
           div(uiOutput("select_species")),
           div(class = "row", 
               div(class = "col-6", 
@@ -23,8 +23,8 @@ sidebar_ui_with_variable_to_display <- function(){
           tags$br()
         )} else if(variable == "species_name") {
           tagList(
-            div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
-                HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),
+            # div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
+            #     HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),
             div(uiOutput("select_species_name")),
             div(class = "row", 
                 div(class = "col-6", 
@@ -39,8 +39,8 @@ sidebar_ui_with_variable_to_display <- function(){
           )
         } else {
         tagList(
-          div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
-              HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),
+          # div(id = paste0(variable, "_toggle"), style = "cursor: pointer;", 
+          #     HTML(sprintf("Select %s <span id='arrow_indicator'>&#9660;</span>", variable))),
           div(
             uiOutput(paste0("select_", variable)),
             actionButton(paste0("all_", variable), paste("Select All", gsub("_", " ", variable)))

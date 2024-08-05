@@ -6,7 +6,6 @@ server <- function(input, output, session) {
     debug = FALSE
   }
   
-  flog.info(sprintf("current env:",current_env()))
   
   # Initialize resource paths and modules
   addResourcePath("www", here::here("www"))
@@ -23,6 +22,7 @@ server <- function(input, output, session) {
   data_loaded <- reactiveVal(FALSE)
   show <- reactiveVal(FALSE)
   data_for_filters_trigger <- reactiveVal(0)
+  variable_to_display_react <- reactiveVal(variable_to_display)
   
   # Show main content after loading
   observeEvent(show(), {
@@ -42,8 +42,8 @@ server <- function(input, output, session) {
     selected_gridtype <- dataset_choices$selected_gridtype()
     selected_measurement_unit <- dataset_choices$selected_measurement_unit()
     
-    
-      if (firstSubmit()) {
+    firstsubmit <- firstSubmit()
+      if (firstsubmit) {
       flog.info("First submit")
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
@@ -83,48 +83,54 @@ server <- function(input, output, session) {
       for (col in variable_to_display) {
         assign(paste0("target_", col), unique(default_dataset[[col]]), envir = .GlobalEnv)
         flog.info(sprintf("Target assigned %s:", col))
-        
+
       }
       analysis_options <- lapply(variable_to_display, generate_analysis_option)
       dimensions <- lapply(variable_to_display, generate_dimension)
       targetVariables <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
-      
-      targetVariables2 <- lapply(targetVariables, as.data.frame)
-      
-      targettes <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
-      # Initialize color palettes with a fixed seed for reproducibility
-      palettes <- initialiserPalettes(targetVariables2, seed = 2643598)
 
-      assign("default_dataset", default_dataset, envir =  .GlobalEnv)
-      assign("dimensions", dimensions, envir =  .GlobalEnv)
-      assign("variable_to_display", variable_to_display, envir =  .GlobalEnv)
-      assign("palettes", palettes, envir =  .GlobalEnv)
-      assign("palettes", palettes, envir =  .GlobalEnv)
-      flog.info("Palettes initialised session")
-      flog.info("Reloading session")
-      assign("default_dataset", default_dataset, envir = current_env())
-      assign("dimensions", dimensions, envir =   current_env())
-      assign("variable_to_display", variable_to_display, envir =   current_env())
-      assign("palettes", palettes, envir =   current_env())
-      assign("palettes", palettes, envir =   current_env())
+      targetVariables2 <- lapply(targetVariables, as.data.frame)
+
+      targettes <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
+      # # Initialize color palettes with a fixed seed for reproducibility
+      palettes <- initialiserPalettes(targetVariables2, seed = 2643598)
+      default_dataset <<- default_dataset
+      dimensions <<- dimensions
+      variable_to_display <<- variable_to_display
+      palettes <<- palettes
+      # assign("default_dataset", default_dataset, envir =  .GlobalEnv)
+      # assign("dimensions", dimensions, envir =  .GlobalEnv)
+      # assign("variable_to_display", variable_to_display, envir =  .GlobalEnv)
+      # assign("palettes", palettes, envir =  .GlobalEnv)
+      # assign("palettes", palettes, envir =  .GlobalEnv)
+      # flog.info("Palettes initialised session")
+      # flog.info("Reloading session")
+      # assign("default_dataset", default_dataset, envir = current_env())
+      # assign("dimensions", dimensions, envir =   current_env())
+      # assign("variable_to_display", variable_to_display, envir =   current_env())
+      # assign("palettes", palettes, envir =   current_env())
+      # assign("palettes", palettes, envir =   current_env())
       flog.info("Palettes initialised session")
       flog.info("Reloading session")
       source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
-
-      # initial_data(default_dataset$initial_data)
-      # data_for_filters(default_dataset$data_for_filters)
+      source(here::here("ui.R"))
+      
+      initial_data(default_dataset$initial_data)
+      data_for_filters(default_dataset$data_for_filters)
       # if(variable_to_display != variable_to_display_ancient){
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
-      session$reload() # ne relance pas global.R
+      # session$reload() # ne relance pas global.R
       # }
-      # shinyjs::refresh() #relance global.R
-      # 
-      # flog.info("Dataset created. You can now filter it.")
-      # shinyjs::hide("loading_page")
-      # 
-      # showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
-      # shinyjs::show("main_content")
-      # wkt(global_wkt)
+      shinyjs::refresh() #relance global.R
+      # session$onSessionEnded(restart_app)
+      # session$close()
+
+      shinyjs::hide("loading_page")
+
+      showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
+      shinyjs::show("main_content")
+      wkt(global_wkt)
+      
       
     }
     
@@ -436,8 +442,7 @@ server <- function(input, output, session) {
     head(final_filtered_data())
   })
   
-  onStop(function() {
-    poolClose(pool)
-  })
-  session$onSessionEnded(stopApp)
+  # onStop(function() {
+  #   poolClose(pool)
+  # })
 }

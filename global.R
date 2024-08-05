@@ -15,7 +15,7 @@ load_ui_modules()
 flog.info("All libraries loaded successfully.")
 
 # Load environment variables from file
-try(dotenv::load_dot_env("connection_tunnatlas_inv.txt"))
+try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 
 # Create database connection pool
 # Log environment variables
@@ -48,8 +48,7 @@ tryCatch({
 
 # Log the successful creation of the connection pool
 flog.info("Database connection pool to '%s' has been created successfully.", db_name)
-
-if(!exists("default_dataset")){
+if(!exists("default_dataset") | exists("debug")){
   
   flog.info("Loading data ")
   # Read the DOI CSV file
@@ -90,16 +89,17 @@ load_data(DOI)
 flog.info("Reactive values initialized")
 
 
-source(here::here("R/initialize_reactive_values.R"))
-
-# source(here::here("R/initialize_data_and_plots.R"))
-default_dataset <- as.data.frame(default_dataset)
-
 # Define function to get target values based on category
 getTarget <- function(category) {
   target <- targettes[[category]]
   return(target)
 }
+
+source(here::here("R/initialize_reactive_values.R"))
+
+# source(here::here("R/initialize_data_and_plots.R"))
+default_dataset <- as.data.frame(default_dataset)
+
 
 # Log the initialization of palettes
 flog.info("Color palettes initialized.")
@@ -119,6 +119,7 @@ flog.info("Map init loaded")
 # Générer les options d'analyse
 
 source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
+source(here::here("tab_panels/sidebar_ui.R"))
 
 # Générer targetVariables et targettes
 
@@ -132,3 +133,25 @@ source(here::here("R/data_loading.R"))
 
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")
+
+
+# geographic_catches_ui <- function(variable_to_display) {
+#   nav_panel(
+#     title = "General overview", value = "generaloverview",
+#     grid_container(
+#       layout = c(
+#         "mapcatches   by_month  ",
+#         "plot_catches by_month"
+#       ),
+#       row_sizes = c("0.8fr", "1.2fr"),
+#       col_sizes = c("1.4fr", "0.6fr"),
+#       gap_size = "10px",
+#       grid_card(
+#         area = "mapcatches",
+#         card_body(mapCatchesUI("total_catch"))
+#       ),
+#       grid_card(area = "plot_catches", card_body(plotTotalCatchesUI("catch_by_year"))),
+#       grid_card(area = "by_month", card_body(catches_by_variable_moduleUI("catches_by_variable_month", variable_to_display)))
+#     )
+#   )
+# }

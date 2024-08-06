@@ -13,11 +13,7 @@
 catches_by_variable_moduleUI <- function(id, variable_choices) {
   ns <- NS(id)
   tagList(
-    selectInput(
-      ns("variable"), 
-      "Variable to Display", 
-      choices = setNames(variable_choices, gsub("_", " ", variable_choices))
-    ),
+    uiOutput(ns("variable_ui")),
     plotOutput(ns("plot_year")) %>% withSpinner(),
     plotOutput(ns("plot_month")) %>% withSpinner(),
     sliderInput(
@@ -48,6 +44,21 @@ catches_by_variable_moduleUI <- function(id, variable_choices) {
 catches_by_variable_moduleServer <- function(id, data_without_geom) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+    
+    variable_choices <- reactive({
+      df <- data_without_geom()
+      colnames(df)
+      intersect(colnames(df), variable_to_display)
+    })
+    
+    # Dynamically generate the selectInput based on available columns
+    output$variable_ui <- renderUI({
+      selectInput(
+        ns("variable"), 
+        "Variable to Display", 
+        choices = setNames(variable_choices(), gsub("_", " ", variable_choices()))
+      )
+    })
     
     # Reactive expression for yearly data
     data_year <- reactive({

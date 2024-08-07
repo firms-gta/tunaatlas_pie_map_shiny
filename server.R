@@ -2,7 +2,9 @@ server <- function(input, output, session) {
   flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
   flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset$initial_data)))
-  if(!exists("debug")){
+  if(is.logical(debug) && debug){
+    debug = TRUE
+  } else {
     debug = FALSE
   }
   
@@ -43,7 +45,7 @@ server <- function(input, output, session) {
     selected_measurement_unit <- dataset_choices$selected_measurement_unit()
     
     firstsubmit <- firstSubmit()
-      if (firstsubmit) {
+    if (firstsubmit) {
       flog.info("First submit")
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
@@ -65,12 +67,12 @@ server <- function(input, output, session) {
       
     } else {
       showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
-
+      
       flog.info("Loading dataset")
-
+      
       # shinyjs::hide("main_content")
       # shinyjs::show("loading_page")
-      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = TRUE, pool)
+      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = debug, pool)
       flog.info("Default dataset loaded")
       default_dataset <- dataset_not_init$initial_data
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
@@ -78,19 +80,19 @@ server <- function(input, output, session) {
       variable_to_display_ancient <- variable_to_display
       variable_to_display <- intersect(variable,colnames(default_dataset))
       # saveRDS(variable_to_display, file = "variable_to_display")
-
+      
       flog.info(sprintf("Variable to display %s:", variable_to_display))
       for (col in variable_to_display) {
         assign(paste0("target_", col), unique(default_dataset[[col]]), envir = .GlobalEnv)
         flog.info(sprintf("Target assigned %s:", col))
-
+        
       }
       analysis_options <- lapply(variable_to_display, generate_analysis_option)
       dimensions <- lapply(variable_to_display, generate_dimension)
       targetVariables <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
-
+      
       targetVariables2 <- lapply(targetVariables, as.data.frame)
-
+      
       targettes <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
       # # Initialize color palettes with a fixed seed for reproducibility
       palettes <- initialiserPalettes(targetVariables2, seed = 2643598)
@@ -98,71 +100,57 @@ server <- function(input, output, session) {
       dimensions <<- dimensions
       variable_to_display <<- variable_to_display
       palettes <<- palettes
-      # assign("default_dataset", default_dataset, envir =  .GlobalEnv)
-      # assign("dimensions", dimensions, envir =  .GlobalEnv)
-      # assign("variable_to_display", variable_to_display, envir =  .GlobalEnv)
-      # assign("palettes", palettes, envir =  .GlobalEnv)
-      # assign("palettes", palettes, envir =  .GlobalEnv)
-      # flog.info("Palettes initialised session")
-      # flog.info("Reloading session")
-      # assign("default_dataset", default_dataset, envir = current_env())
-      # assign("dimensions", dimensions, envir =   current_env())
-      # assign("variable_to_display", variable_to_display, envir =   current_env())
-      # assign("palettes", palettes, envir =   current_env())
-      # assign("palettes", palettes, envir =   current_env())
       flog.info("Palettes initialised session")
       flog.info("Reloading session")
-      source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
-      source(here::here("ui.R"))
+      # source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
+      # source(here::here("ui.R"))
       
       initial_data(default_dataset$initial_data)
       data_for_filters(default_dataset$data_for_filters)
-      # if(variable_to_display != variable_to_display_ancient){
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
       # session$reload() # ne relance pas global.R
-      # }
       shinyjs::refresh() #relance global.R
-      # session$onSessionEnded(restart_app)
-      # session$close()
-
+      
       shinyjs::hide("loading_page")
-
+      
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
       shinyjs::show("main_content")
       wkt(global_wkt)
       
+      shinyjs::delay(1000,{
+        shinyjs::click("submit")
+        data_for_filters_trigger(data_for_filters_trigger() + 1)
+        updateNavbarPage(session, "main", selected = "generaloverview")
+        
+      })
       
     }
     
-   
-    shinyjs::delay(1000,{
-    shinyjs::click("submit")
-    data_for_filters_trigger(data_for_filters_trigger() + 1)
-      updateNavbarPage(session, "main", selected = "generaloverview")
 
   })
-  })
   
-  shinyjs::delay(1, { shinyjs::click("dataset_choice-submitDataset") })
+  shinyjs::delay(1, { 
+    flog.info("submitfirstdataset")
+    shinyjs::click("dataset_choice-submitDataset") })
   
   # Filtering the final data
   final_filtered_data <- eventReactive(input$submit, {
-
+    
     flog.info("Submit button clicked")
-
+    
     req(wkt())
     wkt <- wkt()
     req(initial_data())
     req(data_for_filters())
-
+    
     if (!firstSubmit()) {
       showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
     }
-
+    
     flog.info("Filtering")
-
+    
     final_filtered_data <- initial_data()
-
+    
     for (variable in variable_to_display) {
       select_input <- paste0("select_", variable)
       if (!is.null(input[[select_input]])) {
@@ -170,27 +158,27 @@ server <- function(input, output, session) {
           dplyr::filter(!!sym(variable) %in% input[[select_input]])
       }
     }
-
+    
     if (!is.null(input$toggle_year) && !is.null(input$years)) {
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
     }
-
+    
     if(wkt != global_wkt){
       sf_wkt <- st_as_sfc(wkt, crs = 4326)
       final_filtered_data <- st_as_sf(final_filtered_data)
       final_filtered_data <- final_filtered_data[st_within(final_filtered_data, sf_wkt, sparse = FALSE), ]
     }
-
+    
     if (!firstSubmit()) {
       showNotification("Filtering finished", type = "message", id = "filtrage")
     }
-
-
+    
+    
     flog.info("Filtering finished")
     firstSubmit(FALSE)
     flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
-
+    
     final_filtered_data
   }, ignoreNULL = FALSE)
   
@@ -206,6 +194,14 @@ server <- function(input, output, session) {
     }
     flog.info("Data without geometry: %s", head(data_without_geom))
     data_without_geom
+  })
+  
+    variable_choicesintersect <- reactive({
+    req(data_for_filters())
+    variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
+    flog.info("variable_choicesintersect %s", variable_choicesintersect)
+    
+    variable_choicesintersect
   })
   
   # Calculate the centroid of the map
@@ -231,9 +227,9 @@ server <- function(input, output, session) {
   
   observeEvent(data_for_filters_trigger(), {
     req(data_for_filters())
+    req(variable_choicesintersect())
     data_for_filters <- data_for_filters()
-    
-    lapply(variable_to_display, function(variable) {
+    lapply(variable_choicesintersect(), function(variable) {
       local({
         variable <- variable
         flog.info(paste("Initialising", variable))
@@ -271,20 +267,20 @@ server <- function(input, output, session) {
     }
   })
   
-    observeEvent(input$major_tunas, {
+  observeEvent(input$major_tunas, {
     flog.info("Select major tunas")
     req(data_for_filters())
     species <- data_for_filters() %>% dplyr::select(species)%>% dplyr::filter(species %in% c("YFT", "SKJ", "ALB", "BET", "SBF"))  %>% dplyr::distinct() %>% pull(species)
     updateSelectInput(session, "select_species", selected = species)
   })
-    
-    observeEvent(input$major_tunas_name, {
-      flog.info("Select major tunas")
-      req(data_for_filters())
-      species_name <- data_for_filters()%>% dplyr::select(species_name) %>% dplyr::filter(species_name %in% c("Albacore", "Bigeye tuna", "Skipjack tuna", "Yellowfin tuna", "Southern bluefin tuna"))  %>% 
-        dplyr::distinct() %>% pull(species_name)
-      updateSelectInput(session, "select_species_name", selected = species_name)
-    })
+  
+  observeEvent(input$major_tunas_name, {
+    flog.info("Select major tunas")
+    req(data_for_filters())
+    species_name <- data_for_filters()%>% dplyr::select(species_name) %>% dplyr::filter(species_name %in% c("Albacore", "Bigeye tuna", "Skipjack tuna", "Yellowfin tuna", "Southern bluefin tuna"))  %>% 
+      dplyr::distinct() %>% pull(species_name)
+    updateSelectInput(session, "select_species_name", selected = species_name)
+  })
   
   lapply(variable_to_display, function(variable) {
     observeEvent(input[[paste0("all_", variable)]], {
@@ -296,6 +292,128 @@ server <- function(input, output, session) {
   })
   
   
+  output$sidebar_ui_with_variable_to_display <- renderUI({
+    req(variable_choicesintersect())
+    nav_panel(
+      title = "Filter your data",
+      useShinyjs(),
+      uiOutput("year_input"),
+      checkboxInput("toggle_year", "Discrete selection of year", value = FALSE),
+      tags$br(),
+      do.call(tagList, lapply(variable_choicesintersect(), function(variable) {
+        if(variable == "species"){
+          tagList(
+            div(uiOutput("select_species")),
+            div(class = "row", 
+                div(class = "col-6", 
+                    actionButton("all_species", "Select All Species")
+                ),
+                div(class = "col-6", 
+                    actionButton("major_tunas", "Select Major Tunas")
+                )
+            ),
+            tags$br(),
+            tags$br()
+          )
+        } else if(variable == "species_name") {
+          tagList(
+            div(uiOutput("select_species_name")),
+            div(class = "row", 
+                div(class = "col-6", 
+                    actionButton("all_species_name", "Select All Species")
+                ),
+                div(class = "col-6", 
+                    actionButton("major_tunas_name", "Select Major Tunas")
+                )
+            ),
+            tags$br(),
+            tags$br()
+          )
+        } else {
+          tagList(
+            div(
+              uiOutput(paste0("select_", variable)),
+              actionButton(paste0("all_", variable), paste("Select All", gsub("_", " ", variable)))
+            ),
+            tags$br(),
+            tags$br()
+          )
+        }
+      })),
+      div(class = "row", 
+          div(class = "col-6", 
+              actionButton("resetWkt", "Reset WKT to global")
+          ),
+          div(class = "col-6", 
+              actionButton("resetFilters", "Reset Filters")
+          )
+      ),
+      tags$br(),
+      div(style = "position: -webkit-sticky; position: sticky; bottom: 0; z-index: 999;",
+          actionButton("submit", "Submit", class = "btn-primary")
+      ),
+      tags$br(),
+      tags$br(),
+      actionButton("change_dataset", "Choose another dataset")
+    )
+  })
+  
+  
+  
+  output$dynamic_panels <- renderUI({
+    req(variable_choicesintersect())
+    panel_list <- lapply(variable_choicesintersect(), function(column_name) {
+      nav_panel(
+        title = column_name,
+        geographic_catches_by_variable_ui(column_name)
+      )
+    })
+    do.call(navset_card_tab, panel_list)
+    
+    # bslib::navset_card_tab(panel_list)
+    # panel_list
+    # do.call(nav_menu, c(list(title = "Indicators for each variable"), panel_list))
+  })
+
+  # 
+  # output$nav_panels <- renderUI({
+  #   req(dimensions())
+  #   nav_menu(
+  #     title = "Indicators for each variable",
+  #     !!!lapply(dimensions(), function(dimension) {
+  #       nav_panel(
+  #         title = dimension$column_name,
+  #         geographic_catches_by_variable_ui(dimension$column_name)
+  #       )
+  #     })
+  #   )
+  # })
+  # 
+  # Map and time series
+  lapply(variable_to_display, function(variable) {
+    local({
+      variable <- variable
+      pieMapTimeSeriesServer(paste0(variable, "_module"), category_var = variable, data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
+    })
+  })
+
+  # Pie charts
+  lapply(variable_to_display, function(variable) {
+    local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
+      variable <- variable
+      categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
+    })
+  })
+
+  # Time series by dimension
+  lapply(variable_to_display, function(variable) {
+    local({
+      variable <- variable
+      TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom)
+    })
+  })
+
+  # Global overview
   observeEvent(input$resetWkt, {
     showModal(modalDialog(
       title = "Changing spatial coverage",
@@ -315,14 +433,14 @@ server <- function(input, output, session) {
   })
   
   
-  observeEvent(submitTrigger(), {
-    print("submittrigger")
-    if(submitTrigger()) {
-      print("submit")
-      shinyjs::click("submit")  # Trigger the submit button click in the sidebar
-      submitTrigger(FALSE)
-    }
-  })
+  # observeEvent(submitTrigger(), {
+  #   print("submittrigger")
+  #   if(submitTrigger()) {
+  #     print("submit")
+  #     shinyjs::click("submit")  # Trigger the submit button click in the sidebar
+  #     submitTrigger(FALSE)
+  #   }
+  # })
   # Data and graphics outputs
   output$sql_query_init <- renderText({ 
     paste(sql_query_init)
@@ -367,47 +485,23 @@ server <- function(input, output, session) {
          alt = "This is alternate text")
   }, deleteFile = TRUE)
   
-  # Pie charts
-  lapply(variable_to_display, function(variable) {
-    local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
-      variable <- variable
-      categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
-    })
-  })
-  
-  # Map and time series
-  lapply(variable_to_display, function(variable) {
-    local({
-      variable <- variable
-      pieMapTimeSeriesServer(paste0(variable, "_module"), category_var = variable, data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
-    })
-  })
-  
-  # Time series by dimension
-  lapply(variable_to_display, function(variable) {
-    local({
-      variable <- variable
-      TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom)
-    })
-  })
-  
-  # Global overview
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
   mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
+  plotTotalCatchesServer("catch_by_year", data = data_without_geom)
   
   observeEvent(firstSubmit(), {
     if (!firstSubmit()) {
       flog.info("delay")
-      catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
-      mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
       shinyjs::delay(3000, {   
-        show(TRUE)
+        data_for_filters_trigger(data_for_filters_trigger() + 1)
+        # show(TRUE)
         flog.info("delay finished")
+        shinyjs::hide("loading_page")
+        shinyjs::show("main_content")
       })
     }
   })
   
-  plotTotalCatchesServer("catch_by_year", data = data_without_geom)
   
   observeEvent(input$change_dataset, {
     print("Button clicked")
@@ -442,7 +536,7 @@ server <- function(input, output, session) {
     head(final_filtered_data())
   })
   
-  # onStop(function() {
-  #   poolClose(pool)
-  # })
+  onStop(function() {
+    poolClose(pool)
+  })
 }

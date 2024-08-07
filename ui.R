@@ -21,22 +21,27 @@ ui <- tagList(
           selected = "datasetchoicevalue",
           collapsible = TRUE,
           theme = bslib::bs_theme(),
-          # sidebar = uiOutput("sidebar"),
-          sidebar = sidebar_ui_with_variable_to_display(),
+          # sidebar = uiOutput("sidebar_ui_with_variable_to_display"),
+          sidebar = nav_panel("sidebarfilter", uiOutput("sidebar_ui_with_variable_to_display")),
           # sidebar = sidebar_ui(), # to make work the toggle little fleche
           geographic_catches_ui(),
-          nav_menu(
-            title = "Indicators for each variable",
-            !!!lapply(dimensions, function(dimension) {
-              nav_panel(
-                title = dimension$column_name,
-                geographic_catches_by_variable_ui(dimension$column_name)
-              )
-            })
+          nav_panel(
+            title = "Other dimensions",
+            uiOutput("dynamic_panels")  # Dynamic nav panels within a nav_menu
           ),
-            data_explorer_combined_ui(),
-            dataset_choice_ui("dataset_choice"),
-            main_panel_ui(),
+          # uiOutput("dynamic_panels"),
+          # nav_menu(
+          #   title = "Indicators for each variable",
+          #   !!!lapply(variable_choicesintersectinit, function(variable) {
+          #     nav_panel(
+          #       title = variable,
+          #       geographic_catches_by_variable_ui(variable)
+          #     )
+          #   })
+          # ),
+          data_explorer_combined_ui(),
+          dataset_choice_ui("dataset_choice"),
+          main_panel_ui(),
           
             more_about()
           )
@@ -44,3 +49,4 @@ ui <- tagList(
     )
   
 )
+

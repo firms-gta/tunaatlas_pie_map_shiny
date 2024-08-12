@@ -13,6 +13,7 @@ mapCatchesServer <- function(id, data, submitTrigger) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    newwkt <- reactiveVal()
     sum_all <- reactive({
       req(data())
       df <- data()
@@ -61,36 +62,66 @@ mapCatchesServer <- function(id, data, submitTrigger) {
     observeEvent(input$submit_draw_total, {
       
       flog.info("Submitting draw")
+      if (!is.null(input$map_total_catch_draw_new_feature) && 
+          !is.null(input$map_total_catch_draw_new_feature$geometry) && 
+          length(input$map_total_catch_draw_new_feature$geometry$coordinates) > 0) {
+        
+        showModal(modalDialog(
+          title = "Changing spatial coverage",
+          "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure?",
+          footer = tagList(
+            modalButton("No"),
+            actionButton(ns("yes_button_pie_map"), "Yes")  # Ensure ns is used
+          ),
+          easyClose = TRUE,
+          id = ns("confirmation_modal")  
+        ))
+      } else {
+        showModal(modalDialog(
+          title = "Changing spatial coverage",
+          "Please draw a square or polygon shape",
+          footer = tagList(
+            modalButton("Ok"),
+          ),
+          easyClose = TRUE,
+          id = ns("drawashape")  
+        ))
+      }
       
       
-      showModal(modalDialog(
-        title = "Changing spatial coverage",
-        "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure? \n(You have to draw the shape before clicking this button)",
-        footer = tagList(
-          modalButton("No"),
-          actionButton(ns("yes_button"), "Yes")  # Ensure ns is used
-        ),
-        easyClose = TRUE,
-        id = ns("confirmation_modal")  
-      ))
     })
     
     observeEvent(input$yes_button, {
       flog.info("Yes button clicked changing the wkt")
-      req(input$pie_map_draw_new_feature$geometry)
-      req(input$pie_map_draw_stop)
-      geojson <- input$pie_map_draw_new_feature$geometry
+      req(input$map_total_catch_draw_new_feature$geometry)
+      req(input$map_total_catch_draw_stop)
+      flog.info("Draw shape exists")
+      
+      geojson <- input$map_total_catch_draw_new_feature$geometry
       # Convert GeoJSON to sf object
+      flog.info("geojson ok")
+      
       geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
       sf_obj <- geojsonsf::geojson_sf(geojson_text)
-      
-      
-      # Convert to WKT
+      flog.info("sf objok ")
+
+            # Convert to WKT
       wkt_val <- st_as_text(sf_obj$geometry)
-      wkt(wkt_val)  # Update the reactive value with the WKT representation
-      submitTrigger(TRUE)      
+        # wkt(wkt_val)  # Mettre à jour la valeur réactive WKT
+        flog.info("WKT mis à jour: %s", wkt_val)
+        
+        # submitTrigger(TRUE) 
+      # wkt(wkt_val)  # Update the reactive value with the WKT representation
+      flog.info("wkt")
       removeModal()
+      # flog.info("submittrigger")
+      flog.info("WKT mis à jour: %s", wkt_val)
+      newwkt(wkt_val)
+      # shinyjs::click("submit")
+      
     })
+    
+    return(list(newwkt = newwkt))
     
     
   })

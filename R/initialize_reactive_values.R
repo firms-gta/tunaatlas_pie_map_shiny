@@ -3,7 +3,6 @@ global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1)
-
 object <- tools::file_path_sans_ext(DOI$Filename[1])
 # Load the shapefile
 # shapefile_path <- here::here("data/cl_areal_grid_erased.csv") # much slower with this shapefile
@@ -62,7 +61,7 @@ default_dataset <- default_dataset[
 default_dataset <- merge(default_dataset, species, by.x = "species", by.y = "code_species", all.x = TRUE)
 default_dataset <- merge(default_dataset, cl_cwp_gear_level2, by.x = "gear_type", by.y = "Code", all.x = TRUE)
 default_dataset[, gear_type := as.character(gear_type)]
-default_dataset <- default_dataset[measurement_unit == "t"]
+# default_dataset <- default_dataset[measurement_unit == "t"]
 default_dataset[, geographic_identifier := as.character(geographic_identifier)]
 
 # Effectuer la jointure pour ajouter la colonne de géométrie de shapefile.fix
@@ -78,15 +77,16 @@ variable <- c("source_authority",
               "species_group", 
               "Gear",
               "gear_type", 
-              "species",
               "species_name",
-              "fishing_mode"
+              "fishing_mode", 
+              "measurement_unit",
               # "measurement",
-              # "gridtype",
-              # "measurement_type"
+              "gridtype",
+              # "measurement_type",
+              "species"
+              
 )
 flog.info(sprintf("variable %s:", paste0(variable)))
-
 if(exists("pool") && pool::dbIsValid(pool)){
   # load_target_data <- function(file_path) {
   #   target_data <- readRDS(file_path)

@@ -25,7 +25,7 @@ server <- function(input, output, session) {
   show <- reactiveVal(FALSE)
   data_for_filters_trigger <- reactiveVal(0)
   variable_to_display_react <- reactiveVal(variable_to_display)
-  
+  wkt <- reactiveVal(global_wkt)
   # Show main content after loading
   observeEvent(show(), {
     if (show()) {
@@ -126,22 +126,21 @@ server <- function(input, output, session) {
       
     }
     
-
+    
   })
   
   shinyjs::delay(1, { 
     flog.info("submitfirstdataset")
-    shinyjs::click("dataset_choice-submitDataset") })
+    shinyjs::click("dataset_choice-submitDataset") 
+  })
   
   # Filtering the final data
   final_filtered_data <- eventReactive(input$submit, {
-    
     flog.info("Submit button clicked")
-    
     req(wkt())
-    wkt <- wkt()
     req(initial_data())
     req(data_for_filters())
+    current_wkt <- wkt()
     
     if (!firstSubmit()) {
       showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
@@ -153,7 +152,8 @@ server <- function(input, output, session) {
     
     for (variable in variable_to_display) {
       select_input <- paste0("select_", variable)
-      if (!is.null(input[[select_input]])) {
+      unique_values <- unique(final_filtered_data[[variable]])
+      if (!is.null(input[[select_input]]) && !all(unique_values %in% input[[select_input]])) {
         final_filtered_data <- final_filtered_data %>%
           dplyr::filter(!!sym(variable) %in% input[[select_input]])
       }
@@ -164,10 +164,27 @@ server <- function(input, output, session) {
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
     }
     
-    if(wkt != global_wkt){
-      sf_wkt <- st_as_sfc(wkt, crs = 4326)
-      final_filtered_data <- st_as_sf(final_filtered_data)
-      final_filtered_data <- final_filtered_data[st_within(final_filtered_data, sf_wkt, sparse = FALSE), ]
+    if(as.character(current_wkt) != global_wkt){
+      # Your spatial filtering code
+      sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
+      
+      # Step 1: Select unique geographic identifiers and their associated geometries
+      unique_id_geom <- final_filtered_data %>%
+        dplyr::select(geographic_identifier, geom_wkt) %>%
+        dplyr::distinct()
+      
+      # Step 2: Convert to sf object
+      unique_id_geom <- st_as_sf(unique_id_geom)
+      
+      # Step 3: Perform spatial intersection
+      within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
+      
+      # Step 4: Filter based on spatial intersection
+      unique_id_geom_filtered <- unique_id_geom[rowSums(within_unique) > 0, ]
+      
+      # Step 5: Filter the original data
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
     }
     
     if (!firstSubmit()) {
@@ -177,6 +194,7 @@ server <- function(input, output, session) {
     
     flog.info("Filtering finished")
     firstSubmit(FALSE)
+    submitTrigger(FALSE)
     flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
     
     final_filtered_data
@@ -196,7 +214,7 @@ server <- function(input, output, session) {
     data_without_geom
   })
   
-    variable_choicesintersect <- reactive({
+  variable_choicesintersect <- reactive({
     req(data_for_filters())
     variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
     flog.info("variable_choicesintersect %s", variable_choicesintersect)
@@ -291,16 +309,97 @@ server <- function(input, output, session) {
     })
   })
   
+  newwkttest <- reactiveVal(NULL)
+  
+  # Map and time series
+  # Loop through variables and set up the modules
+  lapply(variable_to_display, function(variable) {
+    local({
+      variable <- variable
+      pieMapTimeSeriesServer(
+        paste0(variable, "_module"), 
+        category_var = variable, 
+        data = final_filtered_data, 
+        centroid = centroid, 
+        submitTrigger = submitTrigger, 
+        newwkttest = newwkttest  # Pass the single newwkt reactive value to each module
+      )
+    })
+  })
+  
+  observeEvent(newwkttest(), {
+    req(newwkttest())  # Ensure newwkt is not NULL
+    flog.info("New WKT received: %s", newwkttest())
+    wkt(newwkttest())
+    # Trigger any further actions, such as filtering based on the new WKT
+    submitTrigger(TRUE)
+  })
+  
+  # Pie charts
+  lapply(variable_to_display, function(variable) {
+    local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
+      variable <- variable
+      categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
+    })
+  })
+  
+  # Time series by dimension
+  lapply(variable_to_display, function(variable) {
+    local({
+      variable <- variable
+      TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom)
+    })
+  })
+  
+  # Global overview
+  observeEvent(input$resetWkt, {
+    showModal(modalDialog(
+      title = "Changing spatial coverage",
+      "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
+      footer = tagList(
+        modalButton("No"),
+        actionButton("yes_button", "Yes")
+      ),
+      easyClose = TRUE,
+    ))
+  }, ignoreInit = TRUE)
+  
+  observeEvent(input$yes_button, {
+    wkt(global_wkt)
+    removeModal()
+    submitTrigger(TRUE)
+  })
+  
+  observeEvent(submitTrigger(), {
+    flog.info(sprintf("submittrigger is %s", submitTrigger()))
+    req(wkt())
+    if(submitTrigger()) {
+      flog.info("submit")
+      shinyjs::click("submit")  # Trigger the submit button click in the sidebar
+      submitTrigger(FALSE)
+    }
+  })
   
   output$sidebar_ui_with_variable_to_display <- renderUI({
     req(variable_choicesintersect())
+    variable_choicesintersect <- variable_choicesintersect()
     nav_panel(
       title = "Filter your data",
       useShinyjs(),
+      
+      # Submit button at the top
+      div(style = "position: -webkit-sticky; position: sticky; top: 0; z-index: 999;",
+          actionButton("submit", "Submit", class = "btn-primary")
+      ),
+      tags$br(),
+      
+      # Year input and toggle
       uiOutput("year_input"),
       checkboxInput("toggle_year", "Discrete selection of year", value = FALSE),
       tags$br(),
-      do.call(tagList, lapply(variable_choicesintersect(), function(variable) {
+      
+      # Dynamic variable filters
+      do.call(tagList, lapply(variable_choicesintersect, function(variable) {
         if(variable == "species"){
           tagList(
             div(uiOutput("select_species")),
@@ -340,6 +439,8 @@ server <- function(input, output, session) {
           )
         }
       })),
+      
+      # Reset buttons
       div(class = "row", 
           div(class = "col-6", 
               actionButton("resetWkt", "Reset WKT to global")
@@ -349,15 +450,11 @@ server <- function(input, output, session) {
           )
       ),
       tags$br(),
-      div(style = "position: -webkit-sticky; position: sticky; bottom: 0; z-index: 999;",
-          actionButton("submit", "Submit", class = "btn-primary")
-      ),
-      tags$br(),
-      tags$br(),
+      
+      # Dataset change button
       actionButton("change_dataset", "Choose another dataset")
     )
   })
-  
   
   
   output$dynamic_panels <- renderUI({
@@ -370,77 +467,7 @@ server <- function(input, output, session) {
     })
     do.call(navset_card_tab, panel_list)
     
-    # bslib::navset_card_tab(panel_list)
-    # panel_list
-    # do.call(nav_menu, c(list(title = "Indicators for each variable"), panel_list))
   })
-
-  # 
-  # output$nav_panels <- renderUI({
-  #   req(dimensions())
-  #   nav_menu(
-  #     title = "Indicators for each variable",
-  #     !!!lapply(dimensions(), function(dimension) {
-  #       nav_panel(
-  #         title = dimension$column_name,
-  #         geographic_catches_by_variable_ui(dimension$column_name)
-  #       )
-  #     })
-  #   )
-  # })
-  # 
-  # Map and time series
-  lapply(variable_to_display, function(variable) {
-    local({
-      variable <- variable
-      pieMapTimeSeriesServer(paste0(variable, "_module"), category_var = variable, data = final_filtered_data, centroid = centroid, submitTrigger = submitTrigger)
-    })
-  })
-
-  # Pie charts
-  lapply(variable_to_display, function(variable) {
-    local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
-      variable <- variable
-      categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
-    })
-  })
-
-  # Time series by dimension
-  lapply(variable_to_display, function(variable) {
-    local({
-      variable <- variable
-      TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom)
-    })
-  })
-
-  # Global overview
-  observeEvent(input$resetWkt, {
-    showModal(modalDialog(
-      title = "Changing spatial coverage",
-      "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
-      footer = tagList(
-        modalButton("No"),
-        actionButton("yes_button", "Yes")
-      ),
-      easyClose = TRUE,
-    ))
-  }, ignoreInit = TRUE)
-  
-  observeEvent(input$yes_button, {
-    wkt(global_wkt)
-    submitTrigger(TRUE)
-    removeModal()
-  })
-  
-  
-  # observeEvent(submitTrigger(), {
-  #   print("submittrigger")
-  #   if(submitTrigger()) {
-  #     print("submit")
-  #     shinyjs::click("submit")  # Trigger the submit button click in the sidebar
-  #     submitTrigger(FALSE)
-  #   }
-  # })
   # Data and graphics outputs
   output$sql_query_init <- renderText({ 
     paste(sql_query_init)
@@ -486,8 +513,16 @@ server <- function(input, output, session) {
   }, deleteFile = TRUE)
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
-  mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger)
+  newwkt <- mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger = submitTrigger)
   plotTotalCatchesServer("catch_by_year", data = data_without_geom)
+  
+  observeEvent(newwkt$newwkt(), {
+    req(wkt())
+    if(newwkt$newwkt() != wkt()){
+    wkt(newwkt$newwkt())
+    submitTrigger(TRUE)
+    }
+  })
   
   observeEvent(firstSubmit(), {
     if (!firstSubmit()) {
@@ -501,6 +536,8 @@ server <- function(input, output, session) {
       })
     }
   })
+  
+  
   
   
   observeEvent(input$change_dataset, {

@@ -4,7 +4,7 @@ pieMapTimeSeriesUI <- function(id) {
     div(
       style = "height: 400px;",
       leafletOutput(ns("pie_map"))%>% withSpinner(),
-      actionButton(ns("submit_draw"), "Update wkt from drawing",
+      actionButton(ns("submit_draw_pie_map"), "Update wkt from drawing",
                    class = "btn-primary",
                    style = "position: absolute; top: 100px; right: 20px; z-index: 400; font-size: 0.8em; padding: 5px 10px;")
     ),
@@ -12,11 +12,10 @@ pieMapTimeSeriesUI <- function(id) {
 }
 
 
-pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigger) {
+pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigger, newwkttest) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     zoom_level <- reactiveVal(1)
-    
     target_var <- getTarget(category_var)
     
     data_pie_map <- reactive({
@@ -106,24 +105,38 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
                       legend = TRUE, legendPosition = "bottomright")
     })
     
-    observeEvent(input$submit_draw, {
-      
+    observeEvent(input$submit_draw_pie_map, {
+      # browser()
       flog.info("Submitting draw")
       
+      if (!is.null(input$pie_map_draw_new_feature) && 
+          !is.null(input$pie_map_draw_new_feature$geometry) && 
+          length(input$pie_map_draw_new_feature$geometry$coordinates) > 0) {
       
       showModal(modalDialog(
         title = "Changing spatial coverage",
-        "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure? \n(You have to draw the shape before clicking this button)",
+        "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure?",
         footer = tagList(
           modalButton("No"),
-          actionButton(ns("yes_button"), "Yes")  # Ensure ns is used
+          actionButton(ns("yes_button_pie_map"), "Yes")  # Ensure ns is used
         ),
         easyClose = TRUE,
         id = ns("confirmation_modal")  
       ))
+      } else {
+        showModal(modalDialog(
+          title = "Changing spatial coverage",
+          "Please draw a square or polygon shape",
+          footer = tagList(
+            modalButton("Ok"),
+          ),
+          easyClose = TRUE,
+          id = ns("drawashape")  
+        ))
+    }
     })
     
-    observeEvent(input$yes_button, {
+    observeEvent(input$yes_button_pie_map, {
       flog.info("Yes button clicked cahnign the wkt")
       req(input$pie_map_draw_new_feature$geometry)
       req(input$pie_map_draw_stop)
@@ -135,10 +148,16 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       
       # Convert to WKT
       wkt_val <- st_as_text(sf_obj$geometry)
-      wkt(wkt_val)  # Update the reactive value with the WKT representation
-      submitTrigger(TRUE)      
+      flog.info("wkt")
       removeModal()
+      flog.info("submittrigger")
+      
+      newwkttest(wkt_val)
+      # shinyjs::click("submit")
+      
     })
+    
+    # return(list(newwkt = newwkt))
     
   })
 }

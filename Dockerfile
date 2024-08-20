@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y \
     redland-utils && \
     apt-get clean
     
-# Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates somme errors
+# Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates some errors
 
 # Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y
@@ -113,7 +113,7 @@ RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
 # Run the global script to load packages and data prior to running the shiny app 
 # Removed as global.R need connection to DB for now to implement everything #not anymore
-RUN Rscript global.R
+# RUN Rscript global.R maybe creating errors
   
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]

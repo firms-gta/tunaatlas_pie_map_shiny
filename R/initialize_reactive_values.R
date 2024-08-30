@@ -4,107 +4,39 @@ global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1)
-object <- tools::file_path_sans_ext(DOI$Filename[1])
 
-# Load the shapefile
-shapefile_path <- here::here("data/cl_areal_grid.csv")
-flog.info("Loading shapefile from %s", shapefile_path)
-shapefile.fix <- read.csv(shapefile_path)
+# Load environment variables from file
+try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 
-# Convert to sf object
-flog.info("Converting shapefile to sf object")
-shapefile.fix <- sf::st_as_sf(shapefile.fix, wkt = "geom_wkt")
-if (is.na(st_crs(shapefile.fix))) {
-  flog.warn("No CRS found, setting to WGS84")
-  st_crs(shapefile.fix) <- 4326  # Set to WGS84
-}
+# Create database connection pool
+# Log environment variables
+db_host <- Sys.getenv("DB_HOST")
+db_port <- as.integer(Sys.getenv("DB_PORT"))
+db_name <- Sys.getenv("DB_NAME")
+db_user <- Sys.getenv("DB_USER")
+db_user_readonly <- Sys.getenv("DB_USER_READONLY")
+db_password <- Sys.getenv("DB_PASSWORD")
 
-# Set tmap options
-flog.info("Setting tmap options")
-tmap_options(check.and.fix = TRUE)
+flog.info("Attempting to connect to the database with the following parameters:")
+flog.info("Host: %s", db_host)
+flog.info("Port: %d", db_port)
+flog.info("Database Name: %s", db_name)
+flog.info("User: %s", db_user)
+flog.info("User readonly: %s", db_user_readonly)
 
-flog.info("Filtering and renaming shapefile data")
-shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]
-shapefile.fix <- shapefile.fix %>% 
-  dplyr::rename(cwp_code = CWP_CODE, gridtype = GRIDTYPE, geom = geom_wkt) %>% 
-  dplyr::select(cwp_code, gridtype, geom) %>%
-  dplyr::mutate(cwp_code = as.character(cwp_code))
-
-flog.info("Converting shapefile to data.table")
-shapefile.fix <- as.data.table(shapefile.fix)
-
-flog.info("Loading species data")
-species <- read_csv(here::here("data/cl_species.csv")) %>% 
-  dplyr::select(code, label, taxa_order) %>% 
-  dplyr::rename(code_species = code, species_name = label, species_group = taxa_order) %>% 
-  distinct() #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cl_asfis_species.csv
-flog.info("Loaded species and species_group data")
-
-flog.info("Loading cl_cwp_gear_level2 data")
-cl_cwp_gear_level2 <- read_csv(here::here("data/cl_cwp_gear_level2.csv")) %>% 
-  dplyr::select(Code = code, Gear = label) %>% 
-  dplyr::distinct() #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv
-flog.info("Loaded cl_cwp_gear_level2 data")
-
-flog.info(sprintf("Time %s:", Sys.time()))
-
-flog.info("Loading default dataset")
-default_dataset <- base::get(object)
-
-# Convert species and cl_cwp_gear_level2 to data.table
-flog.info("Converting species and cl_cwp_gear_level2 to data.table")
-species <- as.data.table(species)
-cl_cwp_gear_level2 <- as.data.table(cl_cwp_gear_level2)
-
-# Convert default_dataset to data.table
-flog.info("Converting default_dataset to data.table to make all the operations from 30 seconds to 15 seconds")
-setDT(default_dataset)
-
-# Perform operations on default_dataset with data.table
-flog.info("Filtering and selecting columns in default_dataset")
-default_dataset <- default_dataset[
-  !is.na(measurement_value), 
-  .(year = year(time_start), 
-    month = month(time_start), 
-    measurement_value, 
-    measurement_unit, 
-    species, 
-    gear_type, 
-    source_authority,
-    measurement,
-    measurement_type,
-    geographic_identifier, 
-    fishing_mode, 
-    fishing_fleet)
-]
-
-flog.info("Merging default_dataset with species data")
-default_dataset <- merge(default_dataset, species, by.x = "species", by.y = "code_species", all.x = TRUE)
-
-flog.info("Merging default_dataset with cl_cwp_gear_level2 data")
-default_dataset <- merge(default_dataset, cl_cwp_gear_level2, by.x = "gear_type", by.y = "Code", all.x = TRUE)
-default_dataset[, gear_type := as.character(gear_type)]
-default_dataset[, geographic_identifier := as.character(geographic_identifier)]
-
-flog.info("Merging default_dataset with shapefile.fix to add geometry")
-default_dataset <- merge(default_dataset, shapefile.fix, by.x = "geographic_identifier", by.y = "cwp_code", all.x = TRUE)
-default_dataset <- as.data.frame(default_dataset) %>% dplyr::rename(geom_wkt = geom)
-
-flog.info(sprintf("Time %s:", Sys.time()))
-flog.info(sprintf("Colnames %s:", paste0(colnames(default_dataset))))
-
-variable <- c("source_authority",
-              "fishing_fleet",
-              "species_group", 
-              "Gear",
-              "gear_type", 
-              "species_name",
-              "fishing_mode", 
-              "measurement_unit",
-              "gridtype",
-              "species"
-)
-flog.info(sprintf("Variables: %s", paste0(variable)))
+# Create database connection pool
+tryCatch({
+  pool <- dbPool(RPostgreSQL::PostgreSQL(),
+                 host = db_host,
+                 port = db_port,
+                 dbname = db_name,
+                 user = db_user_readonly,
+                 password = db_password)
+  flog.info("Database connection pool to '%s' has been created successfully.", db_name)
+  
+}, error = function(e) {
+  flog.error("Failed to create database connection pool: %s", e$message)
+})
 
 if (exists("pool") && pool::dbIsValid(pool)) {
   flog.info("DB pool exists and is valid")
@@ -135,6 +67,10 @@ if (exists("pool") && pool::dbIsValid(pool)) {
   default_measurement_unit <- "t"
   
   
+} else {
+  filters_combinations <- as.data.frame(NULL)
+  default_gridtype <- NULL
+  default_measurement_unit <- NULL
 }
 
 

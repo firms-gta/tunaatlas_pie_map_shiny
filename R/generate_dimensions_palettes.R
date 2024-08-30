@@ -1,6 +1,7 @@
-flog.info(sprintf("Colnames default dataset%s:", colnames(default_dataset)))
+flog.info(sprintf("Colnames default dataset %s:", colnames(default_dataset)))
 # initialising variable to display
 variable_to_display <- intersect(variable,colnames(default_dataset))
+flog.info(sprintf("Colnames variable to display %s:", colnames(variable_to_display)))
 
 # Create target_* variables for each non-numeric column
 for (col in variable_to_display) {

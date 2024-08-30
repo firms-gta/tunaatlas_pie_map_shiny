@@ -25,7 +25,7 @@ load_ui_modules <- function() {
     "R/data_loading.R", 
     'R/get_html_title.R',
     'R/getPalette.R',
-    'R/palette_settings.R' 
+    'R/palette_settings.R', "R/data_loading.R"
   )
   lapply(ui_files, function(file) {
     source(here::here(file))

@@ -134,5 +134,6 @@ if(!file.exists("data/default_dataset") & !exists("default_dataset")){
   flog.info("Color palettes initialized.")
   
 } else if(!exists("default_dataset") & file.exists("data/default_dataset")){
+  flog.info("reading the data from qs file")
   default_dataset <- qs::qread("data/default_dataset")
 }

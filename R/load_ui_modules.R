@@ -22,14 +22,11 @@ load_ui_modules <- function() {
     'modules/pieMapTimeSeriesUI.R',
     'modules/plotTotalCatches.R',
     "modules/dataset_choice.R",
-    "R/data_loading.R", 
     'R/get_html_title.R',
-    'R/getPalette.R',
-    'R/palette_settings.R', "R/data_loading.R"
+    'R/getPalette.R', "R/data_loading.R"
   )
   lapply(ui_files, function(file) {
     source(here::here(file))
     flog.info(paste("Loaded UI module:", file))
   })
 }
-load_ui_modules()

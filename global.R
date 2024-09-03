@@ -2,12 +2,18 @@
 # renv::restore(exclude = c("shinyuieditor"))
 # try(pool::dbDisconnect(pool))
 # Source install script
+require(here)
 source(here::here('install.R'))
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 #create default_dataset
 source(here::here("R/create_or_load_default_dataset.R"))
+flog.info("Sourced create or load defautl dataset")
+
 source(here::here("R/load_ui_modules.R"))
+load_ui_modules()
+flog.info("Sourced loading ui modules dataset")
+
 variable <- c("source_authority",
               "fishing_fleet",
               "species_group", 
@@ -22,13 +28,13 @@ variable <- c("source_authority",
 
 flog.info(sprintf("Variables: %s", paste0(variable)))
 
+source(here::here("R/palette_settings.R"))
 source(here::here("R/generate_dimensions_palettes.R"))
 
 # Load functions from external sources
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
-flog.info(sprintf("current env:",current_env()))
-# Load UI modules
+flog.info("Functions loaded")
 
 getTarget <- function(category) {
   target <- targettes[[category]]
@@ -60,24 +66,3 @@ source(here::here("R/initialize_reactive_values.R")) # and database connection
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")
 
-
-# geographic_catches_ui <- function(variable_to_display) {
-#   nav_panel(
-#     title = "General overview", value = "generaloverview",
-#     grid_container(
-#       layout = c(
-#         "mapcatches   by_month  ",
-#         "plot_catches by_month"
-#       ),
-#       row_sizes = c("0.8fr", "1.2fr"),
-#       col_sizes = c("1.4fr", "0.6fr"),
-#       gap_size = "10px",
-#       grid_card(
-#         area = "mapcatches",
-#         card_body(mapCatchesUI("total_catch"))
-#       ),
-#       grid_card(area = "plot_catches", card_body(plotTotalCatchesUI("catch_by_year"))),
-#       grid_card(area = "by_month", card_body(catches_by_variable_moduleUI("catches_by_variable_month", variable_to_display)))
-#     )
-#   )
-# }

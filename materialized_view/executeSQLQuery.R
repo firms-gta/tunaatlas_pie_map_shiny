@@ -11,7 +11,7 @@ executeSQLQuery <- function(con, queryFile) {
   # Replace the connection details with your own
   
   # Execute the SQL query
-  result <- DBI::dbGetQuery(con, query)
+  result <- DBI::dbExecute(con, query)
   
   # Close the database connection
   DBI::dbDisconnect(con)

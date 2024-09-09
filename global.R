@@ -50,7 +50,7 @@ map_init <- read_html(here::here("www/map_init.html"))
 flog.info("Map init loaded")
 # Générer les options d'analyse
 
-source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
+# source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
 source(here::here("tab_panels/sidebar_ui.R"))
 
 # Générer targetVariables et targettes

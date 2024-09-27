@@ -235,6 +235,86 @@ server <- function(input, output, session) {
     result
   })
   
+  original_data <- reactiveVal()
+  observe({
+    original_data(initial_data())  # Store original data at start
+  })
+  
+  # Reactive variable to store CSV data
+  csv_data <- reactiveVal()
+  
+  # Observe CSV file upload
+  observeEvent(input$file_upload, {
+    req(input$file_upload)
+    data <- read.csv(input$file_upload$datapath)
+    csv_data(data)  # Store uploaded data
+    flog.info("Csv_data uploaded")
+  })
+  
+    # Apply filters based on uploaded CSV
+  observeEvent(input$apply_csv_filters, {
+    flog.info("Apply csv filters")
+    req(csv_data())
+    flog.info("Req csv data")
+    # Implement filtering logic using csv_data()
+    # Example: filtering by a column that both datasets share
+    common_columns <- intersect(colnames(initial_data()), colnames(csv_data()))
+    filtered_data <- initial_data()
+    
+    filtered_data <- filtered_data %>% dplyr::mutate_if(is.double, as.character)
+    csv_data <- csv_data() %>% dplyr::mutate_if(is.double, as.character)
+    
+    filtered_data <- filtered_data %>% dplyr::inner_join(csv_data)
+    browser()
+    filtered_data <- as.data.frame(filtered_data %>% dplyr::ungroup() %>% 
+                                     dplyr::mutate(year = as.numeric(year), month = as.numeric(month)) %>% 
+                                     dplyr::mutate(measurement_value = as.numeric(measurement_value)))
+    
+    data <- load_initial_data(filtered_data)
+    
+    flog.info("Initial Data loaded")
+    
+    initial_data(data$initial_data)
+    flog.info("Inital data loaded")
+    
+    data_for_filters(data$data_for_filters)
+
+    flog.info("Data is filtered on the basis of the csv")
+    flog.info(paste0("Initial data is filtered, nrow are:", nrow(initial_data())))
+    
+    # session$reload() # ne relance pas global.R
+    # shinyjs::refresh() #relance global.R
+    # 
+    # showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
+    # shinyjs::show("main_content")
+    # wkt(global_wkt)
+    
+    shinyjs::delay(1000,{
+      shinyjs::click("submit")
+      data_for_filters_trigger(data_for_filters_trigger() + 1)
+      updateNavbarPage(session, "main", selected = "generaloverview")
+      
+    })
+    
+    
+    output$filtered_data_table <- renderDT({
+      initial_data()
+    })
+  })
+  
+  # Reset filters to original data
+  observeEvent(input$reset_csv_filters, {
+    initial_data(original_data())  # Reset to original unfiltered data
+    output$filtered_data_table <- renderDT({
+      initial_data()
+    })
+  })
+  
+  # Ensure the data table shows the current state of initial_data
+  output$filtered_data_table <- renderDT({
+    head(initial_data())
+  })
+  
   # Update selectors and reactivity
   
   # ObserveEvent for the resetFilters button
@@ -519,8 +599,8 @@ server <- function(input, output, session) {
   observeEvent(newwkt$newwkt(), { #if newwkt from mapCatchesserver is updated 
     req(wkt())
     if(newwkt$newwkt() != wkt()){
-    wkt(newwkt$newwkt())
-    submitTrigger(TRUE)
+      wkt(newwkt$newwkt())
+      submitTrigger(TRUE)
     }
   })
   

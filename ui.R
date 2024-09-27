@@ -29,16 +29,18 @@ ui <- tagList(
             title = "Other dimensions",
             uiOutput("dynamic_panels")  # Dynamic nav panels within a nav_menu
           ),
-          # uiOutput("dynamic_panels"),
-          # nav_menu(
-          #   title = "Indicators for each variable",
-          #   !!!lapply(variable_choicesintersectinit, function(variable) {
-          #     nav_panel(
-          #       title = variable,
-          #       geographic_catches_by_variable_ui(variable)
-          #     )
-          #   })
-          # ),
+          tabPanel("CSV-based Filtering",
+                   sidebarLayout(
+                     sidebarPanel(
+                       fileInput("file_upload", "Upload CSV", accept = ".csv"),
+                       actionButton("apply_csv_filters", "Apply CSV Filters", class = "btn-success"),
+                       actionButton("reset_csv_filters", "Reset Filters", class = "btn-warning")
+                     ),
+                     mainPanel(
+                       DTOutput("filtered_data_table")
+                     )
+                   )
+          ),
           data_explorer_combined_ui(),
           dataset_choice_ui("dataset_choice"),
           main_panel_ui(),

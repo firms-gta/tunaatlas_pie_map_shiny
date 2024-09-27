@@ -10,7 +10,7 @@ server <- function(input, output, session) {
   
   
   # Initialize resource paths and modules
-  addResourcePath("www", here::here("www"))
+  # addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
   
   # Initialize reactive values
@@ -516,7 +516,7 @@ server <- function(input, output, session) {
   newwkt <- mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger = submitTrigger)
   plotTotalCatchesServer("catch_by_year", data = data_without_geom)
   
-  observeEvent(newwkt$newwkt(), {
+  observeEvent(newwkt$newwkt(), { #if newwkt from mapCatchesserver is updated 
     req(wkt())
     if(newwkt$newwkt() != wkt()){
     wkt(newwkt$newwkt())
@@ -536,9 +536,6 @@ server <- function(input, output, session) {
       })
     }
   })
-  
-  
-  
   
   observeEvent(input$change_dataset, {
     print("Button clicked")
@@ -574,6 +571,6 @@ server <- function(input, output, session) {
   })
   
   onStop(function() {
-    poolClose(pool)
+    try(poolClose(pool))
   })
 }

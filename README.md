@@ -1,6 +1,9 @@
 # Tunaatlas_pie_map_shiny
 
-Shiny app to display Tuna atlas catches with pie maps
+Shiny app to display Tuna atlas catches with pie maps.
+
+Please cite this work if you reuse it or find it useful : [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13685479.svg)](https://doi.org/10.5281/zenodo.13685479)
+
 
 # Prequesite
 

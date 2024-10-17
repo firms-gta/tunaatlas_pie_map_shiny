@@ -1,0 +1,48 @@
+{
+    "creators": [
+        {
+            "orcid": "0009-0007-6967-0300",
+            "name": "FIRMS GTA Technical Working Group"
+        },
+        {
+            "orcid": "0000-0002-9946-1338",
+            "affiliation": "IRD",
+            "name": "Grasset, Bastien"
+        },
+        {
+            "orcid": "0000-0002-3519-6141",
+            "affiliation": "IRD",
+            "name": "Barde, Julien"
+        }
+    ],
+
+    "license": "Apache-2.0",
+    "title": "Global Tuna Atlas Shiny app: exploring datasets",
+    "upload_type": "software",
+    "access_right": "open",
+
+    "related_identifiers": [
+        {
+            "scheme": "doi",
+            "identifier": "10.5281/zenodo.5745958",
+            "relation": "isSupplementTo",
+            "resource_type": "dataset"
+        },
+              {
+            "scheme": "doi",
+            "identifier": "10.5281/zenodo.11460074",
+            "relation": "isSupplementTo",
+            "resource_type": "dataset"
+        }
+    ],
+
+    "keywords": ["Tuna fisheries", "FAIR services","R package", "reproducible research", "Shiny app"],
+
+    "communities": [
+        {"identifier": "fisheries"},
+        {"identifier": "marbec"}
+        
+    ],
+
+    "grants": [{"id":"101094227"}]
+}

@@ -4,7 +4,7 @@ require(readr)
 
 DOI <- read_csv("data/DOI.csv")
 
-options(timeout = 600)
+options(timeout = 6000)
 
 extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
   

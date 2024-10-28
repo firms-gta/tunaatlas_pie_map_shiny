@@ -6,6 +6,7 @@ if(!file.exists("data/default_dataset") & !exists("default_dataset")){
   # Read the DOI CSV file
   
   DOI <- read_csv('data/DOI.csv')
+  source(here::here("update_data.R"))
   load_data <- function(DOI) {
     loaded_data <- list()
     
@@ -38,7 +39,7 @@ if(!file.exists("data/default_dataset") & !exists("default_dataset")){
   load_data(DOI)
   
   object <- tools::file_path_sans_ext(DOI$Filename[1])
-  
+  source(here::here("download_GTA_data.R"))
   # Load the shapefile
   shapefile_path <- here::here("data/cl_areal_grid.csv")
   flog.info("Loading shapefile from %s", shapefile_path)

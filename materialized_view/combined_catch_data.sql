@@ -1,5 +1,5 @@
 -- Recreate the materialized view
-CREATE MATERIALIZED VIEW public.shinycatch AS
+CREATE MATERIALIZED VIEW public.shinycatch_georef AS
 SELECT 
 row_number() OVER () AS ogc_fid,
 metadata.identifier AS dataset,

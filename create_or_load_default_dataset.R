@@ -11,7 +11,7 @@ if(!file.exists("data/default_dataset") & !exists("default_dataset")){
   load_data <- function(DOI) {
     loaded_data <- list()
     
-    for (filename in DOI$Filename) {
+    for (filename in DOI$Filename[1]) {
       flog.info("Loading dataset: %s", filename)
       
       base_filename <- tools::file_path_sans_ext(filename) # Remove any existing extension

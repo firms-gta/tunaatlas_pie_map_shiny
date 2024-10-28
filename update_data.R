@@ -29,8 +29,8 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 }
 
 lapply(1:nrow(DOI), function(i) {
-  if(!file.exists(here::here(paste0("data/",DOI$Filename[i])))){
-  extract_zenodo_metadata(doi = DOI$DOI[i], filename = DOI$Filename[i])
+  if (!file.exists(paste0("data/", DOI$Filename[i]))) {
+    extract_zenodo_metadata(doi = DOI$DOI[i], filename = DOI$Filename[i])
   }
 })
 

@@ -1,5 +1,6 @@
 # Creating default dataset on this basis and if exists already loading it
-source(here::here('install.R'))
+# source(here::here('install.R'))
+flog.info("Sourced create or load defautl dataset")
 if(!file.exists("data/default_dataset") & !exists("default_dataset")){
   
   flog.info("Loading data ")

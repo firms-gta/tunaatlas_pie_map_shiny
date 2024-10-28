@@ -1,4 +1,5 @@
 server <- function(input, output, session) {
+  
   flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
   flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset$initial_data)))
@@ -109,6 +110,8 @@ server <- function(input, output, session) {
       data_for_filters(default_dataset$data_for_filters)
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
       # session$reload() # ne relance pas global.R
+      flog.info(sprintf("Launching global.R again"))
+      
       shinyjs::refresh() #relance global.R
       
       shinyjs::hide("loading_page")

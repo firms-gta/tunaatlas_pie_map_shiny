@@ -106,7 +106,7 @@ RUN R -e "renv::restore()"
 COPY . .
 
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
-RUN Rscript ./R/create_or_load_default_dataset.R 
+# RUN Rscript ./create_or_load_default_dataset.R 
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838

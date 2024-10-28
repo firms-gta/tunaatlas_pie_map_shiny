@@ -7,10 +7,9 @@ source(here::here('install.R'))
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 #create default_dataset
-source(here::here("R/create_or_load_default_dataset.R"))
-flog.info("Sourced create or load defautl dataset")
+# source(here::here("R/create_or_load_default_dataset.R"))
 
-source(here::here("R/load_ui_modules.R"))
+source(here::here("modules/load_ui_modules.R"))
 load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
@@ -27,9 +26,6 @@ variable <- c("source_authority",
 )
 
 flog.info(sprintf("Variables: %s", paste0(variable)))
-
-source(here::here("R/palette_settings.R"))
-source(here::here("R/generate_dimensions_palettes.R"))
 
 # Load functions from external sources
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
@@ -60,8 +56,11 @@ source(here::here("tab_panels/sidebar_ui.R"))
 # } else {
 #   default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
 # }
+source(here::here("modules/initialize_reactive_values.R"))
+source(here::here("R/palette_settings.R"))
+source(here::here("global/generate_dimensions_palettes.R"))
+source(here::here("R/get_html_title.R"))
 # Rprofmem("memory_profile.txt")
-source(here::here("R/initialize_reactive_values.R")) # and database connection
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully
 flog.info("Global.R file loaded")

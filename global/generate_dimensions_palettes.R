@@ -1,3 +1,4 @@
+flog.info(sprintf("Running generate_dimensions_palettes.R"))
 flog.info(sprintf("Colnames default dataset %s:", colnames(default_dataset)))
 # initialising variable to display
 variable_to_display <- intersect(variable,colnames(default_dataset))

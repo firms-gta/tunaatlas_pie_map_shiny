@@ -1,0 +1,76 @@
+{
+  "title": "Global Tuna Atlas Shiny app: exploring datasets",
+  "description": "This is a generic Shiny app which can display any data complying with fisheries data complying with the CWP format. This app is meant to display and compare the contents of different fisheries datasets : e.g. multiple versions of the same datasest with different levels of processing (raw, raised data..) or datasets collected in different areas. This Shiny app has been developped and is hosted in the same <a href=\"https://blue-cloud.d4science.org/group/globalfisheriesatlas\">Virtual Lab<\/a> provided by <a href=\"https://blue-cloud.d4science.org\">Blue-Cloud 2026<\/a> project which implements best practices for Open Science and FAIR data management.",
+  "license": "CC-BY-4.0",
+  "upload_type": "software",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Barde, Julien",
+      "affiliation": "IRD",
+      "orcid": "0000-0002-3519-6141"
+      },
+      {
+        "name": "Grasset, Bastien",
+        "affiliation": "IRD",
+        "orcid": "0000-0002-9946-1338"
+        },
+        {
+          "name": "FIRMS GTA Technical Working Group",
+          "orcid": "0009-0007-6967-0300"
+          },
+          {
+            "name": "Blondel, Emmanuel",
+            "affiliation": "FAO",
+            "orcid": "0000-0002-5870-5762"
+            }
+        ],
+  "keywords": [
+    "web mapping",
+    "FAIR services",
+    "reproducible research",
+    "Shiny app",
+    "leaflet",
+    "Fisheries",
+    "Fishing catches",
+    "Global Tuna Atlas",
+    "FIRMS",
+    "Open Science",
+    "CWP",
+    "R"
+    ],
+  "related_identifiers": [
+    {
+      "scheme": "doi",
+      "identifier": "https://doi.org/10.5281/zenodo.5745958",
+      "relation": "isSupplementTo",
+      "resource_type": "dataset"
+      },
+          {
+      "scheme": "doi",
+      "identifier": "https://dx.doi.org/10.5281/zenodo.5747174",
+      "relation": "isSupplementTo",
+      "resource_type": "dataset"
+      },
+          {
+      "scheme": "doi",
+      "identifier": "https://dx.doi.org/10.5281/zenodo.5745986",
+      "relation": "isSupplementTo",
+      "resource_type": "dataset"
+      },
+          {
+      "scheme": "doi",
+      "identifier": "https://dx.doi.org/10.5281/zenodo.5746041",
+      "relation": "isSupplementTo",
+      "resource_type": "dataset"
+      }
+      ],
+  "communities": [
+    {"identifier":"umr-marbec"},
+    {"identifier":"bluecloud"}
+    ],
+  "grants": [
+    {"id":"101094227"},
+    {"id":"862409"}
+    ]
+}

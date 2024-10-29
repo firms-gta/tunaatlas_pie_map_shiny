@@ -1,7 +1,7 @@
 # Creating default dataset on this basis and if exists already loading it
 # source(here::here('install.R'))
 flog.info("Sourced create or load defautl dataset")
-if(!file.exists("data/default_dataset") & !exists("default_dataset")){
+if(!file.exists("data/default_dataset.qs") & !exists("default_dataset")){
   
   flog.info("Loading data ")
   # Read the DOI CSV file
@@ -130,12 +130,12 @@ if(!file.exists("data/default_dataset") & !exists("default_dataset")){
   
   # source(here::here("R/initialize_data_and_plots.R"))
   default_dataset <- as.data.frame(default_dataset)
-  qs::qsave(default_dataset, "data/default_dataset")
+  qs::qsave(default_dataset, "data/default_dataset.qs")
   
   # Log the initialization of palettes
   flog.info("Color palettes initialized.")
   
-} else if(!exists("default_dataset") & file.exists("data/default_dataset")){
+} else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){
   flog.info("reading the data from qs file")
-  default_dataset <- qs::qread("data/default_dataset")
+  default_dataset <- qs::qread("data/default_dataset.qs")
 }

@@ -38,40 +38,40 @@ tryCatch({
   flog.error("Failed to create database connection pool: %s", e$message)
 })
 
-if (exists("pool") && pool::dbIsValid(pool)) {
-  flog.info("DB pool exists and is valid")
-  
-  # load_target_data <- function(file_path) {
-  #   target_data <- readRDS(file_path)
-  #   list2env(target_data, .GlobalEnv)
-  # }
-  # 
-  # # Call the function to load data
-  # load_target_data("data/target.rds")
-  # Query distinct values from the database for filters
-  
-  filters_combinations_query <- glue::glue_sql("SELECT dataset, measurement_unit, gridtype FROM public.shinycatch GROUP BY dataset, measurement_unit, gridtype;",
-                                               .con = pool)
-  
-  flog.info("Executing query to get filters_combinations")
-  filters_combinations <- DBI::dbGetQuery(pool, filters_combinations_query)
-  
-  flog.info("Setting default filter values based on combinations")
-  default_dataset_DB <- ifelse('global_catch_5deg_1m_firms_level1' %in% filters_combinations$dataset, "global_catch_5deg_1m_firms_level1", filters_combinations[[1]][1])
-  
-  default_gridtype <- filters_combinations %>%
-    dplyr::filter(dataset == default_dataset_DB) %>%
-    head(1) %>%
-    pull(gridtype)
-  
-  default_measurement_unit <- "t"
-  
-  
-} else {
+# if (exists("pool") && pool::dbIsValid(pool)) {
+#   flog.info("DB pool exists and is valid")
+#   
+#   # load_target_data <- function(file_path) {
+#   #   target_data <- readRDS(file_path)
+#   #   list2env(target_data, .GlobalEnv)
+#   # }
+#   # 
+#   # # Call the function to load data
+#   # load_target_data("data/target.rds")
+#   # Query distinct values from the database for filters
+#   
+#   filters_combinations_query <- glue::glue_sql("SELECT dataset, measurement_unit, gridtype FROM public.shinycatch GROUP BY dataset, measurement_unit, gridtype;",
+#                                                .con = pool)
+#   
+#   flog.info("Executing query to get filters_combinations")
+#   filters_combinations <- DBI::dbGetQuery(pool, filters_combinations_query)
+#   
+#   flog.info("Setting default filter values based on combinations")
+#   default_dataset_DB <- ifelse('global_catch_5deg_1m_firms_level1' %in% filters_combinations$dataset, "global_catch_5deg_1m_firms_level1", filters_combinations[[1]][1])
+#   
+#   default_gridtype <- filters_combinations %>%
+#     dplyr::filter(dataset == default_dataset_DB) %>%
+#     head(1) %>%
+#     pull(gridtype)
+#   
+#   default_measurement_unit <- "t"
+#   
+#   
+# } else {
   filters_combinations <- as.data.frame(NULL)
   default_gridtype <- NULL
   default_measurement_unit <- NULL
-}
+# }
 
 
 # shapefile.fix <- st_read(pool,query = "SELECT * from area.cwp_grid") 
@@ -86,9 +86,9 @@ if (exists("pool") && pool::dbIsValid(pool)) {
 #   dplyr::select(Code = code, Gear = label)%>% dplyr::distinct()
 # flog.info("Loaded cl_cwp_gear_level2 data from DB")
 # 
-# query <- sprintf("SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom,
+# query <- sprintf("SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom,
 #     ST_asText(geom) AS geom_wkt, year, month FROM public.shinycatch
 #     WHERE dataset = '%s'
-#     GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit", default_dataset_DB)
+#     GROUP BY gridtype, species, fishing_fleet, codesource_area, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit", default_dataset_DB)
 # 
-# default_dataset <- DBI::dbGetQuery(pool, query) %>% dplyr::rename(geographic_identifier = geom_id)
+# default_dataset <- DBI::dbGetQuery(pool, query) %>% dplyr::rename(geographic_identifier = codesource_area)

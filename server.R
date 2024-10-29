@@ -580,7 +580,7 @@ server <- function(input, output, session) {
   output$plot11 <- renderImage({
     df_i11_filtered <- as(final_filtered_data(), "Spatial")
     i11 <- Atlas_i11_CatchesByCountry(df=df_i11_filtered,
-                                      geomIdAttributeName="geom_id",
+                                      geomIdAttributeName="codesource_area",
                                       countryAttributeName="fishing_fleet",
                                       speciesAttributeName="species",
                                       valueAttributeName="measurement_value",
@@ -610,7 +610,7 @@ server <- function(input, output, session) {
   observeEvent(firstSubmit(), {
     if (!firstSubmit()) {
       flog.info("delay")
-      shinyjs::delay(3000, {   
+      shinyjs::delay(100, {   
         data_for_filters_trigger(data_for_filters_trigger() + 1)
         # show(TRUE)
         flog.info("delay finished")

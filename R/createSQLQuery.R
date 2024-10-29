@@ -13,7 +13,7 @@ createSQLQuery <- function(dataset_name = default_dataset,
   limit_clause <- if (!is.null(limit)) glue::glue_sql("LIMIT {limit}", .con = con) else SQL("")
   
   query <- glue::glue_sql(
-    "SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom,
+    "SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom,
     ST_asText(geom) AS geom_wkt, year, month FROM public.shinycatch
     WHERE dataset IN ({dataset_name})
     AND ST_Within(geom, ST_GeomFromText(({wkt*}), 4326))
@@ -24,7 +24,7 @@ createSQLQuery <- function(dataset_name = default_dataset,
     AND year IN ({selected_years*})
     AND fishing_mode IN ({fishing_mode_name*})
     AND measurement_unit IN ({measurement_unit_name*})
-    GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit
+    GROUP BY gridtype, species, fishing_fleet, codesource_area, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit
     ORDER BY species, fishing_fleet DESC {limit_clause}",
     .con = pool
   )

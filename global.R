@@ -37,12 +37,12 @@ getTarget <- function(category) {
   return(target)
 }
 # Adding resource path to display html -------------------------------------
-addResourcePath("www", here::here("www"))
+# addResourcePath("www", here::here("www"))
 
 sql_query_init <- readRDS(here::here("tab_panels/sql_query_init.rds"))
 flog.info("SQl query loaded")
 
-map_init <- read_html(here::here("www/map_init.html"))
+# map_init <- read_html(here::here("www/map_init.html"))
 flog.info("Map init loaded")
 # Générer les options d'analyse
 
@@ -61,6 +61,8 @@ source(here::here("R/palette_settings.R"))
 source(here::here("global/generate_dimensions_palettes.R"))
 source(here::here("R/get_html_title.R"))
 source(here::here("R/getPalette.R")) # do not knwo why we should run it as it is supposed to be ran after global.R but yet it is not
+addResourcePath("www", here::here("www"))
+
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

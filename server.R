@@ -616,9 +616,32 @@ server <- function(input, output, session) {
         flog.info("delay finished")
         shinyjs::hide("loading_page")
         shinyjs::show("main_content")
+        showModal(                   modalDialog(
+          title = "Information",
+          # includeHTML("doc/ribbon_GH.html"),
+          includeMarkdown("doc/popup.md"),
+          size = "l",
+          easyClose = TRUE,
+          footer=modalButton("OK", icon =icon("check"))
+        ))
       })
     }
   })
+  
+  # observeEvent(c(firstSubmit(), additionalState()), {
+  #   if (firstSubmit() && additionalState()) {
+  #     flog.info("delay")
+  #     shinyjs::delay(100, {   
+  #       data_for_filters_trigger(data_for_filters_trigger() + 1)
+  #       # show(TRUE)
+  #       flog.info("delay finished")
+  #       removeModal()
+  #       shinyjs::hide("loading_page")
+  #       shinyjs::show("main_content")
+  #       
+  #     })
+  #   }
+  # })
   
   observeEvent(input$change_dataset, {
     print("Button clicked")

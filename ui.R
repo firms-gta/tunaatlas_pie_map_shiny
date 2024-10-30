@@ -3,24 +3,19 @@ ui <- tagList(
   div(
     id = "loading_page",
     style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; text-align: center;",
+    
+    # IFrame pour le chargement
     tags$iframe(
       src = "www/map_init.html",
       style = "width: 100%; height: 100%; border: none;"
-    ),
-    # julien modal
-    modalDialog(
-      title = "Information",
-      # includeHTML("doc/ribbon_GH.html"),
-      includeMarkdown("doc/popup.md"),
-      size = "l",
-      easyClose = TRUE,
-      footer=modalButton("OK", icon =icon("check"))
+    ), 
+    div(
+      style = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.8); padding: 20px; border-radius: 10px; text-align: center;",
+      
+      tags$h1("Welcome to the GlobalTunaAtlas shiny app"),
+      
+      tags$p("Please wait for data to load")
     )
-    # div(
-    #   style = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.8); padding: 20px; border-radius: 10px;",
-    #   tags$h1("Welcome to the GlobalTunaAtlas shiny app"),
-    #   tags$p("Please wait for data to load")
-    # )
   ),
   hidden(
     div(id = "main_content",
@@ -39,15 +34,6 @@ ui <- tagList(
             uiOutput("dynamic_panels")  # Dynamic nav panels within a nav_menu
           ),
           tabPanel("CSV-based Filtering",
-                   # # julien modal
-                   # modalDialog(
-                   #   title = "Information",
-                   #   # includeHTML("doc/ribbon_GH.html"),
-                   #   includeMarkdown("doc/popup.md"),
-                   #   size = "l",
-                   #   easyClose = TRUE,
-                   #   footer=modalButton("OK", icon =icon("check"))
-                   # ),
                    sidebarLayout(
                      sidebarPanel(
                        fileInput("file_upload", "Upload CSV", accept = ".csv"),

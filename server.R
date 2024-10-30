@@ -142,17 +142,40 @@ server <- function(input, output, session) {
     flog.info("Submit button clicked")
     req(wkt())
     req(initial_data())
-    req(data_for_filters())
     current_wkt <- wkt()
-    
+
     if (!firstSubmit()) {
       showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
     }
-    
+
     flog.info("Filtering")
-    
+
     final_filtered_data <- initial_data()
-    
+
+    if(as.character(current_wkt) != global_wkt){
+      # Your spatial filtering code
+      sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
+
+      # Step 1: Select unique geographic identifiers and their associated geometries
+      unique_id_geom <- final_filtered_data %>%
+        dplyr::select(geographic_identifier, geom_wkt) %>%
+        dplyr::distinct()
+
+      # Step 2: Convert to sf object
+      unique_id_geom <- st_as_sf(unique_id_geom)
+
+      # Step 3: Perform spatial intersection
+      within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
+
+      # Step 4: Filter based on spatial intersection
+      unique_id_geom_filtered <- unique_id_geom[rowSums(within_unique) > 0, ]
+
+      # Step 5: Filter the original data
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
+    }
+
+
     for (variable in variable_to_display) {
       select_input <- paste0("select_", variable)
       unique_values <- unique(final_filtered_data[[variable]])
@@ -161,48 +184,26 @@ server <- function(input, output, session) {
           dplyr::filter(!!sym(variable) %in% input[[select_input]])
       }
     }
-    
+
     if (!is.null(input$toggle_year) && !is.null(input$years)) {
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
     }
-    
-    if(as.character(current_wkt) != global_wkt){
-      # Your spatial filtering code
-      sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
-      
-      # Step 1: Select unique geographic identifiers and their associated geometries
-      unique_id_geom <- final_filtered_data %>%
-        dplyr::select(geographic_identifier, geom_wkt) %>%
-        dplyr::distinct()
-      
-      # Step 2: Convert to sf object
-      unique_id_geom <- st_as_sf(unique_id_geom)
-      
-      # Step 3: Perform spatial intersection
-      within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
-      
-      # Step 4: Filter based on spatial intersection
-      unique_id_geom_filtered <- unique_id_geom[rowSums(within_unique) > 0, ]
-      
-      # Step 5: Filter the original data
-      final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
-    }
-    
+
+
+
     if (!firstSubmit()) {
       showNotification("Filtering finished", type = "message", id = "filtrage")
     }
-    
-    
+
+
     flog.info("Filtering finished")
     firstSubmit(FALSE)
     submitTrigger(FALSE)
     flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
-    
+
     final_filtered_data
   }, ignoreNULL = FALSE)
-  
   
   # Reactive function for data without geometry
   data_without_geom <- reactive({
@@ -210,11 +211,12 @@ server <- function(input, output, session) {
     flog.info("Removing geometry column from data")
     data_without_geom <- as.data.frame(final_filtered_data())
     data_without_geom$geom_wkt <- NULL
-    if ("geom" %in% colnames(data_without_geom)) {
-      data_without_geom <- data_without_geom %>% dplyr::select(-geom)
-    }
-    flog.info("Data without geometry: %s", head(data_without_geom))
-    data_without_geom
+    data_without_geom$geom <- NULL
+    # if ("geom" %in% colnames(data_without_geom)) {
+    #   data_without_geom <- data_without_geom %>% dplyr::select(-geom)
+    # }
+    # flog.info("Data without geometry: %s", head(data_without_geom))
+    data_without_geom <- as.data.frame(final_filtered_data())
   })
   
   variable_choicesintersect <- reactive({
@@ -268,7 +270,6 @@ server <- function(input, output, session) {
     csv_data <- csv_data() %>% dplyr::mutate_if(is.double, as.character)
     
     filtered_data <- filtered_data %>% dplyr::inner_join(csv_data)
-    browser()
     filtered_data <- as.data.frame(filtered_data %>% dplyr::ungroup() %>% 
                                      dplyr::mutate(year = as.numeric(year), month = as.numeric(month)) %>% 
                                      dplyr::mutate(measurement_value = as.numeric(measurement_value)))
@@ -336,7 +337,7 @@ server <- function(input, output, session) {
         flog.info(paste("Initialising", variable))
         
         variable_data <- data_for_filters %>% dplyr::select(all_of(variable)) %>% dplyr::distinct()
-        flog.info(paste(variable, "data after distinct:", paste(head(variable_data), collapse = ", ")))
+        # flog.info(paste(variable, "data after distinct:", paste(head(variable_data), collapse = ", ")))
         
         output[[paste0("select_", variable)]] <- renderUI({
           selectizeInput(paste0('select_', variable), 
@@ -568,7 +569,7 @@ server <- function(input, output, session) {
       dplyr::group_by(species, year) %>%
       dplyr::summarise(measurement_value = sum(measurement_value)) %>%
       tidyr::spread(species, measurement_value, fill = 0)
-    flog.info("Time series species data: %s", head(result))
+    # flog.info("Time series species data: %s", head(result))
     result
   })
   
@@ -577,23 +578,23 @@ server <- function(input, output, session) {
     data_time_serie_species()
   })
   
-  output$plot11 <- renderImage({
-    df_i11_filtered <- as(final_filtered_data(), "Spatial")
-    i11 <- Atlas_i11_CatchesByCountry(df=df_i11_filtered,
-                                      geomIdAttributeName="codesource_area",
-                                      countryAttributeName="fishing_fleet",
-                                      speciesAttributeName="species",
-                                      valueAttributeName="measurement_value",
-                                      withSparql=FALSE)
-    i11
-    png(i11, width = 400, height = 300)
-    dev.off()
-    list(src = i11,
-         contentType = 'image/png',
-         width = 1600,
-         height = 1200,
-         alt = "This is alternate text")
-  }, deleteFile = TRUE)
+  # output$plot11 <- renderImage({
+  #   df_i11_filtered <- as(final_filtered_data(), "Spatial")
+  #   i11 <- Atlas_i11_CatchesByCountry(df=df_i11_filtered,
+  #                                     geomIdAttributeName="codesource_area",
+  #                                     countryAttributeName="fishing_fleet",
+  #                                     speciesAttributeName="species",
+  #                                     valueAttributeName="measurement_value",
+  #                                     withSparql=FALSE)
+  #   i11
+  #   png(i11, width = 400, height = 300)
+  #   dev.off()
+  #   list(src = i11,
+  #        contentType = 'image/png',
+  #        width = 1600,
+  #        height = 1200,
+  #        alt = "This is alternate text")
+  # }, deleteFile = TRUE)
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
   newwkt <- mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger = submitTrigger)
@@ -628,20 +629,6 @@ server <- function(input, output, session) {
     }
   })
   
-  # observeEvent(c(firstSubmit(), additionalState()), {
-  #   if (firstSubmit() && additionalState()) {
-  #     flog.info("delay")
-  #     shinyjs::delay(100, {   
-  #       data_for_filters_trigger(data_for_filters_trigger() + 1)
-  #       # show(TRUE)
-  #       flog.info("delay finished")
-  #       removeModal()
-  #       shinyjs::hide("loading_page")
-  #       shinyjs::show("main_content")
-  #       
-  #     })
-  #   }
-  # })
   
   observeEvent(input$change_dataset, {
     print("Button clicked")
@@ -656,7 +643,7 @@ server <- function(input, output, session) {
       paste("GTA_species_dataset_", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
-      csv_tuna <- final_filtered_data()
+      csv_tuna <- data_without_geom()
       write.csv(csv_tuna, file)
     }
   )
@@ -672,8 +659,8 @@ server <- function(input, output, session) {
   )
   
   output$head_table_init <- renderDataTable({
-    req(final_filtered_data())
-    head(final_filtered_data())
+    req(data_without_geom())
+    head(data_without_geom())
   })
   
   onStop(function() {

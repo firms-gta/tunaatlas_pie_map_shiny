@@ -8,7 +8,7 @@ ui <- tagList(
     tags$iframe(
       src = "www/map_init.html",
       style = "width: 100%; height: 100%; border: none;"
-    ), 
+    ),
     div(
       style = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.8); padding: 20px; border-radius: 10px; text-align: center;",
       
@@ -47,9 +47,8 @@ ui <- tagList(
           ),
           data_explorer_combined_ui(),
           dataset_choice_ui("dataset_choice"),
-          main_panel_ui(),
-          
-            more_about()
+          outputmoreabout,
+          main_panel_ui()
           )
         )
     )

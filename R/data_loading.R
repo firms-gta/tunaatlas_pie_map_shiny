@@ -15,10 +15,11 @@ load_initial_data <- function(default_dataset_preloaded) {
   flog.info("Removing geometry of preloaded data")
   
   default_dataset_preloaded_without_geom <- default_dataset_preloaded
-  if ("geom" %in% colnames(default_dataset_preloaded_without_geom)) {
-    default_dataset_preloaded_without_geom <- default_dataset_preloaded_without_geom %>% dplyr::select(-geom)
-  }
+  # if ("geom" %in% colnames(default_dataset_preloaded_without_geom)) {
+  #   default_dataset_preloaded_without_geom <- default_dataset_preloaded_without_geom %>% dplyr::select(-geom)
+  # }
   default_dataset_preloaded_without_geom$geom_wkt <- NULL
+  default_dataset_preloaded_without_geom$geom <- NULL
   flog.info("geometry of preloaded data removed")
   
   list(initial_data = default_dataset_preloaded,

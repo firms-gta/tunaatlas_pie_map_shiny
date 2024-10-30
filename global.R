@@ -62,7 +62,10 @@ source(here::here("global/generate_dimensions_palettes.R"))
 source(here::here("R/get_html_title.R"))
 source(here::here("R/getPalette.R")) # do not knwo why we should run it as it is supposed to be ran after global.R but yet it is not
 addResourcePath("www", here::here("www"))
-
+more_about = function(){
+  generateRmdNavMenu("rmd_docs", nav_bar_menu_html)
+}
+outputmoreabout <- more_about()
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

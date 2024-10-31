@@ -41,7 +41,7 @@ categoryGlobalPieChartServer <- function(id, category, reactive_data, sql_query 
       
       palette <- getPalette(category)
       palette <- palette[names(palette) %in% unique(df[[category]])]
-      flog.info("Palette used for pie chart: %s", paste(names(palette), collapse = ", "))
+      # flog.info("Palette used for pie chart: %s", paste(names(palette), collapse = ", "))
       
       plot_ly(df, labels = as.formula(paste0("~`", category, "`")), values = ~measurement_value, type = 'pie',
               marker = list(colors = palette, line = list(color = '#FFFFFF', width = 1))) %>%

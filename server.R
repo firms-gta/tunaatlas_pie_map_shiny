@@ -205,29 +205,7 @@ server <- function(input, output, session) {
     final_filtered_data
   }, ignoreNULL = FALSE)
   
-  # Reactive function for data without geometry
-  data_without_geom <- reactive({
-    req(final_filtered_data())
-    flog.info("Removing geometry column from data")
-    data_without_geom <- as.data.frame(final_filtered_data())
-    data_without_geom$geom_wkt <- NULL
-    data_without_geom$geom <- NULL
-    # if ("geom" %in% colnames(data_without_geom)) {
-    #   data_without_geom <- data_without_geom %>% dplyr::select(-geom)
-    # }
-    # flog.info("Data without geometry: %s", head(data_without_geom))
-    data_without_geom <- as.data.frame(final_filtered_data())
-  })
   
-  variable_choicesintersect <- reactive({
-    req(data_for_filters())
-    variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
-    flog.info("variable_choicesintersect %s", variable_choicesintersect)
-    
-    variable_choicesintersect
-  })
-  
-  # Calculate the centroid of the map
   centroid <- reactive({
     flog.info("Calculating centroid")
     bbox <- st_as_sf(final_filtered_data()) %>% 
@@ -240,6 +218,27 @@ server <- function(input, output, session) {
     result
   })
   
+  # Reactive function for data without geometry
+  data_without_geom <- reactive({
+    req(final_filtered_data())
+    flog.info("Removing geometry columns from data")
+    
+    # Remove 'geom_wkt' and 'geom' columns in one step
+    data_without_geom <- final_filtered_data()[, setdiff(names(final_filtered_data()), c("geom_wkt", "geom"))]
+    
+    flog.info("Geometry columns removed")
+    data_without_geom
+  })
+  
+  variable_choicesintersect <- reactive({
+    req(data_for_filters())
+    variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
+    flog.info("variable_choicesintersect %s", variable_choicesintersect)
+    
+    variable_choicesintersect
+  })
+  
+  # Calculate the centroid of the map
   original_data <- reactiveVal()
   observe({
     original_data(initial_data())  # Store original data at start

@@ -1,6 +1,5 @@
 require(zen4R)
 require(readr)
-
 DOI <- read_csv("data/DOI.csv")
 
 options(timeout = 6000) # Global timeout for downloads
@@ -59,6 +58,6 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 lapply(1:nrow(DOI), function(i) {
   filepath <- paste0("data/", DOI$Filename[i])
   if (!file.exists(filepath)) {
-    extract_zenodo_metadata(doi = DOI$DOI[i], filename = DOI$Filename[i])
+    zen4R::extract_zenodo_metadata(doi = DOI$DOI[i], filename = DOI$Filename[i])
   }
 })

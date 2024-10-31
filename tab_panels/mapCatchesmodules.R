@@ -21,7 +21,7 @@ mapCatchesServer <- function(id, data, submitTrigger) {
       df %>%
         dplyr::group_by(geom_wkt) %>%
         dplyr::summarise(measurement_value = sum(measurement_value)) %>%
-        as.data.frame() %>%
+        # as.data.frame() %>%
         st_as_sf()
     })
     

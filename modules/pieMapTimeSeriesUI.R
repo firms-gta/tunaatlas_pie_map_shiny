@@ -21,15 +21,28 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     data_pie_map <- reactive({
       flog.info("Generating pie map data for category: %s", category_var)
       req(data())
-      sf_data <- st_as_sf(as.data.frame(data()))
-      df <- sf_data %>%
-        dplyr::group_by(!!sym(category_var), geom_wkt) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value)) %>%
-        tidyr::spread(key = !!sym(category_var), value = measurement_value, fill = 0) %>%
-        dplyr::mutate(total = rowSums(across(any_of(target_var))))
-      flog.info("Pie map data created: %s")
-      df
+      # Convert to data.table
+      dt <- as.data.table(data()[, setdiff(names(data()), c("geom_wkt", "geom"))])
+      
+      dt <- dt[, .(measurement_value = sum(measurement_value)), by = c(category_var, "geographic_identifier")]
+      # Spread the data to wide format
+      dt_wide <- dcast(dt, geographic_identifier ~ get(category_var), value.var = "measurement_value", fill = 0)
+      target_var <- intersect(target_var, colnames(dt_wide))
+      # Add total column by summing across the target variables
+      dt_wide[, total := rowSums(.SD), .SDcols = target_var]
+      
+      # Join geometry back using the identifier column
+      geometry_data <- data() %>% dplyr::select(geographic_identifier, geom_wkt) %>% 
+        dplyr::distinct()
+      # geometry_data <- unique(data()[, .(geographic_identifier, geom_wkt)])
+      dt_wide <- as.data.frame(dt_wide)
+      dt_wide <- st_as_sf(dt_wide %>% dplyr::left_join(st_as_sf(geometry_data)))
+      # dt_wide <- merge(dt_wide, geometry_data, by = "geographic_identifier", all.x = TRUE)
+      
+      flog.info("Pie map data created")
+      dt_wide
     })
+    
     
     la_palette <- reactive({
       flog.info("Generating palette for category: %s", category_var)
@@ -48,7 +61,6 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       lat_centroid <- st_coordinates(centroid)[2]
       lon_centroid <- st_coordinates(centroid)[1]
       la_palette <- la_palette()
-      
       leaflet() %>% 
         addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
         setView(lng = lon_centroid, lat = lat_centroid, zoom = zoom_level()) %>%
@@ -79,7 +91,10 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
         addMinicharts(lng = st_coordinates(st_centroid(df, crs = 4326))[, "X"],
                       lat = st_coordinates(st_centroid(df, crs = 4326))[, "Y"],
                       maxValues = max(df$total),
-                      chartdata = dplyr::select(df, -total) %>% st_drop_geometry(), type = "pie",
+                      chartdata = df %>%
+                        st_drop_geometry() %>%
+                        dplyr::select(-total) %>%
+                        dplyr::select_if(is.numeric), type = "pie",
                       colorPalette = unname(la_palette),
                       width =  8 + ((zoom_level() * 20) * (df$total / max(df$total))),
                       legend = TRUE, legendPosition = "bottomright", layerId = "minicharts") %>%
@@ -91,38 +106,46 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       df <- data_pie_map()
       la_palette <- la_palette()
       
+      # Calculate new width based on zoom level
       new_width <- 8 + (input$map_zoom_level * 20) * (df$total / max(df$total))
       
+      # Update leaflet map with new minicharts
       leafletProxy("pie_map", data = df) %>%
         clearGroup("minicharts") %>% 
-        addMinicharts(lng = st_coordinates(st_centroid(df, crs = 4326))[, "X"],
-                      lat = st_coordinates(st_centroid(df, crs = 4326))[, "Y"],
-                      maxValues = max(df$total),
-                      chartdata = dplyr::select(df, -total) %>% st_drop_geometry(),
-                      type = "pie",
-                      colorPalette = unname(la_palette), transitionTime = 50,
-                      width = new_width,  
-                      legend = TRUE, legendPosition = "bottomright")
+        addMinicharts(
+          lng = st_coordinates(st_centroid(df, crs = 4326))[, "X"],
+          lat = st_coordinates(st_centroid(df, crs = 4326))[, "Y"],
+          maxValues = max(df$total),
+          chartdata = df %>%
+            st_drop_geometry() %>%
+            dplyr::select(-total) %>%
+            dplyr::select_if(is.numeric),
+          type = "pie",
+          colorPalette = unname(la_palette),
+          transitionTime = 50,
+          width = new_width,  
+          legend = TRUE, 
+          legendPosition = "bottomright"
+        )
     })
     
     observeEvent(input$submit_draw_pie_map, {
-      # browser()
       flog.info("Submitting draw")
       
       if (!is.null(input$pie_map_draw_new_feature) && 
           !is.null(input$pie_map_draw_new_feature$geometry) && 
           length(input$pie_map_draw_new_feature$geometry$coordinates) > 0) {
-      
-      showModal(modalDialog(
-        title = "Changing spatial coverage",
-        "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure?",
-        footer = tagList(
-          modalButton("No"),
-          actionButton(ns("yes_button_pie_map"), "Yes")  # Ensure ns is used
-        ),
-        easyClose = TRUE,
-        id = ns("confirmation_modal")  
-      ))
+        
+        showModal(modalDialog(
+          title = "Changing spatial coverage",
+          "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure?",
+          footer = tagList(
+            modalButton("No"),
+            actionButton(ns("yes_button_pie_map"), "Yes")  # Ensure ns is used
+          ),
+          easyClose = TRUE,
+          id = ns("confirmation_modal")  
+        ))
       } else {
         showModal(modalDialog(
           title = "Changing spatial coverage",
@@ -133,7 +156,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
           easyClose = TRUE,
           id = ns("drawashape")  
         ))
-    }
+      }
     })
     
     observeEvent(input$yes_button_pie_map, {

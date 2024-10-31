@@ -2,8 +2,24 @@
 # renv::restore(exclude = c("shinyuieditor"))
 # try(pool::dbDisconnect(pool))
 # Source install script
+before_package <-Sys.time()
+print(before_package)
 require(here)
-source(here::here('install.R'))
+# source(here::here('install.R'))
+
+unique_packages <- c("xts",
+  "RPostgreSQL", "here", "tools", "sf", "dplyr", "qs", 
+  "futile.logger", "shinyjs", "tidyr", "bslib", 
+  "shiny", "readr", "glue", "stringr", "knitr", 
+  "DT", "viridis", "leaflet", "geojsonsf", "scales", 
+  "dotenv", "zoo", "RColorBrewer", "shinycssloaders", "data.table", "htmlwidgets",
+  "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
+  "pool"
+)
+
+lapply(unique_packages, function(pkg) {
+  library(pkg, character.only = TRUE)
+})
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 #create default_dataset

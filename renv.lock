@@ -292,28 +292,6 @@
       ],
       "Hash": "8111c34df3f1e550e1f0e9aa043a0b79"
     },
-    "attachment": {
-      "Package": "attachment",
-      "Version": "0.4.1",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "R",
-        "cli",
-        "desc",
-        "glue",
-        "knitr",
-        "magrittr",
-        "rmarkdown",
-        "roxygen2",
-        "stats",
-        "stringr",
-        "utils",
-        "withr",
-        "yaml"
-      ],
-      "Hash": "34ad126e6d8002a3e1f95da9866c6f29"
-    },
     "attempt": {
       "Package": "attempt",
       "Version": "0.3.1",
@@ -1003,7 +981,7 @@
     },
     "geojson": {
       "Package": "geojson",
-      "Version": "0.3.5",
+      "Version": "0.3.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1015,7 +993,7 @@
         "protolite",
         "sp"
       ],
-      "Hash": "efc8d020709d1e1f9628a8d5362d193b"
+      "Hash": "8d2107f1ebe9a75339e9fd130c07c1f6"
     },
     "geojsonsf": {
       "Package": "geojsonsf",
@@ -2666,6 +2644,16 @@
       ],
       "Hash": "c19df082ba346b0ffa6f833e92de34d1"
     },
+    "semantic.assets": {
+      "Package": "semantic.assets",
+      "Version": "1.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "htmlwidgets"
+      ],
+      "Hash": "13ee579a535e39b73f2143eced792755"
+    },
     "servr": {
       "Package": "servr",
       "Version": "0.27",
@@ -2761,6 +2749,26 @@
         "xtable"
       ],
       "Hash": "3a1f41807d648a908e3c7f0334bf85e6"
+    },
+    "shiny.semantic": {
+      "Package": "shiny.semantic",
+      "Version": "0.5.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R6",
+        "glue",
+        "grDevices",
+        "htmltools",
+        "htmlwidgets",
+        "jsonlite",
+        "magrittr",
+        "purrr",
+        "semantic.assets",
+        "shiny",
+        "stats"
+      ],
+      "Hash": "7ba90374cf8d858e273e601b79473c16"
     },
     "shinyWidgets": {
       "Package": "shinyWidgets",

@@ -1,7 +1,7 @@
 # Creating default dataset on this basis and if exists already loading it
 # source(here::here('install.R'))
 flog.info("Sourced create or load defautl dataset")
-if(!file.exists("data/default_dataset.qs") & !exists("default_dataset")){
+if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_dataset")){
   
   flog.info("Loading data ")
   # Read the DOI CSV file
@@ -56,7 +56,7 @@ if(!file.exists("data/default_dataset.qs") & !exists("default_dataset")){
   
   # Set tmap options
   flog.info("Setting tmap options")
-  tmap_options(check.and.fix = TRUE)
+  tmap::tmap_options(check.and.fix = TRUE)
   
   flog.info("Filtering and renaming shapefile data")
   shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]

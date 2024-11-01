@@ -14,7 +14,7 @@ unique_packages <- c("xts",
   "DT", "viridis", "leaflet", "geojsonsf", "scales", 
   "dotenv", "zoo", "RColorBrewer", "shinycssloaders", "data.table", "htmlwidgets",
   "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
-  "pool","jsonlite"
+  "pool", "jsonlite", "tmap"
 )
 
 lapply(unique_packages, function(pkg) {

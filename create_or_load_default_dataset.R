@@ -1,5 +1,5 @@
 # Creating default dataset on this basis and if exists already loading it
-# source(here::here('install.R'))
+lapply(c("here", "futile.logger", "readr", "tools", "sf", "tmap", "dplyr", "data.table", "qs"), require, character.only = TRUE)
 flog.info("Sourced create or load defautl dataset")
 if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_dataset")){
   

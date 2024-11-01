@@ -71,7 +71,7 @@ mapCatchesServer <- function(id, data, submitTrigger) {
           "Attention, you are about to change the geographic coverage of the filter, it can take some time. Are you sure?",
           footer = tagList(
             modalButton("No"),
-            actionButton(ns("yes_button_pie_map"), "Yes")  # Ensure ns is used
+            actionButton(ns("yes_button_total_map"), "Yes")  # Ensure ns is used
           ),
           easyClose = TRUE,
           id = ns("confirmation_modal")  
@@ -91,7 +91,7 @@ mapCatchesServer <- function(id, data, submitTrigger) {
       
     })
     
-    observeEvent(input$yes_button, {
+    observeEvent(input$yes_button_total_map, {
       flog.info("Yes button clicked changing the wkt")
       req(input$map_total_catch_draw_new_feature$geometry)
       req(input$map_total_catch_draw_stop)

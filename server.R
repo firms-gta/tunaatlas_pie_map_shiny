@@ -1,5 +1,5 @@
 server <- function(input, output, session) {
-  
+
   flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
   flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset$initial_data)))
@@ -455,7 +455,7 @@ server <- function(input, output, session) {
   
   observeEvent(submitTrigger(), {
     flog.info(sprintf("submittrigger is %s", submitTrigger()))
-    req(wkt())
+    # req(wkt())
     if(submitTrigger()) {
       flog.info("submit")
       shinyjs::click("submit")  # Trigger the submit button click in the sidebar

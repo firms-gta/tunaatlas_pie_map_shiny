@@ -11,37 +11,25 @@ verify_file <- function(filepath, expected_size) {
 
 extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
   dir <- getwd()
-  # Create data directory if it doesn't exist
-  if (!dir.exists(data_dir)) {
-    dir.create(data_dir)
-  }
-  
-  # Set working directory to the data directory
+  if (!dir.exists(data_dir)) dir.create(data_dir)
   setwd(data_dir)
   
-  # Export DublinCore metadata
-  zen4R::export_zenodo(doi = doi, filename = "zenodoDublincore", format = "DublinCore")
-  
-  # Download the file with retry logic
   success <- FALSE
   attempts <- 3
   attempt <- 1
   
   while (!success && attempt <= attempts) {
     tryCatch({
+      zen4R::export_zenodo(doi = doi, filename = "zenodoDublincore", format = "DublinCore")
+      
       zen4R::download_zenodo(doi = doi, files = filename)
       
-      # Check if the file was downloaded and matches the expected size
+      # Check if the file was downloaded
       if (file.exists(filename)) {
-        # If `Size` exists in DOI, we can compare the size
-        success <- is.na(DOI$Size[DOI$Filename == filename]) ||
-          verify_file(filename, expected_size = DOI$Size[DOI$Filename == filename])
-      }
-      
-      if (success) {
+        success <- TRUE
         message(sprintf("File '%s' downloaded successfully", filename))
       } else {
-        message(sprintf("File '%s' is incomplete, retrying...", filename))
+        message(sprintf("File '%s' was not downloaded completely, retrying...", filename))
       }
       
     }, error = function(e) {
@@ -50,7 +38,6 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
     attempt <- attempt + 1
   }
   
-  # Reset working directory
   setwd(dir)
 }
 

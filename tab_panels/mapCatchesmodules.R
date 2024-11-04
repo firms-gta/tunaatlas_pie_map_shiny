@@ -9,7 +9,7 @@ mapCatchesUI <- function(id) {
 }
 
 # Module Server
-mapCatchesServer <- function(id, data, submitTrigger) {
+mapCatchesServer <- function(id, data, submitTrigger, geom) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -17,12 +17,14 @@ mapCatchesServer <- function(id, data, submitTrigger) {
     sum_all <- reactive({
       req(data())
       df <- data()
-      
-      df %>%
-        dplyr::group_by(geom_wkt) %>%
+      geom <- geom()
+      df <- st_as_sf(as.data.frame(df %>%
+        dplyr::group_by(geographic_identifier) %>%
         dplyr::summarise(measurement_value = sum(measurement_value)) %>%
         # as.data.frame() %>%
-        st_as_sf()
+        # st_as_sf() %>% 
+        dplyr::left_join(st_as_sf(geom))))
+      df
     })
     
     output$map_total_catch <- renderLeaflet({

@@ -2,9 +2,9 @@
 
 load_initial_data <- function(default_dataset_preloaded) {
   if (is.null(default_dataset_preloaded)) {
-    flog.info("No default dataset preloaded using datasf.rds")
+    flog.info("No default dataset preloaded using default_dataset.qs")
     
-    default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+    default_dataset_preloaded <- qs::qread(here::here("data/default_dataset.qs"))
     flog.info("Data sf loaded")
   } else {
     flog.info("Default dataset preloaded using this one")
@@ -12,8 +12,12 @@ load_initial_data <- function(default_dataset_preloaded) {
     default_dataset_preloaded <- default_dataset_preloaded
     
   }
+  flog.info("Creating dataset with geometry only")
+  geom <- qs::qread("data/cl_areal_grid.qs")
+  # geom <- default_dataset_preloaded %>% 
+  #   dplyr::select(geom_wkt, geographic_identifier) %>% dplyr::distinct()
+  flog.info("Dataset with geometry only created")
   flog.info("Removing geometry of preloaded data")
-  
   default_dataset_preloaded_without_geom <- default_dataset_preloaded
   # if ("geom" %in% colnames(default_dataset_preloaded_without_geom)) {
   #   default_dataset_preloaded_without_geom <- default_dataset_preloaded_without_geom %>% dplyr::select(-geom)
@@ -22,7 +26,7 @@ load_initial_data <- function(default_dataset_preloaded) {
   default_dataset_preloaded_without_geom$geom <- NULL
   flog.info("geometry of preloaded data removed")
   
-  list(initial_data = default_dataset_preloaded,
+  list(initial_data = geom,
     data_for_filters = default_dataset_preloaded_without_geom
   )
 }

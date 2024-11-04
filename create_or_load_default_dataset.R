@@ -1,6 +1,68 @@
 # Creating default dataset on this basis and if exists already loading it
 lapply(c("here", "futile.logger", "readr", "tools", "sf", "tmap", "dplyr", "data.table", "qs"), require, character.only = TRUE)
 flog.info("Sourced create or load defautl dataset")
+
+# Load required packages
+lapply(c("here", "futile.logger", "readr", "tools", "sf", "tmap", "dplyr", "data.table", "qs"), require, character.only = TRUE)
+flog.info("Sourced create or load default dataset")
+
+# Paths for processed files
+cl_areal_grid_path <- here::here("data/cl_areal_grid.qs")
+cl_species_path <- here::here("data/cl_species.qs")
+cl_cwp_gear_path <- here::here("data/cl_cwp_gear_level2.qs")
+default_dataset_path <- here::here("data/default_dataset.qs")
+
+# Load or process cl_areal_grid
+if (file.exists(cl_areal_grid_path)) {
+  flog.info("Loading processed cl_areal_grid from .qs")
+  shapefile.fix <- qs::qread(cl_areal_grid_path)
+} else {
+  flog.info("Processing cl_areal_grid and saving as .qs")
+  shapefile_path <- here::here("data/cl_areal_grid.csv")
+  shapefile.fix <- read.csv(shapefile_path)
+  shapefile.fix <- sf::st_as_sf(shapefile.fix, wkt = "geom_wkt")
+  if (is.na(st_crs(shapefile.fix))) {
+    flog.warn("No CRS found, setting to WGS84")
+    st_crs(shapefile.fix) <- 4326
+  }
+  shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]
+  shapefile.fix <- shapefile.fix %>% 
+    rename(geographic_identifier = CWP_CODE, gridtype = GRIDTYPE) %>% 
+    select(geographic_identifier, gridtype, geom_wkt) %>%
+    mutate(geographic_identifier = as.character(geographic_identifier))
+  shapefile.fix <- st_as_sf(shapefile.fix)
+  qs::qsave(shapefile.fix, cl_areal_grid_path)
+  shapefile.fix$geom_wkt <- NULL
+  qs::qsave(shapefile.fix, "data/gridtype.qs")
+}
+
+# Load or process cl_species
+if (file.exists(cl_species_path)) {
+  flog.info("Loading processed cl_species from .qs")
+  species <- qs::qread(cl_species_path)
+} else {
+  flog.info("Processing cl_species and saving as .qs")
+  species <- read_csv(here::here("data/cl_species.csv")) %>% 
+    select(code, label, taxa_order) %>% 
+    rename(code_species = code, species_name = label, species_group = taxa_order) %>% 
+    distinct() #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cl_asfis_species.csv
+  species <- as.data.table(species)
+  qs::qsave(species, cl_species_path)
+}
+
+# Load or process cl_cwp_gear_level2
+if (file.exists(cl_cwp_gear_path)) {
+  flog.info("Loading processed cl_cwp_gear_level2 from .qs")
+  cl_cwp_gear_level2 <- qs::qread(cl_cwp_gear_path)
+} else {
+  flog.info("Processing cl_cwp_gear_level2 and saving as .qs")
+  cl_cwp_gear_level2 <- read_csv(here::here("data/cl_cwp_gear_level2.csv")) %>% 
+    select(Code = code, Gear = label) %>% 
+    distinct() #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv
+  cl_cwp_gear_level2 <- as.data.table(cl_cwp_gear_level2)
+  qs::qsave(cl_cwp_gear_level2, cl_cwp_gear_path)
+}
+
 if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_dataset")){
   
   flog.info("Loading data ")
@@ -11,28 +73,53 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   load_data <- function(DOI) {
     loaded_data <- list()
     
-    for (filename in DOI$Filename[1]) {
+    for (filename in DOI$Filename) {
       flog.info("Loading dataset: %s", filename)
       
-      base_filename <- tools::file_path_sans_ext(filename) # Remove any existing extension
+      # Define file paths
+      base_filename <- tools::file_path_sans_ext(filename)
+      qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
       csv_file_path <- file.path('data', paste0(base_filename, '.csv'))
       rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
       
-      if (file.exists(csv_file_path)) {
-        # Read CSV file with specific column type for gear_type
-        loaded_data[[base_filename]] <- read_csv(csv_file_path, 
-                                                 col_types = cols(gear_type = col_character()))
-        assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
-      } else if (file.exists(rds_file_path)) {
-        loaded_data[[base_filename]] <- readRDS(rds_file_path)
-        # Ensure gear_type is character after reading from RDS
-        if ("gear_type" %in% names(loaded_data[[base_filename]])) {
-          loaded_data[[base_filename]]$gear_type <- as.character(loaded_data[[base_filename]]$gear_type)
-        }
-        assign(base_filename, loaded_data[[base_filename]], envir = .GlobalEnv)
+      # Check if .qs file exists
+      if (file.exists(qs_file_path)) {
+        # Load from .qs if it exists
+        loaded_data[[base_filename]] <- qs::qread(qs_file_path)
+        flog.info("Loaded %s from .qs", filename)
+        
       } else {
-        warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
+        # If .qs does not exist, try to load from CSV or RDS
+        if (file.exists(csv_file_path)) {
+          # Load from CSV with specific column type
+          data <- read_csv(csv_file_path, col_types = cols(gear_type = col_character()))
+          flog.info("Loaded %s from CSV", filename)
+          
+        } else if (file.exists(rds_file_path)) {
+          # Load from RDS
+          data <- readRDS(rds_file_path)
+          flog.info("Loaded %s from RDS", filename)
+          
+          # Ensure gear_type is character after reading from RDS
+          if ("gear_type" %in% names(data)) {
+            data$gear_type <- as.character(data$gear_type)
+          }
+        } else {
+          # File not found
+          warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
+          next
+        }
+        
+        # Save the loaded data to .qs for faster future access
+        qs::qsave(data, qs_file_path)
+        flog.info("Saved %s as .qs", filename)
+        
+        # Add to the loaded_data list and assign to global environment
+        loaded_data[[base_filename]] <- data
       }
+      
+      # Assign the loaded data to the global environment
+      assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
     }
   }
   
@@ -42,43 +129,13 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   object <- tools::file_path_sans_ext(DOI$Filename[1])
   source(here::here("download_GTA_data.R"))
   # Load the shapefile
-  shapefile_path <- here::here("data/cl_areal_grid.csv")
-  flog.info("Loading shapefile from %s", shapefile_path)
-  shapefile.fix <- read.csv(shapefile_path)
-  
-  # Convert to sf object
-  flog.info("Converting shapefile to sf object")
-  shapefile.fix <- sf::st_as_sf(shapefile.fix, wkt = "geom_wkt")
-  if (is.na(st_crs(shapefile.fix))) {
-    flog.warn("No CRS found, setting to WGS84")
-    st_crs(shapefile.fix) <- 4326  # Set to WGS84
-  }
-  
-  # Set tmap options
-  flog.info("Setting tmap options")
-  tmap::tmap_options(check.and.fix = TRUE)
-  
-  flog.info("Filtering and renaming shapefile data")
-  shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]
-  shapefile.fix <- shapefile.fix %>% 
-    dplyr::rename(cwp_code = CWP_CODE, gridtype = GRIDTYPE, geom = geom_wkt) %>% 
-    dplyr::select(cwp_code, gridtype, geom) %>%
-    dplyr::mutate(cwp_code = as.character(cwp_code))
-  
-  flog.info("Converting shapefile to data.table")
-  shapefile.fix <- as.data.table(shapefile.fix)
   
   flog.info("Loading species data")
-  species <- read_csv(here::here("data/cl_species.csv")) %>% 
-    dplyr::select(code, label, taxa_order) %>% 
-    dplyr::rename(code_species = code, species_name = label, species_group = taxa_order) %>% 
-    distinct() #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cl_asfis_species.csv
+  species <- qs::qread("data/cl_species.qs")
   flog.info("Loaded species and species_group data")
   
   flog.info("Loading cl_cwp_gear_level2 data")
-  cl_cwp_gear_level2 <- read_csv(here::here("data/cl_cwp_gear_level2.csv")) %>% 
-    dplyr::select(Code = code, Gear = label) %>% 
-    dplyr::distinct() #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv
+  cl_cwp_gear_level2 <- qs::qread("data/cl_cwp_gear_level2.qs")
   flog.info("Loaded cl_cwp_gear_level2 data")
   
   flog.info(sprintf("Time %s:", Sys.time()))
@@ -86,12 +143,6 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   flog.info("Loading default dataset")
   default_dataset <- base::get(object)
   
-  # Convert species and cl_cwp_gear_level2 to data.table
-  flog.info("Converting species and cl_cwp_gear_level2 to data.table")
-  species <- as.data.table(species)
-  cl_cwp_gear_level2 <- as.data.table(cl_cwp_gear_level2)
-  
-  # Convert default_dataset to data.table
   flog.info("Converting default_dataset to data.table to make all the operations from 30 seconds to 15 seconds")
   setDT(default_dataset)
   
@@ -121,21 +172,27 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   default_dataset[, gear_type := as.character(gear_type)]
   default_dataset[, geographic_identifier := as.character(geographic_identifier)]
   
-  flog.info("Merging default_dataset with shapefile.fix to add geometry")
-  default_dataset <- merge(default_dataset, shapefile.fix, by.x = "geographic_identifier", by.y = "cwp_code", all.x = TRUE)
-  default_dataset <- as.data.frame(default_dataset) %>% dplyr::rename(geom_wkt = geom)
+  gridtype <- qs::qread("data/gridtype.qs")
+  # flog.info("Merging default_dataset with shapefile.fix to add geometry")
+  default_dataset <- merge(default_dataset, gridtype, by.x = "geographic_identifier", by.y = "geographic_identifier", all.x = TRUE)
+  default_dataset <- as.data.frame(default_dataset)
   
   flog.info(sprintf("Time %s:", Sys.time()))
   flog.info(sprintf("Colnames %s:", paste0(colnames(default_dataset))))
   
+  # geom <- default_dataset %>% 
+  #   dplyr::select(geom_wkt, geographic_identifier) %>% 
+  #   dplyr::distinct()
   # source(here::here("R/initialize_data_and_plots.R"))
-  default_dataset <- as.data.frame(default_dataset)
+  # default_dataset$geom_wkt <- NULL
   qs::qsave(default_dataset, "data/default_dataset.qs")
-  
-  # Log the initialization of palettes
-  flog.info("Color palettes initialized.")
+  # qs::qsave(geom, "data/geom.qs")
   
 } else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){
   flog.info("reading the data from qs file")
   default_dataset <- qs::qread("data/default_dataset.qs")
+  # geom <- qs::qread("data/geom.qs")
+  # default_dataset_shape <- default_dataset %>% dplyr::inner_join(shapefile.fix, by = c("geographic_identifier" = "cwp_code"))
+  flog.info("Data read")
+  
 }

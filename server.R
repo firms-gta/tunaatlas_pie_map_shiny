@@ -141,7 +141,8 @@ server <- function(input, output, session) {
   final_filtered_data <- eventReactive(input$submit, {
     flog.info("Submit button clicked")
     req(wkt())
-    req(initial_data())
+    req(data_for_filters())
+    # req(initial_data())
     current_wkt <- wkt()
 
     if (!firstSubmit()) {
@@ -149,13 +150,13 @@ server <- function(input, output, session) {
     }
 
     flog.info("Filtering")
-
-    final_filtered_data <- initial_data()
-
+    final_filtered_data <- data_for_filters()
+    
     if(as.character(current_wkt) != global_wkt){
       # Your spatial filtering code
       sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
-
+      final_filtered_data <- final_filtered_data %>% 
+        dplyr::inner_join(initial_data(), by = c("geographic_identifier" = "cwp_code"))
       # Step 1: Select unique geographic identifiers and their associated geometries
       unique_id_geom <- final_filtered_data %>%
         dplyr::select(geographic_identifier, geom_wkt) %>%
@@ -173,8 +174,8 @@ server <- function(input, output, session) {
       # Step 5: Filter the original data
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
+      final_filtered_data$geom_wkt <- NULL
     }
-
 
     for (variable in variable_to_display) {
       select_input <- paste0("select_", variable)
@@ -205,10 +206,12 @@ server <- function(input, output, session) {
     final_filtered_data
   }, ignoreNULL = FALSE)
   
-  
+  # Calculate the centroid of the map
   centroid <- reactive({
+    final_filtered_data <- final_filtered_data() %>% 
+      dplyr::select(geographic_identifier) %>% dplyr::distinct()%>% dplyr::inner_join(initial_data())
     flog.info("Calculating centroid")
-    bbox <- st_as_sf(final_filtered_data()) %>% 
+    bbox <- st_as_sf(final_filtered_data) %>% 
       st_bbox()
     center_lon <- (bbox["xmin"] + bbox["xmax"]) / 2
     center_lat <- (bbox["ymin"] + bbox["ymax"]) / 2
@@ -238,10 +241,9 @@ server <- function(input, output, session) {
     variable_choicesintersect
   })
   
-  # Calculate the centroid of the map
   original_data <- reactiveVal()
   observe({
-    original_data(initial_data())  # Store original data at start
+    original_data(data_for_filters())  # Store original data at start
   })
   
   # Reactive variable to store CSV data
@@ -301,15 +303,15 @@ server <- function(input, output, session) {
     
     
     output$filtered_data_table <- renderDT({
-      initial_data()
+      data_for_filters()
     })
   })
   
   # Reset filters to original data
   observeEvent(input$reset_csv_filters, {
-    initial_data(original_data())  # Reset to original unfiltered data
+    data_for_filters(original_data())  # Reset to original unfiltered data
     output$filtered_data_table <- renderDT({
-      initial_data()
+      data_for_filters()
     })
   })
   
@@ -402,9 +404,10 @@ server <- function(input, output, session) {
       pieMapTimeSeriesServer(
         paste0(variable, "_module"), 
         category_var = variable, 
-        data = final_filtered_data, 
+        data = data_for_filters, 
         centroid = centroid, 
         submitTrigger = submitTrigger, 
+        geom = initial_data,
         newwkttest = newwkttest  # Pass the single newwkt reactive value to each module
       )
     })
@@ -596,7 +599,7 @@ server <- function(input, output, session) {
   # }, deleteFile = TRUE)
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
-  newwkt <- mapCatchesServer("total_catch", data = final_filtered_data, submitTrigger = submitTrigger)
+  newwkt <- mapCatchesServer("total_catch", data = data_without_geom, submitTrigger = submitTrigger, geom = initial_data)
   plotTotalCatchesServer("catch_by_year", data = data_without_geom)
   
   observeEvent(newwkt$newwkt(), { #if newwkt from mapCatchesserver is updated 

@@ -85,5 +85,4 @@ outputmoreabout <- more_about()
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully
-flog.info("Global.R file loaded")
-
+flog.info(paste0("Global.R file loaded in ",  Sys.time() - before_package, " seconds"))

@@ -1,5 +1,5 @@
 server <- function(input, output, session) {
-
+  
   flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
   flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset$initial_data)))
@@ -144,11 +144,11 @@ server <- function(input, output, session) {
     req(data_for_filters())
     # req(initial_data())
     current_wkt <- wkt()
-
+    
     if (!firstSubmit()) {
       showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
     }
-
+    
     flog.info("Filtering")
     final_filtered_data <- data_for_filters()
     
@@ -156,27 +156,27 @@ server <- function(input, output, session) {
       # Your spatial filtering code
       sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
       final_filtered_data <- final_filtered_data %>% 
-        dplyr::inner_join(initial_data(), by = c("geographic_identifier" = "cwp_code"))
+        dplyr::inner_join(initial_data(), by = c("geographic_identifier"))
       # Step 1: Select unique geographic identifiers and their associated geometries
       unique_id_geom <- final_filtered_data %>%
         dplyr::select(geographic_identifier, geom_wkt) %>%
         dplyr::distinct()
-
+      
       # Step 2: Convert to sf object
       unique_id_geom <- st_as_sf(unique_id_geom)
-
+      
       # Step 3: Perform spatial intersection
       within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
-
+      
       # Step 4: Filter based on spatial intersection
       unique_id_geom_filtered <- unique_id_geom[rowSums(within_unique) > 0, ]
-
+      
       # Step 5: Filter the original data
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
       final_filtered_data$geom_wkt <- NULL
     }
-
+    
     for (variable in variable_to_display) {
       select_input <- paste0("select_", variable)
       unique_values <- unique(final_filtered_data[[variable]])
@@ -185,24 +185,24 @@ server <- function(input, output, session) {
           dplyr::filter(!!sym(variable) %in% input[[select_input]])
       }
     }
-
+    
     if (!is.null(input$toggle_year) && !is.null(input$years)) {
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
     }
-
-
-
+    
+    
+    
     if (!firstSubmit()) {
       showNotification("Filtering finished", type = "message", id = "filtrage")
     }
-
-
+    
+    
     flog.info("Filtering finished")
     firstSubmit(FALSE)
     submitTrigger(FALSE)
     flog.info("Nrow final_filtered_data %s", nrow(final_filtered_data))
-
+    
     final_filtered_data
   }, ignoreNULL = FALSE)
   
@@ -235,7 +235,14 @@ server <- function(input, output, session) {
   
   variable_choicesintersect <- reactive({
     req(data_for_filters())
+    
+    priority_vars <- c("source_authority", "species", "Gear")
+    
     variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
+    
+    variable_choicesintersect <- c(priority_vars[priority_vars %in% variable_choicesintersect],
+                                   variable_choicesintersect[!variable_choicesintersect %in% priority_vars])
+    
     flog.info("variable_choicesintersect %s", variable_choicesintersect)
     
     variable_choicesintersect
@@ -257,7 +264,7 @@ server <- function(input, output, session) {
     flog.info("Csv_data uploaded")
   })
   
-    # Apply filters based on uploaded CSV
+  # Apply filters based on uploaded CSV
   observeEvent(input$apply_csv_filters, {
     flog.info("Apply csv filters")
     req(csv_data())
@@ -283,7 +290,7 @@ server <- function(input, output, session) {
     flog.info("Inital data loaded")
     
     data_for_filters(data$data_for_filters)
-
+    
     flog.info("Data is filtered on the basis of the csv")
     flog.info(paste0("Initial data is filtered, nrow are:", nrow(initial_data())))
     
@@ -303,7 +310,7 @@ server <- function(input, output, session) {
     
     
     output$filtered_data_table <- renderDT({
-      data_for_filters()
+      final_filtered_data()
     })
   })
   
@@ -315,9 +322,9 @@ server <- function(input, output, session) {
     })
   })
   
-  # Ensure the data table shows the current state of initial_data
+  # Ensure the data table shows the current state of final_filtered_data
   output$filtered_data_table <- renderDT({
-    head(initial_data())
+    head(final_filtered_data())
   })
   
   # Update selectors and reactivity
@@ -404,7 +411,7 @@ server <- function(input, output, session) {
       pieMapTimeSeriesServer(
         paste0(variable, "_module"), 
         category_var = variable, 
-        data = data_for_filters, 
+        data = final_filtered_data, 
         centroid = centroid, 
         submitTrigger = submitTrigger, 
         geom = initial_data,

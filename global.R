@@ -7,7 +7,7 @@ print(before_package)
 require(here)
 # source(here::here('install.R'))
 
-unique_packages <- c("xts",
+unique_packages <- c("xts","raster", "ggplot2",
   "RPostgreSQL", "here", "tools", "sf", "dplyr", "qs", 
   "futile.logger", "shinyjs", "tidyr", "bslib", 
   "shiny", "readr", "glue", "stringr", "knitr", 
@@ -16,10 +16,22 @@ unique_packages <- c("xts",
   "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
   "pool", "jsonlite", "tmap"
 )
+require(futile.logger)
 
 lapply(unique_packages, function(pkg) {
+  start_time <- Sys.time()  # Record start time
+  flog.info("Loading package: %s", pkg)
+  
   library(pkg, character.only = TRUE)
+  
+  end_time <- Sys.time()  # Record end time
+  load_duration <- end_time - start_time  # Calculate duration
+  
+  flog.info("Loaded package: %s in %s seconds", pkg, load_duration)
 })
+
+# Log total loading time
+flog.info("All libraries loaded successfully in %s seconds", Sys.time() - before_package)
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 #create default_dataset

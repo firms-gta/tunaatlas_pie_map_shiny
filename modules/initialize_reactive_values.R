@@ -6,23 +6,23 @@ metadata <- reactiveVal()
 zoom <- reactiveVal(1)
 
 # Load environment variables from file
-try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
+# try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
 
 # Create database connection pool
 # Log environment variables
-db_host <- Sys.getenv("DB_HOST")
-db_port <- as.integer(Sys.getenv("DB_PORT"))
-db_name <- Sys.getenv("DB_NAME")
-db_user <- Sys.getenv("DB_USER")
-db_user_readonly <- Sys.getenv("DB_USER_READONLY")
-db_password <- Sys.getenv("DB_PASSWORD")
+# db_host <- Sys.getenv("DB_HOST")
+# db_port <- as.integer(Sys.getenv("DB_PORT"))
+# db_name <- Sys.getenv("DB_NAME")
+# db_user <- Sys.getenv("DB_USER")
+# db_user_readonly <- Sys.getenv("DB_USER_READONLY")
+# db_password <- Sys.getenv("DB_PASSWORD")
 
-flog.info("Attempting to connect to the database with the following parameters:")
-flog.info("Host: %s", db_host)
-flog.info("Port: %d", db_port)
-flog.info("Database Name: %s", db_name)
-flog.info("User: %s", db_user)
-flog.info("User readonly: %s", db_user_readonly)
+# flog.info("Attempting to connect to the database with the following parameters:")
+# flog.info("Host: %s", db_host)
+# flog.info("Port: %d", db_port)
+# flog.info("Database Name: %s", db_name)
+# flog.info("User: %s", db_user)
+# flog.info("User readonly: %s", db_user_readonly)
 
 # Create database connection pool
 tryCatch({

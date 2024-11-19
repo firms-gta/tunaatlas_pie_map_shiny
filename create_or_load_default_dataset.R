@@ -1,7 +1,3 @@
-# Creating default dataset on this basis and if exists already loading it
-lapply(c("here", "futile.logger", "readr", "tools", "sf", "tmap", "dplyr", "data.table", "qs"), require, character.only = TRUE)
-flog.info("Sourced create or load defautl dataset")
-
 # Load required packages
 lapply(c("here", "futile.logger", "readr", "tools", "sf", "tmap", "dplyr", "data.table", "qs"), require, character.only = TRUE)
 flog.info("Sourced create or load default dataset")
@@ -13,9 +9,9 @@ cl_cwp_gear_path <- here::here("data/cl_cwp_gear_level2.qs")
 default_dataset_path <- here::here("data/default_dataset.qs")
 
 # Load or process cl_areal_grid
-if (file.exists(cl_areal_grid_path)) {
+if (file.exists(here::here(cl_areal_grid_path))) {
   flog.info("Loading processed cl_areal_grid from .qs")
-  shapefile.fix <- qs::qread(cl_areal_grid_path)
+  shapefile.fix <- qs::qread(here::here(cl_areal_grid_path))
 } else {
   flog.info("Processing cl_areal_grid and saving as .qs")
   shapefile_path <- here::here("data/cl_areal_grid.csv")
@@ -37,9 +33,9 @@ if (file.exists(cl_areal_grid_path)) {
 }
 
 # Load or process cl_species
-if (file.exists(cl_species_path)) {
+if (file.exists(here::here(cl_species_path))) {
   flog.info("Loading processed cl_species from .qs")
-  species <- qs::qread(cl_species_path)
+  species <- qs::qread(here::here(cl_species_path))
 } else {
   flog.info("Processing cl_species and saving as .qs")
   species <- read_csv(here::here("data/cl_species.csv")) %>% 
@@ -51,16 +47,16 @@ if (file.exists(cl_species_path)) {
 }
 
 # Load or process cl_cwp_gear_level2
-if (file.exists(cl_cwp_gear_path)) {
+if (file.exists(here::here(cl_cwp_gear_path))) {
   flog.info("Loading processed cl_cwp_gear_level2 from .qs")
-  cl_cwp_gear_level2 <- qs::qread(cl_cwp_gear_path)
+  cl_cwp_gear_level2 <- qs::qread(here::here(cl_cwp_gear_path))
 } else {
   flog.info("Processing cl_cwp_gear_level2 and saving as .qs")
   cl_cwp_gear_level2 <- read_csv(here::here("data/cl_cwp_gear_level2.csv")) %>% 
     select(Code = code, Gear = label) %>% 
     distinct() #https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv
   cl_cwp_gear_level2 <- as.data.table(cl_cwp_gear_level2)
-  qs::qsave(cl_cwp_gear_level2, cl_cwp_gear_path)
+  qs::qsave(cl_cwp_gear_level2, here::here(cl_cwp_gear_path))
 }
 
 if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_dataset")){
@@ -71,7 +67,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   DOI <- read_csv('data/DOI.csv')
   source(here::here("update_data.R"))
   load_data <- function(DOI) {
-    loaded_data <- list()
+    # loaded_data <- list()
     
     for (filename in DOI$Filename) {
       flog.info("Loading dataset: %s", filename)
@@ -83,21 +79,21 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
       rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
       
       # Check if .qs file exists
-      if (file.exists(qs_file_path)) {
-        # Load from .qs if it exists
-        loaded_data[[base_filename]] <- qs::qread(qs_file_path)
+      if (file.exists(here::here(qs_file_path))) {
+        flog.info("Load from qs")
+        data <- qs::qread(here::here(qs_file_path))
         flog.info("Loaded %s from .qs", filename)
         
       } else {
         # If .qs does not exist, try to load from CSV or RDS
-        if (file.exists(csv_file_path)) {
+        if (file.exists(here::here(csv_file_path))) {
           # Load from CSV with specific column type
-          data <- read_csv(csv_file_path, col_types = cols(gear_type = col_character()))
+          data <- read_csv(here::here(csv_file_path), col_types = cols(gear_type = col_character()))
           flog.info("Loaded %s from CSV", filename)
           
-        } else if (file.exists(rds_file_path)) {
+        } else if (file.exists(here::here(rds_file_path))) {
           # Load from RDS
-          data <- readRDS(rds_file_path)
+          data <- readRDS(here::here(rds_file_path))
           flog.info("Loaded %s from RDS", filename)
           
           # Ensure gear_type is character after reading from RDS
@@ -115,11 +111,11 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
         flog.info("Saved %s as .qs", filename)
         
         # Add to the loaded_data list and assign to global environment
-        loaded_data[[base_filename]] <- data
+        # loaded_data[[base_filename]] <- data
       }
       
       # Assign the loaded data to the global environment
-      assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
+      # assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
     }
   }
   

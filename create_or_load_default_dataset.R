@@ -111,11 +111,11 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
         flog.info("Saved %s as .qs", filename)
         
         # Add to the loaded_data list and assign to global environment
-        # loaded_data[[base_filename]] <- data
+        loaded_data[[base_filename]] <- data
       }
       
       # Assign the loaded data to the global environment
-      # assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
+      assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
     }
   }
   

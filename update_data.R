@@ -48,7 +48,7 @@ lapply(1:nrow(DOI), function(i) {
   
   # Check if the file already exists
   if (!file.exists(filepath)) {
-    download_source_file(doi = DOI$DOI[i], filename = DOI$Filename[i])
+    download_with_downloader(doi = DOI$DOI[i], filename = DOI$Filename[i])
   } else {
     message(sprintf("File '%s' already exists. Skipping download.", DOI$Filename[i]))
   }

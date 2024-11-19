@@ -1,5 +1,5 @@
 # Restore the renv environment, excluding shinyuieditor
-# renv::restore(exclude = c("shinyuieditor"))
+# renv::restore(exclude = c("shinyuieditor"), prompt= FALSE)
 # try(pool::dbDisconnect(pool))
 # Source install script
 before_package <-Sys.time()
@@ -35,6 +35,7 @@ flog.info("All libraries loaded successfully in %s seconds", Sys.time() - before
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 #create default_dataset
+source(here::here("download_GTA_data.R"))
 source(here::here("create_or_load_default_dataset.R"))
 
 source(here::here("modules/load_ui_modules.R"))

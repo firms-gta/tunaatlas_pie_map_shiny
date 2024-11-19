@@ -144,6 +144,19 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   
   # Perform operations on default_dataset with data.table
   flog.info("Filtering and selecting columns in default_dataset")
+  expected_columns <- c(
+    "time_start", "measurement_value", "measurement_unit", "species", 
+    "gear_type", "source_authority", "measurement", "measurement_type", 
+    "geographic_identifier", "fishing_mode", "fishing_fleet"
+  )
+  
+  # Ajouter les colonnes manquantes avec des valeurs NA
+  missing_columns <- setdiff(expected_columns, names(default_dataset))
+  if (length(missing_columns) > 0) {
+    for (col in missing_columns) {
+      default_dataset[, (col) := NA]
+    }
+  }
   default_dataset <- default_dataset[
     !is.na(measurement_value), 
     .(year = year(time_start), 

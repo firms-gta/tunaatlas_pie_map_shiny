@@ -9,7 +9,7 @@ DOI <- read_csv("data/DOI.csv")
 options(timeout = 6000)
 
 # Function to download files using curl
-download_source_file <- function(doi, filename, data_dir = "data") {
+download_with_downloader <- function(doi, filename, data_dir = "data") {
   # S'assurer que le répertoire des données existe
   if (!dir.exists(data_dir)) dir.create(data_dir)
   

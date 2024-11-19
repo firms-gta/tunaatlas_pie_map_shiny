@@ -1,17 +1,15 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - 'main'
-    tags:
-      - "v*"
-  pull_request:
-    branches:
-      - 'main'
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: "Branch to base the Docker image on:"
+        required: true
+        default: "main"
 
 env:
-  CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database-cache
+  CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache
   DOCKER_BUILDKIT: 1
   RENV_PATHS_ROOT: /root/.cache/R/renv
 
@@ -26,17 +24,26 @@ jobs:
 
       - name: Calculate renv.lock hash
         id: renv_lock
-        run: echo "renv_lock_hash=$(sha256sum renv.lock | cut -d' ' -f1)" >> $GITHUB_ENV
+        run: |
+          if [ -f renv.lock ]; then
+            echo "renv_lock_hash=$(sha256sum renv.lock | cut -d' ' -f1)" >> $GITHUB_ENV
+          else
+            echo "renv_lock_hash=default" >> $GITHUB_ENV
+          fi
 
       - name: Calculate DOI.csv hash
         id: doi_csv
-        run: echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
-
+        run: |
+          if [ -f data/DOI.csv ]; then
+            echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
+          else
+            echo "doi_csv_hash=default" >> $GITHUB_ENV
+          fi
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
+          images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny
           flavor: latest=true
           tags: |
             type=ref,event=branch
@@ -70,26 +77,28 @@ jobs:
 
       - name: Build Docker image
         run: |
+          BRANCH_NAME=$(echo ${{ github.ref_name }} | tr '/' '_' | tr ':' '_')
           docker buildx build \
             --progress=plain \
-            --cache-from type=registry,ref=$CACHE_IMAGE:latest \
-            --cache-to type=registry,ref=$CACHE_IMAGE:latest,mode=max \
+            --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
+            --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
             --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
             --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
-            --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest \
+            --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
             --output type=docker,dest=/tmp/docker-image.tar \
             .
 
       - name: Load Docker image
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
         run: |
           docker load -i /tmp/docker-image.tar
 
       - name: Conditional push Docker image
-        if: github.ref_type == 'tag'
+        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
         run: |
           TAG_NAME=$(basename ${GITHUB_REF})
-          docker tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:${TAG_NAME}
-          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latest
-          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:${TAG_NAME}
+          BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g') # Sanitize branch name
+          docker tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
+          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME}
+          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}

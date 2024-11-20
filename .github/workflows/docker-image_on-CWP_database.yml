@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - 'main'
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       base_branch:
@@ -13,9 +15,7 @@ on:
       action:
         description: "Action to perform: build, build-and-push, build-no-cache-and-push"
         required: true
-        default: "build"
-  tags:
-    - "v*"  
+        default: "build" 
 
 env:
   CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache

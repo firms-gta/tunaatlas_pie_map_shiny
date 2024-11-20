@@ -1,12 +1,21 @@
 name: Build and Push Docker Image
 
 on:
+  push:
+    branches:
+      - 'main'
   workflow_dispatch:
     inputs:
       base_branch:
-        description: "Branch to base the Docker image on:"
+        description: "Branch to base the Docker image on (e.g., main, R4.2.3withoutQGIS)"
         required: true
         default: "main"
+      action:
+        description: "Action to perform: build, build-and-push, build-no-cache-and-push"
+        required: true
+        default: "build"
+  tags:
+    - "v*"  
 
 env:
   CACHE_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache
@@ -76,26 +85,40 @@ jobs:
         run: docker buildx du
 
       - name: Build Docker image
+        if: ${{ !contains(env.COMMIT_MESSAGE, 'No building docker image') }}
         run: |
           BRANCH_NAME=$(echo ${{ github.ref_name }} | tr '/' '_' | tr ':' '_')
-          docker buildx build \
-            --progress=plain \
-            --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
-            --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
-            --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
-            --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
-            --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
-            --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
-            --output type=docker,dest=/tmp/docker-image.tar \
-            .
+    
+          if [[ "${{ github.event.inputs.action }}" == "build-no-cache-and-push" ]]; then
+            echo "Building without cache..."
+            docker buildx build \
+              --no-cache \  # Désactive l'utilisation du cache si on souhaite recommencer sans le cache
+              --progress=plain \
+              --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+              --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+              --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
+              --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
+              --output type=docker,dest=/tmp/docker-image.tar
+          else
+            echo "Building with cache..."
+            docker buildx build \
+              --progress=plain \
+              --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
+              --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
+              --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+              --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+              --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
+              --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
+              --output type=docker,dest=/tmp/docker-image.tar
+          fi
 
       - name: Load Docker image
-        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+        if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           docker load -i /tmp/docker-image.tar
 
       - name: Conditional push Docker image
-        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+        if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           TAG_NAME=$(basename ${GITHUB_REF})
           BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g') # Sanitize branch name

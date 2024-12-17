@@ -33,10 +33,10 @@ load_initial_data <- function(default_dataset_preloaded) {
 
 load_query_data <- function(selected_dataset, selected_gridtype, selected_measurement_unit, debug, pool) {
   base_query <- "
-    SELECT gridtype, geom_id, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, geom, ST_AsText(geom) AS geom_wkt, year, month 
+    SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month 
     FROM public.shinycatch 
-    WHERE dataset = {selected_dataset} AND gridtype = {selected_gridtype} AND measurement_unit = {selected_measurement_unit}
-    GROUP BY gridtype, species, fishing_fleet, geom_id, geom_wkt, geom, year, month, gear_type, fishing_mode, measurement_unit"
+    WHERE dataset = {selected_dataset} 
+    GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit"
   
   if (debug) {
     base_query <- paste(base_query, "LIMIT 10000")
@@ -47,16 +47,15 @@ load_query_data <- function(selected_dataset, selected_gridtype, selected_measur
                           selected_gridtype = selected_gridtype, 
                           selected_measurement_unit = selected_measurement_unit, 
                           .con = pool)
+  geom <- qs::qread("data/cl_areal_grid.qs")
+  data <- dbGetQuery(pool, query) %>% dplyr::rename(geographic_identifier = codesource_area)
+  # data_sf <- as.data.frame(st_as_sf(data, wkt = "geom_wkt", crs = 4326))
+  # 
+  # initial_data <- data_sf
+  # initial_data$geom <- NULL
+  # data_for_filters <- initial_data
   
-  data <- dbGetQuery(pool, query)
-  data_sf <- as.data.frame(st_as_sf(data, wkt = "geom_wkt", crs = 4326))
-  
-  initial_data <- data_sf
-  initial_data$geom <- NULL
-  data_for_filters <- initial_data
-  
-  list(
-    initial_data = data_sf,
-    data_for_filters = data_for_filters
+  list(initial_data = geom,
+       data_for_filters = data
   )
 }

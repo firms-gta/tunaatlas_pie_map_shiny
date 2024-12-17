@@ -75,7 +75,7 @@ server <- function(input, output, session) {
       # shinyjs::show("loading_page")
       dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = debug, pool)
       flog.info("Default dataset loaded")
-      default_dataset <- dataset_not_init$initial_data
+      default_dataset <- dataset_not_init$data_for_filters
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
       # saveRDS(default_dataset, file = "default_dataset.rds")
       variable_to_display_ancient <- variable_to_display
@@ -106,15 +106,15 @@ server <- function(input, output, session) {
       # source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
       # source(here::here("ui.R"))
       
-      initial_data(default_dataset$initial_data)
-      data_for_filters(default_dataset$data_for_filters)
+      initial_data(dataset_not_init$initial_data)
+      data_for_filters(dataset_not_init$data_for_filters)
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
       # session$reload() # ne relance pas global.R
       flog.info(sprintf("Launching global.R again"))
       
-      shinyjs::refresh() #relance global.R
+      # shinyjs::refresh() #relance global.R
       
-      shinyjs::hide("loading_page")
+      # shinyjs::hide("loading_page")
       
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
       shinyjs::show("main_content")
@@ -271,8 +271,8 @@ server <- function(input, output, session) {
     flog.info("Req csv data")
     # Implement filtering logic using csv_data()
     # Example: filtering by a column that both datasets share
-    common_columns <- intersect(colnames(initial_data()), colnames(csv_data()))
-    filtered_data <- initial_data()
+    common_columns <- intersect(colnames(data_without_geom()), colnames(csv_data()))
+    filtered_data <- data_without_geom()
     
     filtered_data <- filtered_data %>% dplyr::mutate_if(is.double, as.character)
     csv_data <- csv_data() %>% dplyr::mutate_if(is.double, as.character)

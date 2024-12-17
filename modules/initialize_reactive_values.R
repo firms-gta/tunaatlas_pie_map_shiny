@@ -4,9 +4,8 @@ global_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
 wkt <- reactiveVal(global_wkt)
 metadata <- reactiveVal() 
 zoom <- reactiveVal(1)
-source("config.R")
 # Load environment variables from file
-if (use_database) {
+if (file.exists("connection_tunaatlas_inv.txt")) {
   try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
   
   # Create database connection pool

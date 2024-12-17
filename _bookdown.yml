@@ -1,0 +1,7 @@
+book_filename: "Documentation on the Dockerfile and the yml for the shinyapp"
+output_dir: "docs"
+delete_merged_file: true
+new_session: false
+rmd_files:
+  - "Dockerfile_Documentation.Rmd"
+  - "GitHub_Actions_YAML_Documentation.Rmd"

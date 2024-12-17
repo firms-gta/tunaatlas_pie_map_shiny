@@ -1,0 +1,286 @@
+---
+title: "GitHub Actions YAML Documentation"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# GitHub Actions YAML Documentation
+
+## Introduction
+
+This document provides a detailed line-by-line explanation of the GitHub Actions workflow for building and deploying a Docker image for a Shiny app.
+
+---
+
+```yaml
+name: Build and Push Docker Image
+```
+
+### Explanation:
+- **`name`**: Specifies the name of the workflow as it appears in the GitHub Actions UI.
+
+---
+
+```yaml
+on:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - 'main'
+```
+
+### Explanation:
+- **`on`**: Defines the events that trigger the workflow.
+  - **`push`**:
+    - **`branches`**: Runs the workflow when code is pushed to the `main` branch.
+    - **`tags`**: Triggers the workflow for tags starting with `v` (e.g., `v1.0.0`).
+  - **`pull_request`**:
+    - **`branches`**: Runs the workflow for pull requests targeting the `main` branch.
+
+---
+
+```yaml
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+```
+
+### Explanation:
+- **`jobs`**: Specifies the set of tasks to execute in the workflow.
+  - **`docker`**: The name of the job.
+  - **`runs-on`**: Uses the `ubuntu-latest` virtual environment to run the job.
+  - **`timeout-minutes`**: Limits the job's runtime to 140 minutes to prevent hanging jobs.
+
+---
+
+```yaml
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v3
+```
+
+### Explanation:
+- **`steps`**: Defines the sequence of actions within the job.
+  - **`name`**: Descriptive name for the step.
+  - **`uses`**: Utilizes the `actions/checkout@v3` action to clone the repository code into the runner.
+
+---
+
+```yaml
+  - name: Calculate renv.lock hash
+    id: renv_lock
+    run: echo "renv_lock_hash=$(sha256sum renv.lock | cut -d' ' -f1)" >> $GITHUB_ENV
+```
+
+### Explanation:
+- **`name`**: Calculates a hash for the `renv.lock` file to check for changes.
+- **`id`**: Assigns an identifier (`renv_lock`) to reference this step later.
+- **`run`**: Executes a shell command to calculate the SHA256 hash of `renv.lock` and saves it as an environment variable (`$GITHUB_ENV`).
+
+---
+
+```yaml
+  - name: Calculate DOI.csv hash
+    id: doi_csv
+    run: echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
+```
+
+### Explanation:
+- Similar to the `renv.lock` step but calculates the hash for `data/DOI.csv`.
+
+---
+
+```yaml
+  - name: Docker meta
+    id: meta
+    uses: docker/metadata-action@v4
+    with:
+      images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
+      flavor: latest=true
+      tags: |
+        type=ref,event=branch
+        type=ref,event=pr
+        type=semver,pattern={{version}}
+      labels: |
+        org.opencontainers.image.url=${{ github.repository }}
+        org.opencontainers.image.source=${{ github.repository }}
+        org.opencontainers.image.title=GlobalTunaAtlasExplorer
+        org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
+        org.opencontainers.image.vendor=IRD
+        org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
+```
+
+### Explanation:
+- **`name`**: Creates metadata for the Docker image.
+- **`id`**: Assigns the identifier `meta`.
+- **`uses`**: Runs the `docker/metadata-action@v4` action to generate Docker image metadata.
+- **`with`**: Configuration inputs for the action:
+  - **`images`**: Specifies the image repository.
+  - **`flavor`**: Marks the latest build as `true`.
+  - **`tags`**: Defines tagging strategies for the image.
+  - **`labels`**: Adds metadata labels to the Docker image.
+
+---
+
+```yaml
+  - name: Login to image repository
+    uses: docker/login-action@v2
+    with:
+      registry: ghcr.io
+      username: ${{ github.actor }}
+      password: ${{ secrets.GHCR_TOKEN }}
+```
+
+### Explanation:
+- **`name`**: Logs into the GitHub Container Registry (GHCR).
+- **`uses`**: Utilizes the `docker/login-action@v2` to authenticate with GHCR.
+- **`with`**: Specifies login details:
+  - **`registry`**: Target registry (`ghcr.io`).
+  - **`username`**: Uses the GitHub actor (user or bot triggering the workflow).
+  - **`password`**: Uses the `GHCR_TOKEN` secret for authentication.
+
+---
+
+### **Set up Docker Buildx**
+
+```yaml
+- name: Set up Docker Buildx
+  uses: docker/setup-buildx-action@v2
+  with:
+    driver-opts: image=moby/buildkit:master,network=host
+```
+
+#### Explanation:
+- **`name`**: Sets up Docker Buildx, a tool for building multi-platform Docker images.
+- **`uses`**: Utilizes the `docker/setup-buildx-action@v2` action to configure Buildx.
+- **`with`**:
+  - **`driver-opts`**: Configures Buildx with a custom driver. The `image=moby/buildkit:master` specifies the Buildkit image, and `network=host` sets the network mode.
+
+---
+
+### **Verify Docker images**
+
+```yaml
+- name: Verify Docker images
+  run: docker images
+```
+
+#### Explanation:
+- **`name`**: Verifies the available Docker images on the runner.
+- **`run`**: Executes the `docker images` command to list all locally available Docker images.
+
+---
+
+### **Inspect Docker cache**
+
+```yaml
+- name: Inspect Docker cache
+  run: docker buildx du
+```
+
+#### Explanation:
+- **`name`**: Inspects the Docker Buildx cache usage.
+- **`run`**: Runs the `docker buildx du` command to display detailed information about the cache, including its size and usage.
+
+---
+
+### **Build Docker image**
+
+```yaml
+- name: Build Docker image
+  if: ${{ !contains(env.COMMIT_MESSAGE, 'No building docker image') }}
+  run: |
+    BRANCH_NAME=$(echo ${{ github.ref_name }} | tr '/' '_' | tr ':' '_')
+
+    if [[ "${{ github.event.inputs.action }}" == "build-no-cache-and-push" ]]; then
+      echo "Building without cache..."
+      docker buildx build         --no-cache \
+        --progress=plain \
+        --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+        --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+        --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
+        --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
+        --output type=docker,dest=/tmp/docker-image.tar \
+        .
+    else
+      echo "Building with cache..."
+      docker buildx build \
+        --progress=plain \
+        --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
+        --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
+        --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+        --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+        --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
+        --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
+        --output type=docker,dest=/tmp/docker-image.tar \
+        .
+    fi
+```
+
+#### Explanation:
+- **`name`**: Builds the Docker image.
+- **`if`**: Ensures the step is skipped if the commit message contains `No building docker image`.
+- **`run`**:
+  - **`BRANCH_NAME`**: Converts the branch name into a sanitized format suitable for tagging.
+  - **Conditional Build**:
+    - **`build-no-cache-and-push`**: If the action input specifies this, the build runs without cache using `--no-cache`.
+    - Otherwise, builds with caching enabled using `--cache-from` and `--cache-to` options.
+  - **`--build-arg`**: Passes environment variables like `RENV_PATHS_ROOT`, `RENV_LOCK_HASH`, and `DOI_CSV_HASH` to the build process.
+
+---
+
+### **Load Docker image**
+
+```yaml
+- name: Load Docker image
+  if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
+  run: |
+    docker load -i /tmp/docker-image.tar
+```
+
+#### Explanation:
+- **`name`**: Loads the Docker image tar file into the runner's Docker environment.
+- **`if`**: Ensures the step runs only for:
+  - `workflow_dispatch` events with the `push` action.
+  - `push` events triggered by tags.
+- **`run`**: Uses `docker load` to import the built image.
+
+---
+
+### **Conditional push Docker image**
+
+```yaml
+- name: Conditional push Docker image
+  if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
+  run: |
+    TAG_NAME=$(basename ${GITHUB_REF})
+    BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g')
+    docker tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
+    docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME}
+    docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
+```
+
+#### Explanation:
+- **`name`**: Conditionally pushes the Docker image to the registry.
+- **`if`**: Ensures the step runs only for:
+  - `workflow_dispatch` events with the `push` action.
+  - `push` events triggered by tags.
+- **`run`**:
+  - **`TAG_NAME`**: Extracts the tag name from the GitHub reference.
+  - **`BRANCH_NAME`**: Sanitizes the branch name for safe use as a tag.
+  - **`docker tag`**: Tags the built image with the branch name and tag name.
+  - **`docker push`**: Pushes both branch-specific and tag-specific images to the registry.
+
+---
+
+## Conclusion
+
+This section of the YAML file automates the process of setting up Docker Buildx, building and managing Docker images, and pushing them to a registry, enabling a robust CI/CD pipeline for containerized applications.
+
+---

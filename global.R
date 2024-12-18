@@ -39,6 +39,7 @@ source(here::here("download_GTA_data.R"))
 source(here::here("create_or_load_default_dataset.R"))
 
 source(here::here("modules/load_ui_modules.R"))
+source(here::here("modules/db_connect.R"))
 load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
@@ -89,6 +90,7 @@ source(here::here("modules/initialize_reactive_values.R"))
 source(here::here("R/palette_settings.R"))
 source(here::here("global/generate_dimensions_palettes.R"))
 source(here::here("R/get_html_title.R"))
+source(here::here("R/load_data.R"))
 source(here::here("R/getPalette.R")) # do not knwo why we should run it as it is supposed to be ran after global.R but yet it is not
 addResourcePath("www", here::here("www"))
 more_about = function(){

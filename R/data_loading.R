@@ -25,7 +25,7 @@ load_initial_data <- function(default_dataset_preloaded) {
   default_dataset_preloaded_without_geom$geom_wkt <- NULL
   default_dataset_preloaded_without_geom$geom <- NULL
   flog.info("geometry of preloaded data removed")
-  
+  geom <- geom %>% dplyr::semi_join(default_dataset_preloaded_without_geom, by = "geographic_identifier")
   list(initial_data = geom,
     data_for_filters = default_dataset_preloaded_without_geom
   )
@@ -35,7 +35,9 @@ load_query_data <- function(selected_dataset, selected_gridtype, selected_measur
   base_query <- "
     SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month 
     FROM public.shinycatch 
-    WHERE dataset = {selected_dataset} 
+    WHERE dataset = {selected_dataset}
+    AND gridtype IN ({selected_gridtype*})
+    AND measurement_unit IN ({selected_measurement_unit*})
     GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit"
   
   if (debug) {
@@ -47,7 +49,23 @@ load_query_data <- function(selected_dataset, selected_gridtype, selected_measur
                           selected_gridtype = selected_gridtype, 
                           selected_measurement_unit = selected_measurement_unit, 
                           .con = pool)
+  geom_query <- glue_sql("
+  SELECT DISTINCT codesource_area
+  FROM public.shinycatch
+  WHERE dataset = {selected_dataset}
+    AND gridtype IN ({selected_gridtype*})
+    AND measurement_unit IN ({selected_measurement_unit*})",
+                         .con = pool)  
+  geom_query <- glue::glue_sql(geom_query, 
+                          selected_dataset = selected_dataset, 
+                          selected_gridtype = selected_gridtype, 
+                          selected_measurement_unit = selected_measurement_unit, 
+                          .con = pool)
+  
   geom <- qs::qread("data/cl_areal_grid.qs")
+  geometry <- dbGetQuery(pool, geom_query) %>% dplyr::rename(geographic_identifier = codesource_area) 
+  geom <-geom %>% dplyr::semi_join(geometry, by = "geographic_identifier")
+  
   data <- dbGetQuery(pool, query) %>% dplyr::rename(geographic_identifier = codesource_area)
   # data_sf <- as.data.frame(st_as_sf(data, wkt = "geom_wkt", crs = 4326))
   # 

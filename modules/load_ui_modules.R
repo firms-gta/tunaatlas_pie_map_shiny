@@ -11,7 +11,6 @@ load_ui_modules <- function() {
     'tab_panels/sidebar_ui.R',
     'tab_panels/mapCatchesmodules.R',
     'tab_panels/create_logo_panel.R',
-    'tab_panels/dataset_choice.R',
     'tab_panels/sqlqueriesui.R',
     'tab_panels/data_explorer_i11_ui.R',
     'tab_panels/more_about.R',

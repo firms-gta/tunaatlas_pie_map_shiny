@@ -66,63 +66,13 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   
   DOI <- read_csv('data/DOI.csv')
   source(here::here("update_data.R"))
-  load_data <- function(DOI) {
-    loaded_data <- list()
-    
-    for (filename in DOI$Filename) {
-      flog.info("Loading dataset: %s", filename)
-      
-      # Define file paths
-      base_filename <- tools::file_path_sans_ext(filename)
-      qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
-      csv_file_path <- file.path('data', paste0(base_filename, '.csv'))
-      rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
-      
-      # Check if .qs file exists
-      if (file.exists(here::here(qs_file_path))) {
-        flog.info("Load from qs")
-        data <- qs::qread(here::here(qs_file_path))
-        flog.info("Loaded %s from .qs", filename)
-        
-      } else {
-        # If .qs does not exist, try to load from CSV or RDS
-        if (file.exists(here::here(csv_file_path))) {
-          # Load from CSV with specific column type
-          data <- read_csv(here::here(csv_file_path), col_types = cols(gear_type = col_character()))
-          flog.info("Loaded %s from CSV", filename)
-          
-        } else if (file.exists(here::here(rds_file_path))) {
-          # Load from RDS
-          data <- readRDS(here::here(rds_file_path))
-          flog.info("Loaded %s from RDS", filename)
-          
-          # Ensure gear_type is character after reading from RDS
-          if ("gear_type" %in% names(data)) {
-            data$gear_type <- as.character(data$gear_type)
-          }
-        } else {
-          # File not found
-          warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
-          next
-        }
-        
-        # Save the loaded data to .qs for faster future access
-        qs::qsave(data, qs_file_path)
-        flog.info("Saved %s as .qs", filename)
-        
-        # Add to the loaded_data list and assign to global environment
-        loaded_data[[base_filename]] <- data
-      }
-      
-      # Assign the loaded data to the global environment
-      assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
-    }
-  }
+  source(here::here("R/load_data.R"))
   
   
   load_data(DOI)
+  for (i in 1:length(DOI$Filename)){
   
-  object <- tools::file_path_sans_ext(DOI$Filename[1])
+  object <- tools::file_path_sans_ext(DOI$Filename[i])
   source(here::here("download_GTA_data.R"))
   # Load the shapefile
   
@@ -194,9 +144,18 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   #   dplyr::distinct()
   # source(here::here("R/initialize_data_and_plots.R"))
   # default_dataset$geom_wkt <- NULL
-  qs::qsave(default_dataset, "data/default_dataset.qs")
+  if(file.exists(file.path("data",paste0(object, "updated.qs")))){
+    file.remove(file.path("data",paste0(object, "updated.qs")))
+  }
+  qs::qsave(default_dataset, file.path("data",paste0(object, "updated.qs")))
+  if(i ==1){
+    if(file.exists("data/default_dataset.qs")){
+      file.remove(file.path("data/default_dataset.qs"))
+    }
+    qs::qsave(default_dataset, "data/default_dataset.qs")
+  }
   # qs::qsave(geom, "data/geom.qs")
-  
+  }
 } else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){
   flog.info("reading the data from qs file")
   default_dataset <- qs::qread("data/default_dataset.qs")
@@ -208,3 +167,4 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   # default_dataset_shape <- default_dataset %>% dplyr::inner_join(shapefile.fix, by = c("geographic_identifier" = "cwp_code"))
   
 }
+

@@ -10,7 +10,7 @@ server <- function(input, output, session) {
   }
   
   
-  # Initialize resource paths and modules
+  # Initialize resource paths and modules*
   # addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
   
@@ -35,25 +35,46 @@ server <- function(input, output, session) {
       updateNavbarPage(session, "main", selected = "generaloverview")
     }
   })
+  # Création de la reactiveVal pour les filtres
+  filters_combinations <- reactiveVal(data.frame(
+    dataset = character(),
+    gridtype = character(),
+    measurement_unit = character(),
+    stringsAsFactors = FALSE
+  ))
   
-  dataset_choices <- dataset_choice_server("dataset_choice", filters_combinations, "global_catch_5deg_1m_firms_level1", default_gridtype, default_measurement_unit)
+  db_connect <- db_connect_server(
+    id = "db_module",
+    filters_combinations = filters_combinations
+  )
   
-  # Initial dataset submission
-  observeEvent(dataset_choices$submit(), {
-    flog.info("Submit dataset clicked")
-    selected_dataset <- dataset_choices$selected_dataset()
-    selected_gridtype <- dataset_choices$selected_gridtype()
-    selected_measurement_unit <- dataset_choices$selected_measurement_unit()
-    
-    firstsubmit <- firstSubmit()
-    if (firstsubmit) {
+  # Récupérer le pool
+  pool <- reactive({
+    req(db_connect$pool())
+    db_connect$pool()
+  })
+  
+  dataset_choices <- dataset_choice_server(
+    id = "dataset_choice",
+    filters_combinations = filters_combinations,
+    default_dataset = "global_catch_5deg_1m_firms_level1",
+    default_gridtype = "5deg_x_5deg",
+    default_measurement_unit = "t"
+  )
+
+    observeEvent(dataset_choices$submit(), {
+      flog.info("Submit dataset clicked")
+      
+      selected_dataset <- dataset_choices$selected_dataset()
+      selected_gridtype <- dataset_choices$selected_gridtype()
+      selected_measurement_unit <- dataset_choices$selected_measurement_unit()
+      firstsubmit <- firstSubmit()
+      if (firstsubmit) {
       flog.info("First submit")
       flog.info("All initialization files already exist. Loading from files.")
       flog.info("loading initial data")
       data <- load_initial_data(default_dataset)
-      
       flog.info("Initial Data loaded")
-      
       initial_data(data$initial_data)
       flog.info("Inital data loaded")
       
@@ -67,14 +88,23 @@ server <- function(input, output, session) {
       })
       
     } else {
+      if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$")) {
+        base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
+        qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
+        default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))
+        dataset_not_init <- load_initial_data(default_dataset)
+      } else {
       showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
       
       flog.info("Loading dataset")
+      req(pool())
+      flog.info("Connection to DB accessible, querying the data")
       
       # shinyjs::hide("main_content")
       # shinyjs::show("loading_page")
-      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = debug, pool)
+      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = debug, pool = pool())
       flog.info("Default dataset loaded")
+      }
       default_dataset <- dataset_not_init$data_for_filters
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
       # saveRDS(default_dataset, file = "default_dataset.rds")
@@ -178,14 +208,16 @@ server <- function(input, output, session) {
     }
     
     for (variable in variable_to_display) {
+      flog.info(sprintf("Creating filters for %s", variable))
       select_input <- paste0("select_", variable)
       unique_values <- unique(final_filtered_data[[variable]])
       if (!is.null(input[[select_input]]) && !all(unique_values %in% input[[select_input]])) {
         final_filtered_data <- final_filtered_data %>%
           dplyr::filter(!!sym(variable) %in% input[[select_input]])
       }
+      flog.info(sprintf("Created filters for %s", variable))
+      
     }
-    
     if (!is.null(input$toggle_year) && !is.null(input$years)) {
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
@@ -673,6 +705,7 @@ server <- function(input, output, session) {
   })
   
   onStop(function() {
-    try(poolClose(pool))
+    try(poolClose(pool), silent = TRUE)
   })
+  
 }

@@ -138,7 +138,9 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   
   flog.info(sprintf("Time %s:", Sys.time()))
   flog.info(sprintf("Colnames %s:", paste0(colnames(default_dataset))))
-  
+  default_dataset <- default_dataset %>% dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
+                                                                 measurement_unit == "no" ~ "Number of fish", 
+                                                                 TRUE ~ measurement_unit))
   # geom <- default_dataset %>% 
   #   dplyr::select(geom_wkt, geographic_identifier) %>% 
   #   dplyr::distinct()

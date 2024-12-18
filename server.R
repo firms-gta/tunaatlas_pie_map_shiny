@@ -91,7 +91,10 @@ server <- function(input, output, session) {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
         qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
-        default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))
+        default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
+          dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
+          measurement_unit == "no" ~ "Number of fish",
+          TRUE ~ measurement_unit))
         dataset_not_init <- load_initial_data(default_dataset)
       } else {
       showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
@@ -174,14 +177,12 @@ server <- function(input, output, session) {
     req(data_for_filters())
     # req(initial_data())
     current_wkt <- wkt()
-    
     if (!firstSubmit()) {
       showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
     }
     
-    flog.info("Filtering")
-    final_filtered_data <- data_for_filters()
-    
+    flog.info("Filtering started")
+    final_filtered_data <- data_for_filters() 
     if(as.character(current_wkt) != global_wkt){
       # Your spatial filtering code
       sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
@@ -208,22 +209,23 @@ server <- function(input, output, session) {
     }
     
     for (variable in variable_to_display) {
-      flog.info(sprintf("Creating filters for %s", variable))
       select_input <- paste0("select_", variable)
       unique_values <- unique(final_filtered_data[[variable]])
-      if (!is.null(input[[select_input]]) && !all(unique_values %in% input[[select_input]])) {
+      flog.info(sprintf("Filtering by %s", variable))
+      if (!is.null(input[[select_input]]) && length(input[[select_input]]) > 0) {
+        flog.info("Applying filter for %s", variable)
         final_filtered_data <- final_filtered_data %>%
           dplyr::filter(!!sym(variable) %in% input[[select_input]])
+        
+        flog.info(sprintf("Number of rows after filtering by %s: %d", variable, nrow(final_filtered_data)))
+        
       }
-      flog.info(sprintf("Created filters for %s", variable))
-      
     }
+    
     if (!is.null(input$toggle_year) && !is.null(input$years)) {
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
     }
-    
-    
     
     if (!firstSubmit()) {
       showNotification("Filtering finished", type = "message", id = "filtrage")

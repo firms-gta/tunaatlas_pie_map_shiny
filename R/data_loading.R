@@ -66,7 +66,10 @@ load_query_data <- function(selected_dataset, selected_gridtype, selected_measur
   geometry <- dbGetQuery(pool, geom_query) %>% dplyr::rename(geographic_identifier = codesource_area) 
   geom <-geom %>% dplyr::semi_join(geometry, by = "geographic_identifier")
   
-  data <- dbGetQuery(pool, query) %>% dplyr::rename(geographic_identifier = codesource_area)
+  data <- dbGetQuery(pool, query) %>% dplyr::rename(geographic_identifier = codesource_area)%>% 
+    dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
+                                               measurement_unit == "no" ~ "Number of fish",
+                                               TRUE ~ measurement_unit))
   # data_sf <- as.data.frame(st_as_sf(data, wkt = "geom_wkt", crs = 4326))
   # 
   # initial_data <- data_sf

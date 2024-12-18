@@ -13,7 +13,7 @@ on:
         required: true
         default: "main"
       action:
-        description: "Action to perform: build, build-no-cache-and-push"
+        description: "Action to perform: build,build-and-push, build-no-cache-and-push"
         required: true
         default: "build" 
 

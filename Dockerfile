@@ -57,7 +57,7 @@ RUN R -e "remotes::install_version('readr', version = '2.1.5', upgrade = 'never'
 
 # Echo the DOI_CSV_HASH for debugging and to to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
 ARG DOI_CSV_HASH
-RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}"
+RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
 
 # Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
 RUN mkdir -p data 

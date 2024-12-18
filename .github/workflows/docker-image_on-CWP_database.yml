@@ -13,7 +13,7 @@ on:
         required: true
         default: "main"
       action:
-        description: "Action to perform: build, build-and-push, build-no-cache-and-push"
+        description: "Action to perform: build, build-no-cache-and-push"
         required: true
         default: "build" 
 
@@ -92,13 +92,13 @@ jobs:
           if [[ "${{ github.event.inputs.action }}" == "build-no-cache-and-push" ]]; then
             echo "Building without cache..."
             docker buildx build \
-              --no-cache \  # Désactive l'utilisation du cache si on souhaite recommencer sans le cache
+              --no-cache \
               --progress=plain \
               --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
               --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
               --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
               --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
-              --output type=docker,dest=/tmp/docker-image.tar \
+              --push \
               .
           else
             echo "Building with cache..."

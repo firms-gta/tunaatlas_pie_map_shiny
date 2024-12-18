@@ -84,7 +84,7 @@ RUN echo "RENV_PATHS_CACHE=${RENV_PATHS_CACHE}"
 
 # Define the build argument for the hash of renv.lock to stop cache if renv.lock has changed
 ARG RENV_LOCK_HASH
-RUN echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}"
+RUN echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}" > /tmp/renv_lock_hash.txt
 
 # Create the renv cache directory
 RUN mkdir -p ${RENV_PATHS_ROOT}

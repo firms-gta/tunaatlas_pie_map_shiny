@@ -24,67 +24,75 @@ db_connect_server <- function(id, filters_combinations) {
     # Variable pour stocker le pool de connexion
     pool_reactive <- reactiveVal(NULL)
     
+    # Fonction pour tenter une connexion à la base de données
+    try_db_connection <- function() {
+      db_host <- Sys.getenv("DB_HOST")
+      db_port <- as.integer(Sys.getenv("DB_PORT"))
+      db_name <- Sys.getenv("DB_NAME")
+      db_user_readonly <- Sys.getenv("DB_USER_READONLY")
+      db_password <- Sys.getenv("DB_PASSWORD")
+      
+      tryCatch({
+        pool <- dbPool(
+          RPostgreSQL::PostgreSQL(),
+          host = db_host,
+          port = db_port,
+          dbname = db_name,
+          user = db_user_readonly,
+          password = db_password
+        )
+        if (pool::dbIsValid(pool)) {
+          return(pool)
+        } else {
+          flog.warn("Invalid pool. Connection failed.")
+          return(NULL)
+        }
+      }, error = function(e) {
+        flog.warn(paste("Connection error:", e$message))
+        return(NULL)
+      })
+    }
+    
     # Connexion à la base de données au clic
     observeEvent(input$connect_db, {
       db_results$status <- "Trying to connect..."
       
-      if (file.exists("connection_tunaatlas_inv.txt")) {
-        try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
+      # Essayer de se connecter avec les variables d'environnement
+      pool <- try_db_connection()
+      
+      if (is.null(pool) && file.exists("connection_tunaatlas_inv.txt")) {
+        # Si échec, charger les variables depuis le fichier .env
+        dotenv::load_dot_env("connection_tunaatlas_inv.txt")
+        flog.info("Trying connection with variables from 'connection_tunaatlas_inv.txt'.")
+        pool <- try_db_connection()
+      }
+      
+      if (!is.null(pool)) {
+        flog.info("Valid connection established.")
+        pool_reactive(pool)
         
-        db_host <- Sys.getenv("DB_HOST")
-        db_port <- as.integer(Sys.getenv("DB_PORT"))
-        db_name <- Sys.getenv("DB_NAME")
-        db_user_readonly <- Sys.getenv("DB_USER_READONLY")
-        db_password <- Sys.getenv("DB_PASSWORD")
+        # Requête SQL
+        filters_query <- glue_sql("
+          SELECT DISTINCT dataset, measurement_unit, gridtype 
+          FROM public.shinycatch;", .con = pool)
         
-        tryCatch({
-          pool <- dbPool(RPostgreSQL::PostgreSQL(),
-                         host = db_host,
-                         port = db_port,
-                         dbname = db_name,
-                         user = db_user_readonly,
-                         password = db_password)
-          
-          if (pool::dbIsValid(pool)) {
-            flog.info("Connexion valide.")
-            pool_reactive(pool)
-            
-            # Requête SQL
-            filters_query <- glue_sql("
-              SELECT DISTINCT dataset, measurement_unit, gridtype 
-FROM public.shinycatch;", .con = pool)
-            
-            filters_data <- DBI::dbGetQuery(pool, filters_query)
-            
-            if (nrow(filters_data) > 0) {
-              filters_combinations(filters_data)
-              db_results$status <- "Connection successful! Filters updated."
-            } else {
-              db_results$status <- "Connection successful but no filters available."
-              filters_combinations(data.frame(
-                dataset = character(),
-                measurement_unit = character(),
-                gridtype = character(),
-                stringsAsFactors = FALSE
-              ))
-            }
-          } else {
-            db_results$status <- "Connection failed: invalid pool."
-          }
-          
-          # Ne fermez pas le pool ici
-          # poolClose(pool)
-        }, error = function(e) {
-          db_results$status <- paste("Connection error:", e$message)
+        filters_data <- DBI::dbGetQuery(pool, filters_query)
+        
+        if (nrow(filters_data) > 0) {
+          filters_combinations(filters_data)
+          db_results$status <- "Connection successful! Filters updated."
+        } else {
+          db_results$status <- "Connection successful but no filters available."
           filters_combinations(data.frame(
             dataset = character(),
             measurement_unit = character(),
             gridtype = character(),
             stringsAsFactors = FALSE
           ))
-        })
+        }
       } else {
-        db_results$status <- "Configuration file missing: 'connection_tunaatlas_inv.txt'."
+        flog.warn("No valid connection established.")
+        db_results$status <- "No valid connection. Please check configuration."
         filters_combinations(data.frame(
           dataset = character(),
           measurement_unit = character(),
@@ -107,5 +115,6 @@ FROM public.shinycatch;", .con = pool)
     ))
   })
 }
+
 
 

@@ -69,8 +69,8 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   source(here::here("R/load_data.R"))
   
   
-  load_data(DOI)
-  for (i in 1:length(DOI$Filename)){
+  load_data(DOI) # load and convert to .qs if not
+  for (i in 1:length(DOI$Filename)){ # update the data
   
   object <- tools::file_path_sans_ext(DOI$Filename[i])
   source(here::here("download_GTA_data.R"))
@@ -156,7 +156,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
     }
     qs::qsave(default_dataset, "data/default_dataset.qs")
   }
-  # qs::qsave(geom, "data/geom.qs")
+  file.remove(file.path("data", DOI$Filename[i])) # Removing .csv as heavy
   }
 } else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){
   flog.info("reading the data from qs file")

@@ -8,14 +8,23 @@ output: html_document
 # Introduction
 This guide explains how to create a docker image of a shiny application using Docker Buildx with a remote cache stored on GitHub Container Registry (GHCR) in local. It will help you replicate and debug workflows locally, including proper authentication for private caches.
 
+# For now, build the shiny app in local 
+
+```bash
+docker build -t tunaatlas_pie_map_shiny .
+```
+
+######## NOT WORKING YET IN LOCAL ONLY WITH GITHUB ACTIONS
+
 # Prerequisites
 Before proceeding, ensure the following tools are installed and configured on your system:
 
 - **Docker**: Install the latest version from [Docker's website](https://www.docker.com/).
 - **Docker Buildx**: Ensure Buildx is enabled in Docker:
-  ```bash
-  docker buildx create --use
-  ```
+
+```bash
+docker buildx create --use
+```
 - **GitHub Account**: With permissions to generate a Personal Access Token (PAT).
 
 # Step 1: Generate a Personal Access Token (PAT)
@@ -51,6 +60,7 @@ Create a `event.json` file to store the necessary inputs for your local builds:
 
 ```
 
+
 Create a secrets.env file with the connection to ghcr
 
 ```env
@@ -74,11 +84,6 @@ If not, enable Buildx:
 docker buildx create --use
 ```
 
-# Step 5: Build the shiny app in local 
-
-```bash
-docker build -t tunaatlas_pie_map_shiny .
-```
 
 ##### INCOMING WORK 
 
@@ -87,15 +92,13 @@ docker build -t tunaatlas_pie_map_shiny .
 Use the following `docker buildx build` command to build your image with caching:
 
 ```bash
-docker buildx build \
-  --cache-from type=registry,ref=ghcr.io/<your_repo>/<cache_name>:latest \
-  --cache-to type=registry,ref=ghcr.io/<your_repo>/<cache_name>:latest,mode=max \
-  -t <your_image_name>:latest .
+docker buildx build --cache-from=type=registry,ref=ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache:latest \
+                    --cache-to=type=registry,ref=ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache:latest,mode=max \
+                    --progress=plain -t tunaatlas_pie_map_shiny .
 ```
 
-- Replace `<your_repo>` with your GitHub repository.
-- Replace `<cache_name>` with your desired cache name.
-- Replace `<your_image_name>` with your image name.
+- Replace `firms-gta` with your GitHub repository.
+- Replace `tunaatlas_pie_map_shiny` with your desired cache name.
 
 ### Explanation
 - `--cache-from`: Pulls cached layers from the remote registry.

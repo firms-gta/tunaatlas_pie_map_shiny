@@ -50,6 +50,7 @@ jobs:
           fi
       - name: Docker meta
         id: meta
+        if: ${{ contains(github.event.inputs.action, 'push') }}
         uses: docker/metadata-action@v4
         with:
           images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny
@@ -89,7 +90,7 @@ jobs:
         run: |
           BRANCH_NAME=$(echo ${{ github.ref_name }} | tr '/' '_' | tr ':' '_')
     
-          if [[ "${{ github.event.inputs.action }}" == "build-no-cache-and-push" ]]; then
+          if [[ "${{ github.event.inputs.action }}" == "build-no-cache-and-push" || "${{ github.event.inputs.action }}" == "build-no-cache" ]]; then
             echo "Building without cache..."
             docker buildx build \
               --no-cache \

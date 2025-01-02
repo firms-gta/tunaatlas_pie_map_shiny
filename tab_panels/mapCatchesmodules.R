@@ -38,13 +38,15 @@ mapCatchesServer <- function(id, data, submitTrigger, geom) {
       leaflet() %>%
         addProviderTiles("Esri.NatGeoWorldMap") %>%
         clearBounds() %>%
-        addPolygons(data = a,
-                    label = ~measurement_value,
-                    popup = ~paste0("Total catches for the selected criteria in this square of the grid: ", round(measurement_value), " tons (t) et des brouettes"),
-                    fillColor = ~qpal(measurement_value),
-                    fill = TRUE,
-                    fillOpacity = 0.8,
-                    smoothFactor = 0.5, weight = 2) %>%
+        addPolygons(
+          data = a,
+          label = ~measurement_value,
+          popup = ~paste0("Total value for the selected criteria in this square of the grid: ", round(measurement_value)),
+          fillColor = ~qpal(measurement_value),
+          fill = TRUE,
+          fillOpacity = 0.8,
+          smoothFactor = 0.5, weight = 2
+        ) %>%
         addDrawToolbar(
           targetGroup = "draw",
           editOptions = editToolbarOptions(
@@ -55,10 +57,26 @@ mapCatchesServer <- function(id, data, submitTrigger, geom) {
           overlayGroups = c("draw"),
           options = layersControlOptions(collapsed = FALSE)
         ) %>%
-        leaflet::addLegend("bottomright", pal = qpal, values = a$measurement_value,
-                  title = "Quantile of the grid for the total catches",
-                  labFormat = labelFormat(prefix = "MT "),
-                  opacity = 1)
+        addLegend(
+          position = "bottomright", 
+          pal = qpal, 
+          values = a$measurement_value,
+          title = "Quantile of the grid for the total catches",
+          labFormat = labelFormat(prefix = "MT "),
+          opacity = 1
+        ) %>%
+        addControl(
+          html = HTML("
+      <div style='background-color: rgba(255, 255, 255, 0.8); padding: 5px; border-radius: 5px;'>
+        <p style='font-size:12px; color:grey; margin:0;'>
+          <b>Caution:</b> Selecting multiple units in the filters will sum their values,<br>
+          which may lead to inaccurate results.
+        </p>
+      </div>
+    "),
+          position = "bottomleft",  
+          className = "legend-popup"
+        )
     })
     
     observeEvent(input$submit_draw_total, {

@@ -9,7 +9,6 @@ server <- function(input, output, session) {
     debug = FALSE
   }
   
-  
   # Initialize resource paths and modules*
   # addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
@@ -43,24 +42,30 @@ server <- function(input, output, session) {
     stringsAsFactors = FALSE
   ))
   
-  db_connect <- db_connect_server(
-    id = "db_module",
-    filters_combinations = filters_combinations
-  )
+  # db_connect <- db_connect_server(
+  #   id = "db_module",
+  #   filters_combinations = filters_combinations
+  # )
   
-  # Récupérer le pool
-  pool <- reactive({
-    req(db_connect$pool())
-    db_connect$pool()
-  })
-  
-  dataset_choices <- dataset_choice_server(
-    id = "dataset_choice",
-    filters_combinations = filters_combinations,
+  dataset_choices <- dataset_and_db_server(
+    id = "dataset_and_db_module",
+    filters_combinations = filters_combinations, 
     default_dataset = "global_catch_5deg_1m_firms_level1",
     default_gridtype = "5deg_x_5deg",
     default_measurement_unit = "t"
   )
+  
+  pool <- reactive({
+    req(dataset_choices$pool())
+    dataset_choices$pool()
+  })
+  # dataset_choices <- dataset_choice_server(
+  #   id = "dataset_choice",
+  #   filters_combinations = filters_combinations,
+  #   default_dataset = "global_catch_5deg_1m_firms_level1",
+  #   default_gridtype = "5deg_x_5deg",
+  #   default_measurement_unit = "t"
+  # )
 
     observeEvent(dataset_choices$submit(), {
       flog.info("Submit dataset clicked")
@@ -105,7 +110,13 @@ server <- function(input, output, session) {
       
       # shinyjs::hide("main_content")
       # shinyjs::show("loading_page")
-      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit,debug = debug, pool = pool())
+      issueddata <- TRUE
+      if(issueddata){
+        selected_viewissued = "public.issueddata"
+      } else {
+        selected_viewissued = "public.shinycatch"
+      }
+      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
       flog.info("Default dataset loaded")
       }
       default_dataset <- dataset_not_init$data_for_filters
@@ -167,7 +178,7 @@ server <- function(input, output, session) {
   
   shinyjs::delay(1, { 
     flog.info("submitfirstdataset")
-    shinyjs::click("dataset_choice-submitDataset") 
+    shinyjs::click("dataset_and_db_module-submitDataset") 
   })
   
   # Filtering the final data

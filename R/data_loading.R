@@ -31,14 +31,28 @@ load_initial_data <- function(default_dataset_preloaded) {
   )
 }
 
-load_query_data <- function(selected_dataset, selected_gridtype, selected_measurement_unit, debug, pool) {
-  base_query <- "
-    SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month 
-    FROM public.shinycatch 
+load_query_data <- function(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = "public.shinycatch", debug, pool) {
+  
+  if (selected_view == "public.shinycatch") {
+    base_query <- "
+    SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month, source_authority
+    FROM {selected_view}
     WHERE dataset = {selected_dataset}
     AND gridtype IN ({selected_gridtype*})
     AND measurement_unit IN ({selected_measurement_unit*})
-    GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit"
+    GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit, source_authority"
+  } else if (selected_view == "public.issueddata"){
+    base_query <- "
+    SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month, source_authority, issue
+    FROM {selected_view}
+    WHERE dataset = {selected_dataset}
+    AND gridtype IN ({selected_gridtype*})
+    AND measurement_unit IN ({selected_measurement_unit*})
+    GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit, source_authority, issue"
+  } else{
+    stop("Provide a view to request")
+  }
+
   
   if (debug) {
     base_query <- paste(base_query, "LIMIT 10000")
@@ -48,10 +62,12 @@ load_query_data <- function(selected_dataset, selected_gridtype, selected_measur
                           selected_dataset = selected_dataset, 
                           selected_gridtype = selected_gridtype, 
                           selected_measurement_unit = selected_measurement_unit, 
+                          selected_view = selected_view,
                           .con = pool)
+  flog.info(print(query))
   geom_query <- glue_sql("
   SELECT DISTINCT codesource_area
-  FROM public.shinycatch
+  FROM {selected_view}
   WHERE dataset = {selected_dataset}
     AND gridtype IN ({selected_gridtype*})
     AND measurement_unit IN ({selected_measurement_unit*})",

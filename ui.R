@@ -46,8 +46,9 @@ ui <- tagList(
                    )
           ),
           data_explorer_combined_ui(),
-          db_connect_ui("db_module"),
-          dataset_choice_ui("dataset_choice"),
+          # db_connect_ui("db_module"),
+          # dataset_choice_ui("dataset_choice"),
+          dataset_and_db_ui("dataset_and_db_module"),
           outputmoreabout,
           main_panel_ui()
           )

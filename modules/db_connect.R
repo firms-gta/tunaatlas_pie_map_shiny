@@ -3,13 +3,24 @@ db_connect_ui <- function(id) {
   nav_panel(
     "Database Connection",
     tagList(
-      actionButton(ns("connect_db"), "Try to connect to GlobalTunaAtlas Database", class = "btn-primary"),
+      # Choix de la source de données
+      uiOutput(ns("choose_data_source")),  # Ajouter le bouton radio pour choisir la source
+      
+      # Bouton de connexion
+      actionButton(
+        ns("connect_db"), 
+        "Try to connect to GlobalTunaAtlas Database", 
+        class = "btn-primary"
+      ),
+      
+      # Statut de connexion
       verbatimTextOutput(ns("connection_status")),
-      tableOutput(ns("filters_table")),
+      
+      # Tableau des filtres
+      tableOutput(ns("filters_table"))
     )
   )
 }
-
 
 
 # Module Server
@@ -23,6 +34,16 @@ db_connect_server <- function(id, filters_combinations) {
     
     # Variable pour stocker le pool de connexion
     pool_reactive <- reactiveVal(NULL)
+    
+    # Ajouter une sélection pour choisir la source de données
+    output$choose_data_source <- renderUI({
+      radioButtons(
+        ns("data_source"),
+        label = "Choose data source:",
+        choices = c("Issueddata" = "issueddata", "Shinycatch" = "shinycatch"),
+        selected = "issueddata"
+      )
+    })
     
     # Connexion à la base de données au clic
     observeEvent(input$connect_db, {
@@ -49,10 +70,17 @@ db_connect_server <- function(id, filters_combinations) {
             flog.info("Connexion valide.")
             pool_reactive(pool)
             
-            # Requête SQL
-            filters_query <- glue_sql("
-              SELECT DISTINCT dataset, measurement_unit, gridtype 
-FROM public.shinycatch;", .con = pool)
+            # Requête SQL basée sur la sélection utilisateur pour ne pas tout télécharger si on s'intéresse aux issueddata
+            data_source <- input$data_source  
+            filters_query <- if (data_source == "issueddata") {
+              glue_sql("
+                SELECT DISTINCT dataset, measurement_unit, gridtype 
+                FROM public.issueddata;", .con = pool)
+            } else {
+              glue_sql("
+                SELECT DISTINCT dataset, measurement_unit, gridtype 
+                FROM public.shinycatch;", .con = pool)
+            }
             
             filters_data <- DBI::dbGetQuery(pool, filters_query)
             
@@ -107,5 +135,6 @@ FROM public.shinycatch;", .con = pool)
     ))
   })
 }
+
 
 

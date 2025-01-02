@@ -52,8 +52,11 @@ variable <- c("source_authority",
               "fishing_mode", 
               "measurement_unit",
               "gridtype",
+              "Issue",
+              # "measurement", 
+              # "measurement_type",
               "species"
-)
+              )
 
 flog.info(sprintf("Variables: %s", paste0(variable)))
 

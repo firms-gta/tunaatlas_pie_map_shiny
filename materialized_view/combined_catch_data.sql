@@ -1,5 +1,5 @@
 -- Recreate the materialized view
-CREATE MATERIALIZED VIEW public.shinycatch_georef AS
+CREATE MATERIALIZED VIEW public.shinycatch AS
 SELECT 
 row_number() OVER () AS ogc_fid,
 metadata.identifier AS dataset,
@@ -37,5 +37,5 @@ LEFT JOIN fishing_mode.fishing_mode_labels USING (id_fishing_mode)
 LEFT JOIN fishing_mode.fishing_mode_mapping_view ON fishing_mode_mapping_view.db_idsource = fact.id_fishing_mode
 LEFT JOIN fishing_mode.fishing_mode_labels fishing_modegroup_label ON fishing_modegroup_label.id_fishing_mode = fishing_mode_mapping_view.db_idtarget
 
-WHERE metadata.identifier LIKE '%global%' AND metadata.identifier NOT LIKE '%effort%' AND metadata.id_metadata = fact.id_metadata AND metadata.id_metadata = fact.id_metadata
+WHERE metadata.identifier LIKE '%global%' AND metadata.id_metadata = fact.id_metadata AND metadata.id_metadata = fact.id_metadata
 GROUP BY metadata.identifier, fact.id_area, area.codesource_area, "time".year,time.month, species_labels.codesource_species, gear_type_labels.codesource_gear_type ,fishing_fleet_labels.codesource_fishing_fleet, cwp_grid.geom, cwp_grid.gridtype, measurement_unit_labels.codesource_measurement_unit, fishing_mode_labels.codesource_fishing_mode;

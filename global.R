@@ -52,7 +52,7 @@ variable <- c("source_authority",
               "fishing_mode", 
               "measurement_unit",
               "gridtype",
-              "Issue",
+              "issue",
               # "measurement", 
               # "measurement_type",
               "species"

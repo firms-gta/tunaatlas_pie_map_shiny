@@ -30,16 +30,19 @@ The following dataset can be found under the following DOI. For each
 dataset a abstract is provided for more comprehensive choosing. Please
 contact us if you need more information.
 
-\`\`\`{r include=FALSE}
+<!-- ```{r include=FALSE} -->
+<!-- require(flextable) -->
+<!-- require(readr) -->
+<!-- metadata_dcmi <- as.data.frame(read_csv(here::here("DOI.csv"))) -->
+<!-- ``` -->
+<!-- ```{r echo=FALSE, results='asis'} -->
+<!-- knitr::kable(metadata_dcmi, format = "markdown", caption = "Details of Accessible Datasets") -->
+<!-- ``` -->
 
-require(flextable) require(readr)
-
-metadata_dcmi \<- as.data.frame(read_csv(here::here(“DOI.csv”)))
-
-
-    ```{r echo=FALSE, results='asis'}
-
-    kable(metadata_dcmi, format = "markdown", caption = "Details of Accessible Datasets")
+| DOI                     | Filename                                            |
+|-------------------------|-----------------------------------------------------|
+| 10.5281/zenodo.14184244 | global_catch_tunaatlasird_level2 (without_geom).csv |
+| 10.5281/zenodo.11460074 | global_catch_firms_level0_harmonized.csv            |
 
 ### Recommendations for data selection
 

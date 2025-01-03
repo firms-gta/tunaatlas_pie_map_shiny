@@ -60,9 +60,3 @@ include_child_with_lowered_headings("rmd/sidebar_explenations.Rmd")
 
 ```
 
-
-```{r echo=FALSE, results='asis'}
-
-include_child_with_lowered_headings("Dockerfile_Documentation.Rmd")
-
-```

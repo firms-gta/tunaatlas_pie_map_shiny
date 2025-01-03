@@ -32,26 +32,23 @@ contact us if you need more information.
 
 \`\`\`{r include=FALSE}
 
-require(flextable) require(dplyr)
+require(flextable) require(readr)
 
-metadata_dcmi \<-
-as.data.frame(readRDS(“\~/tunaatlas_pie_map_shiny/rmd/metadata_dcmi.rds”))
-%\>% dplyr::select(Identifier, Title, Description, SpatialCoverage,
-TemporalCoverage)
+metadata_dcmi \<- as.data.frame(read_csv(here::here(“DOI.csv”)))
 
 
     ```{r echo=FALSE, results='asis'}
 
     qflextable(metadata_dcmi)
 
-### Recommendations for Data Selection
+### Recommendations for data selection
 
 Currently, we strongly advise opting for `datasetlevel1aggregated5deg`
 data. This recommendation is based on the accessibility and the richness
 of information these data provide, making exploration and analysis both
 simpler and more rewarding.
 
-### Display of Grid Types
+### Display of grid types
 
 It is crucial to note that our application does not support the display
 of multiple grid types simultaneously. To maximize the value of the
@@ -269,7 +266,7 @@ From all the maps user is allowed to select a wkt to filter data from a
 specific region. It is needed to click on submit after this selection to
 filter the data.
 
-## Reset and Submission
+## Reset and submission
 
 Users have the option to reset the geographical selection to a global
 view or reset all filters to their default values. A submit button sends
@@ -279,222 +276,3 @@ the selected filtering criteria to update the data display.
 
 Future filters as month, trimester, gear_type, fishing_mode are to be
 added shortly.
-
-## Dockerfile Documentation
-
-### Introduction
-
-This document provides a detailed explanation of the Dockerfile used to
-set up and deploy a Shiny application. The Dockerfile includes steps for
-configuring the environment, managing dependencies, and running the
-Shiny app.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-FROM rocker/r-ver:4.2.3
-```
-
-- **Base Image**: Uses the `rocker/r-ver` base image with R version
-  4.2.3 as the foundation for the container.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
-```
-
-- **Maintainer Information**: Adds metadata about the person maintaining
-  this Dockerfile.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-RUN apt-get update && apt-get install -y \
-    sudo \
-    pandoc \
-    pandoc-citeproc \
-    libssl-dev \
-    libcurl4-gnutls-dev \
-    libxml2-dev \
-    libudunits2-dev \
-    libproj-dev \
-    libgeos-dev \
-    libgdal-dev \
-    libv8-dev \
-    libsodium-dev \
-    libsecret-1-dev \
-    git \
-    libnetcdf-dev \
-    curl \
-    libjq-dev \
-    cmake \
-    protobuf-compiler \
-    libprotobuf-dev \
-    librdf0 \
-    librdf0-dev \
-    redland-utils && \
-    apt-get clean
-```
-
-- **System Dependencies**:
-  - Installs system libraries required for building and running the
-    Shiny app.
-  - Includes dependencies like `pandoc` for document conversion,
-    `libssl-dev` for SSL/TLS, and others for geospatial and network
-    operations.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-RUN install2.r --error --skipinstalled --ncpus -1 httpuv
-```
-
-- Installs the `httpuv` R package, which is a core dependency for Shiny
-  apps.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-WORKDIR /root/tunaatlas_pie_map_shiny
-```
-
-- **Set Working Directory**: Specifies the working directory inside the
-  container.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-COPY download_GTA_data.R ./download_GTA_data.R
-RUN Rscript download_GTA_data.R
-```
-
-- **Data Preparation**:
-  - Copies a script into the container to download necessary datasets,
-    from .zip or .csv files on github.
-  - Executes the script using `Rscript`.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-RUN R -e "install.packages('remotes', repos='https://cran.r-project.org/')" 
-RUN R -e "remotes::install_version('downloader', version = '0.4', upgrade = 'never', repos = 'https://cran.r-project.org/')"
-RUN R -e "remotes::install_version('readr', version = '2.1.5', upgrade = 'never',  repos = 'https://cran.r-project.org/')"
-```
-
-- **Downloading packages for downloading big data**:
-  - Download packages to download data from DOI (around 300 MB).
-  - This can be done using other packages, it can also be integrated to
-    a script.
-
-------------------------------------------------------------------------
-
-``` dockerfile
-### Echo the DOI_CSV_HASH for debugging and to to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
-ARG DOI_CSV_HASH
-RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}"
-
-### Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
-RUN mkdir -p data 
-
-### Copy the CSV containing the data to download
-### Copy the script downloading the data from the CSV
-COPY DOI.csv ./DOI.csv 
-COPY update_data.R ./update_data.R 
-RUN Rscript update_data.R 
-```
-
-This download data from zenodo taking in input a .csv file providing
-every DOI of the dataset to be downloaded. As this operation takes time
-and bandwidth, we use a cache. For this we check the DOI.csv file and if
-it didn’t change this operation is not reran.
-
-``` dockerfile
-### ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
-ARG RENV_PATHS_ROOT=/root/.cache/R/renv
-ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
-
-### Set environment variables for renv cache
-ENV RENV_PATHS_CACHE=${RENV_PATHS_ROOT}
-
-### Echo the RENV_PATHS_ROOT for logging
-RUN echo "RENV_PATHS_ROOT=${RENV_PATHS_ROOT}"
-RUN echo "RENV_PATHS_CACHE=${RENV_PATHS_CACHE}"
-
-### Define the build argument for the hash of renv.lock to stop cache if renv.lock has changed
-ARG RENV_LOCK_HASH
-RUN echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}"
-
-### Create the renv cache directory
-RUN mkdir -p ${RENV_PATHS_ROOT}
-
-### Install renv package that records the packages used in the shiny app
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
-
-### Copy renv configuration and lockfile
-COPY renv.lock ./
-COPY renv/activate.R renv/
-COPY renv/settings.json renv/
-
-### Restore renv packages
-RUN R -e "renv::activate()" 
-### Used to setup the environment (with the path cache)
-RUN R -e "renv::restore()" 
-
-### Copy the rest of the application code
-COPY . .
-```
-
-Similarly, if renv.lock as not changed, all the downloading of the
-packages will not be done again as the cache image already contains
-them. We then activate the project to use renv and thus to load the
-corresonding packages. This action can be put at the all beginning of
-the dockerfile if the packages are the input that are the less likely to
-change. NB: Any change in the Dockerfile will remove the use of the
-cache for the next creation. The ARG RENV_LOCK_HASH corresponds in the
-yml to \$(sha256sum renv.lock \| cut -d’ ’ -f1).
-
-``` dockerfile
-### Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
-RUN Rscript ./create_or_load_default_dataset.R 
-```
-
-Those lines are specific to this shiny app but allows the loading of the
-dataset and the tidying to do it before launching the app and thus
-reduce the laucning time.
-
-``` dockerfile
-
-### Expose port 3838 for the Shiny app
-EXPOSE 3838
-
-### Create directories for configuration
-RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
-
-RUN R -e "library(sf); library(tmap); library(dplyr); library(ggplot2); library(leaflet); library(data.table)"
-```
-
-Exposure and directories are mandatory for the launching.
-
-``` dockerfile
-RUN R -e "library(sf); library(tmap); library(dplyr); library(ggplot2); library(leaflet); library(data.table)"
-```
-
-Those lines are to load big packages prior of the launching to avoid
-time consuming however it is not clear yet if it works well.
-
-Some good practice can help reducing the time of the launching of the
-application, they will be detailled in another documentation file.
-
-### Final Steps
-
-At the end of the Dockerfile: - The `CMD` statement ensures the Shiny
-app starts when the container runs:
-
-``` dockerfile
-CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
-```
-
-- The port `3838` is exposed to allow access to the app.
-
-------------------------------------------------------------------------

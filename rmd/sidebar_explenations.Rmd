@@ -30,7 +30,7 @@ A collapsible panel allows users to select one or multiple fishing fleets. An ac
 
 From all the maps user is allowed to select a wkt to filter data from a specific region. It is needed to click on submit after this selection to filter the data. 
 
-# Reset and Submission
+# Reset and submission
 
 Users have the option to reset the geographical selection to a global view or reset all filters to their default values. A submit button sends the selected filtering criteria to update the data display.
 

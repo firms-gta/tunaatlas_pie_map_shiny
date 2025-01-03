@@ -39,7 +39,7 @@ metadata_dcmi \<- as.data.frame(read_csv(here::here(“DOI.csv”)))
 
     ```{r echo=FALSE, results='asis'}
 
-    qflextable(metadata_dcmi)
+    kable(metadata_dcmi, format = "markdown", caption = "Details of Accessible Datasets")
 
 ### Recommendations for data selection
 

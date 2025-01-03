@@ -61,7 +61,7 @@ Access the app by navigating to http://localhost:3838.
 
 # Specific dataset to observe
 
-Every dataset need to be CWP format stnadard.
+Every dataset need to match the CWP standard.
 
 ## Ran on Rstudio or if you build the image locally
 

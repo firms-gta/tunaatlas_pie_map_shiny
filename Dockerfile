@@ -64,10 +64,10 @@ RUN mkdir -p data
 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
-COPY data/DOI.csv ./data/DOI.csv 
+COPY DOI.csv ./DOI.csv 
 COPY update_data.R ./update_data.R 
 
-# Run the data update script Downloading the data (cached if data/DOI.csv did not change).
+# Run the data update script Downloading the data (cached if DOI.csv did not change).
 RUN Rscript update_data.R 
 # Some errors due to the timeout may appear, for now fixed by raising the  timeout in yml file
 

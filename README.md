@@ -77,12 +77,12 @@ reliability, all data are subject to continuous verification and change.
 See “Detailed explanations on the datasets used” for further background
 and other important considerations surrounding the source data.
 
+## Main Contributors
+
 This repository has been enriched and supported by the efforts and
 contributions of multiple individuals. Their diverse skills and
 dedication have been pivotal in the development and success of this
 project.
-
-## Main Contributors
 
 - **Julien Barde**
 - **Norbert Billet**
@@ -199,7 +199,7 @@ Access the app by navigating to <http://localhost:3838>.
 
 ## Specific dataset to observe
 
-Every dataset need to be CWP format stnadard.
+Every dataset need to match the CWP standard.
 
 ### Ran on Rstudio or if you build the image locally
 

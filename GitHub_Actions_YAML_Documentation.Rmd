@@ -1,10 +1,3 @@
----
-title: "GitHub Actions YAML Documentation"
-output:
-  pdf_document: default
-  html_document: default
----
-
 # GitHub Actions YAML Documentation
 
 ## Introduction
@@ -17,7 +10,6 @@ This document provides a detailed line-by-line explanation of the GitHub Actions
 name: Build and Push Docker Image
 ```
 
-### Explanation:
 - **`name`**: Specifies the name of the workflow as it appears in the GitHub Actions UI.
 
 ---
@@ -34,7 +26,6 @@ on:
       - 'main'
 ```
 
-### Explanation:
 - **`on`**: Defines the events that trigger the workflow.
   - **`push`**:
     - **`branches`**: Runs the workflow when code is pushed to the `main` branch.
@@ -51,7 +42,6 @@ jobs:
     timeout-minutes: 140
 ```
 
-### Explanation:
 - **`jobs`**: Specifies the set of tasks to execute in the workflow.
   - **`docker`**: The name of the job.
   - **`runs-on`**: Uses the `ubuntu-latest` virtual environment to run the job.
@@ -65,7 +55,6 @@ steps:
     uses: actions/checkout@v3
 ```
 
-### Explanation:
 - **`steps`**: Defines the sequence of actions within the job.
   - **`name`**: Descriptive name for the step.
   - **`uses`**: Utilizes the `actions/checkout@v3` action to clone the repository code into the runner.
@@ -78,7 +67,6 @@ steps:
     run: echo "renv_lock_hash=$(sha256sum renv.lock | cut -d' ' -f1)" >> $GITHUB_ENV
 ```
 
-### Explanation:
 - **`name`**: Calculates a hash for the `renv.lock` file to check for changes.
 - **`id`**: Assigns an identifier (`renv_lock`) to reference this step later.
 - **`run`**: Executes a shell command to calculate the SHA256 hash of `renv.lock` and saves it as an environment variable (`$GITHUB_ENV`).
@@ -91,7 +79,6 @@ steps:
     run: echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
 ```
 
-### Explanation:
 - Similar to the `renv.lock` step but calculates the hash for `data/DOI.csv`.
 
 ---
@@ -116,7 +103,6 @@ steps:
         org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
 ```
 
-### Explanation:
 - **`name`**: Creates metadata for the Docker image.
 - **`id`**: Assigns the identifier `meta`.
 - **`uses`**: Runs the `docker/metadata-action@v4` action to generate Docker image metadata.
@@ -137,7 +123,6 @@ steps:
       password: ${{ secrets.GHCR_TOKEN }}
 ```
 
-### Explanation:
 - **`name`**: Logs into the GitHub Container Registry (GHCR).
 - **`uses`**: Utilizes the `docker/login-action@v2` to authenticate with GHCR.
 - **`with`**: Specifies login details:
@@ -147,7 +132,7 @@ steps:
 
 ---
 
-### **Set up Docker Buildx**
+## **Set up Docker Buildx**
 
 ```yaml
 - name: Set up Docker Buildx
@@ -156,7 +141,6 @@ steps:
     driver-opts: image=moby/buildkit:master,network=host
 ```
 
-#### Explanation:
 - **`name`**: Sets up Docker Buildx, a tool for building multi-platform Docker images.
 - **`uses`**: Utilizes the `docker/setup-buildx-action@v2` action to configure Buildx.
 - **`with`**:
@@ -164,33 +148,31 @@ steps:
 
 ---
 
-### **Verify Docker images**
+## **Verify Docker images**
 
 ```yaml
 - name: Verify Docker images
   run: docker images
 ```
 
-#### Explanation:
 - **`name`**: Verifies the available Docker images on the runner.
 - **`run`**: Executes the `docker images` command to list all locally available Docker images.
 
 ---
 
-### **Inspect Docker cache**
+## **Inspect Docker cache**
 
 ```yaml
 - name: Inspect Docker cache
   run: docker buildx du
 ```
 
-#### Explanation:
 - **`name`**: Inspects the Docker Buildx cache usage.
 - **`run`**: Runs the `docker buildx du` command to display detailed information about the cache, including its size and usage.
 
 ---
 
-### **Build Docker image**
+## **Build Docker image**
 
 ```yaml
 - name: Build Docker image
@@ -223,7 +205,6 @@ steps:
     fi
 ```
 
-#### Explanation:
 - **`name`**: Builds the Docker image.
 - **`if`**: Ensures the step is skipped if the commit message contains `No building docker image`.
 - **`run`**:
@@ -235,7 +216,7 @@ steps:
 
 ---
 
-### **Load Docker image**
+## **Load Docker image**
 
 ```yaml
 - name: Load Docker image
@@ -244,7 +225,6 @@ steps:
     docker load -i /tmp/docker-image.tar
 ```
 
-#### Explanation:
 - **`name`**: Loads the Docker image tar file into the runner's Docker environment.
 - **`if`**: Ensures the step runs only for:
   - `workflow_dispatch` events with the `push` action.
@@ -253,7 +233,7 @@ steps:
 
 ---
 
-### **Conditional push Docker image**
+## **Conditional push Docker image**
 
 ```yaml
 - name: Conditional push Docker image
@@ -266,7 +246,6 @@ steps:
     docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
 ```
 
-#### Explanation:
 - **`name`**: Conditionally pushes the Docker image to the registry.
 - **`if`**: Ensures the step runs only for:
   - `workflow_dispatch` events with the `push` action.

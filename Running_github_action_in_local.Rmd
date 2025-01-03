@@ -1,29 +1,35 @@
 ---
-title: "Using Docker Cache with Buildx and GHCR Locally"
-author: "Bastien Grasset, Julien Barde"
-date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-# Introduction
+# (APPENDIX) Using Docker cache with Buildx and GHCR locally {-}
+
 This guide explains how to create a docker image of a shiny application using Docker Buildx with a remote cache stored on GitHub Container Registry (GHCR) in local. It will help you replicate and debug workflows locally, including proper authentication for private caches.
 
-# For now, build the shiny app in local 
+# For now, to build the shiny app in local
 
 ```bash
 docker build -t tunaatlas_pie_map_shiny .
 ```
 
-# To run the image
+## To run the image
 
-```base
+```bash
+docker run -e tunaatlas_pie_map_shiny
+```
+
+## To run the image passing arguments inside as a DB connection:
+
+```bash
 docker run -e DB_HOST=mydbhost -e DB_PORT=5432 -e DB_NAME=mydatabase -e DB_USER_READONLY=myuser -e DB_PASSWORD=mypassword tunaatlas_pie_map_shiny
 ```
 
+# (PART\*) TO BE DONE {-}
 
-######## NOT WORKING YET IN LOCAL ONLY WITH GITHUB ACTIONS
+# Using buildx to create the docker image in local and push
 
-# Prerequisites
 Before proceeding, ensure the following tools are installed and configured on your system:
 
 - **Docker**: Install the latest version from [Docker's website](https://www.docker.com/).
@@ -34,7 +40,7 @@ docker buildx create --use
 ```
 - **GitHub Account**: With permissions to generate a Personal Access Token (PAT).
 
-# Step 1: Generate a Personal Access Token (PAT)
+## Step 1: Generate a Personal Access Token (PAT)
 
 1. Navigate to your GitHub account's **Personal Access Tokens** page: [Generate PAT](https://github.com/settings/tokens).
 2. Click **Generate new token**.
@@ -43,7 +49,7 @@ docker buildx create --use
    - `read:packages` (to pull from the cache).
 4. Save the generated token securely (you will need it later).
 
-# Step 2: Login to GHCR Locally
+## Step 2: Login to GHCR Locally
 
 Authenticate Docker with your PAT:
 
@@ -53,7 +59,7 @@ echo <YOUR_PERSONAL_ACCESS_TOKEN> | docker login ghcr.io -u <YOUR_GITHUB_USERNAM
 
 Replace `<YOUR_PERSONAL_ACCESS_TOKEN>` and `<YOUR_GITHUB_USERNAME>` with your GitHub token and username, respectively.
 
-# Step 3: Create a `event.json` File
+## Step 3: Create a `event.json` File
 
 Create a `event.json` file to store the necessary inputs for your local builds:
 
@@ -67,7 +73,6 @@ Create a `event.json` file to store the necessary inputs for your local builds:
 
 ```
 
-
 Create a secrets.env file with the connection to ghcr
 
 ```env
@@ -77,7 +82,7 @@ GHCR_TOKEN=
 
 Replace the placeholders with your actual credentials.
 
-# Step 4: Verify Docker Buildx Installation
+## Step 4: Verify Docker Buildx Installation
 
 Ensure Docker Buildx is set up and working:
 
@@ -91,10 +96,7 @@ If not, enable Buildx:
 docker buildx create --use
 ```
 
-
-##### INCOMING WORK 
-
-# Step 6: Build with Remote Cache (Incoming)
+## Step 6: Build with Remote Cache (Incoming)
 
 Use the following `docker buildx build` command to build your image with caching:
 
@@ -112,7 +114,7 @@ docker buildx build --cache-from=type=registry,ref=ghcr.io/firms-gta/tunaatlas_p
 - `--cache-to`: Updates the cache in the registry with newly built layers.
 - `-t`: Tags the built image.
 
-# Step 7: Verify Cache Usage
+## Step 7: Verify Cache Usage
 
 Check if the cache was used during the build:
 
@@ -122,24 +124,24 @@ docker buildx du
 
 This command will display the cache usage.
 
-# Step 8: Run Locally with `act`
+## Step 8: Run Locally with `act`
 
 To simulate your GitHub Actions workflow locally, use `act` with the `-s` flag for secrets:
 
 1. Install `act`:
-   ```bash
-   brew install act  # macOS
-   sudo apt install act  # Ubuntu
-   ```
+```bash
+brew install act  # macOS
+sudo apt install act  # Ubuntu
+```
 
 2. Run the workflow:
-   ```bash
-   act workflow_dispatch -s GITHUB_USERNAME=<your_github_username> -s GITHUB_TOKEN=<your_personal_access_token>
-   ```
+```bash
+act workflow_dispatch -s GITHUB_USERNAME=<your_github_username> -s GITHUB_TOKEN=<your_personal_access_token>
+```
 
 Replace the placeholders with your actual credentials.
 
-# Additional Notes
+## Additional Notes
 
 - If you encounter a `401 Unauthorized` error, verify that:
   - Your PAT has the correct permissions (`write:packages`, `read:packages`).
@@ -148,3 +150,6 @@ Replace the placeholders with your actual credentials.
 - Use public caches for simplified access if authentication is not desired.
 
 By following these steps, you can efficiently build and test Docker images locally while leveraging remote caching for faster builds.
+
+
+

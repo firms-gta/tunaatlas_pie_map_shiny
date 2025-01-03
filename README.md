@@ -46,10 +46,10 @@ contact us if you need more information.
 
 ### Recommendations for data selection
 
-Currently, we strongly advise opting for `datasetlevel1aggregated5deg`
-data. This recommendation is based on the accessibility and the richness
-of information these data provide, making exploration and analysis both
-simpler and more rewarding.
+Currently, we strongly advise opting for
+`global_catch_tunaatlasird_level2` data. This recommendation is based on
+the accessibility and the richness of information these data provide,
+making exploration and analysis both simpler and more rewarding.
 
 ### Display of grid types
 

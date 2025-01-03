@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>B Using buildx to create the docker image in local and push | Documentation-on-the-Dockerfile-and-the-YAML-for-the-Shiny-App.knit</title>
+  <meta name="description" content="" />
+  <meta name="generator" content="bookdown 0.41 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="B Using buildx to create the docker image in local and push | Documentation-on-the-Dockerfile-and-the-YAML-for-the-Shiny-App.knit" />
+  <meta property="og:type" content="book" />
+  
+  
+  <meta name="github-repo" content="https://github.com/BastienIRD" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="B Using buildx to create the docker image in local and push | Documentation-on-the-Dockerfile-and-the-YAML-for-the-Shiny-App.knit" />
+  
+  
+  
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="for-now-to-build-the-shiny-app-in-local.html"/>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Documentation</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Documentation on the Dockerfile and the YAML for the Shiny App</a></li>
+<li class="chapter" data-level="1" data-path="dockerfile-documentation.html"><a href="dockerfile-documentation.html"><i class="fa fa-check"></i><b>1</b> Dockerfile Documentation</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="dockerfile-documentation.html"><a href="dockerfile-documentation.html#introduction"><i class="fa fa-check"></i><b>1.1</b> Introduction</a></li>
+<li class="chapter" data-level="1.2" data-path="dockerfile-documentation.html"><a href="dockerfile-documentation.html#final-steps"><i class="fa fa-check"></i><b>1.2</b> Final Steps</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html"><i class="fa fa-check"></i><b>2</b> GitHub Actions YAML Documentation</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#introduction-1"><i class="fa fa-check"></i><b>2.1</b> Introduction</a></li>
+<li class="chapter" data-level="2.2" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#set-up-docker-buildx"><i class="fa fa-check"></i><b>2.2</b> <strong>Set up Docker Buildx</strong></a></li>
+<li class="chapter" data-level="2.3" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#verify-docker-images"><i class="fa fa-check"></i><b>2.3</b> <strong>Verify Docker images</strong></a></li>
+<li class="chapter" data-level="2.4" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#inspect-docker-cache"><i class="fa fa-check"></i><b>2.4</b> <strong>Inspect Docker cache</strong></a></li>
+<li class="chapter" data-level="2.5" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#build-docker-image"><i class="fa fa-check"></i><b>2.5</b> <strong>Build Docker image</strong></a></li>
+<li class="chapter" data-level="2.6" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#load-docker-image"><i class="fa fa-check"></i><b>2.6</b> <strong>Load Docker image</strong></a></li>
+<li class="chapter" data-level="2.7" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#conditional-push-docker-image"><i class="fa fa-check"></i><b>2.7</b> <strong>Conditional push Docker image</strong></a></li>
+<li class="chapter" data-level="2.8" data-path="github-actions-yaml-documentation.html"><a href="github-actions-yaml-documentation.html#conclusion"><i class="fa fa-check"></i><b>2.8</b> Conclusion</a></li>
+</ul></li>
+<li class="appendix"><span><b>Using Docker cache with Buildx and GHCR locally</b></span></li>
+<li class="chapter" data-level="A" data-path="for-now-to-build-the-shiny-app-in-local.html"><a href="for-now-to-build-the-shiny-app-in-local.html"><i class="fa fa-check"></i><b>A</b> For now, to build the shiny app in local</a>
+<ul>
+<li class="chapter" data-level="A.1" data-path="for-now-to-build-the-shiny-app-in-local.html"><a href="for-now-to-build-the-shiny-app-in-local.html#to-run-the-image"><i class="fa fa-check"></i><b>A.1</b> To run the image</a></li>
+<li class="chapter" data-level="A.2" data-path="for-now-to-build-the-shiny-app-in-local.html"><a href="for-now-to-build-the-shiny-app-in-local.html#to-run-the-image-passing-arguments-inside-as-a-db-connection"><i class="fa fa-check"></i><b>A.2</b> To run the image passing arguments inside as a DB connection:</a></li>
+</ul></li>
+<li class="part"><span><b>TO BE DONE</b></span></li>
+<li class="chapter" data-level="B" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html"><i class="fa fa-check"></i><b>B</b> Using buildx to create the docker image in local and push</a>
+<ul>
+<li class="chapter" data-level="B.1" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-1-generate-a-personal-access-token-pat"><i class="fa fa-check"></i><b>B.1</b> Step 1: Generate a Personal Access Token (PAT)</a></li>
+<li class="chapter" data-level="B.2" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-2-login-to-ghcr-locally"><i class="fa fa-check"></i><b>B.2</b> Step 2: Login to GHCR Locally</a></li>
+<li class="chapter" data-level="B.3" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-3-create-a-event.json-file"><i class="fa fa-check"></i><b>B.3</b> Step 3: Create a <code>event.json</code> File</a></li>
+<li class="chapter" data-level="B.4" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-4-verify-docker-buildx-installation"><i class="fa fa-check"></i><b>B.4</b> Step 4: Verify Docker Buildx Installation</a></li>
+<li class="chapter" data-level="B.5" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-6-build-with-remote-cache-incoming"><i class="fa fa-check"></i><b>B.5</b> Step 6: Build with Remote Cache (Incoming)</a>
+<ul>
+<li class="chapter" data-level="B.5.1" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#explanation"><i class="fa fa-check"></i><b>B.5.1</b> Explanation</a></li>
+</ul></li>
+<li class="chapter" data-level="B.6" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-7-verify-cache-usage"><i class="fa fa-check"></i><b>B.6</b> Step 7: Verify Cache Usage</a></li>
+<li class="chapter" data-level="B.7" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-8-run-locally-with-act"><i class="fa fa-check"></i><b>B.7</b> Step 8: Run Locally with <code>act</code></a></li>
+<li class="chapter" data-level="B.8" data-path="using-buildx-to-create-the-docker-image-in-local-and-push.html"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#additional-notes"><i class="fa fa-check"></i><b>B.8</b> Additional Notes</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="_blank">Published with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./"></a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="using-buildx-to-create-the-docker-image-in-local-and-push" class="section level1 hasAnchor" number="4">
+<h1><span class="header-section-number">B</span> Using buildx to create the docker image in local and push<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#using-buildx-to-create-the-docker-image-in-local-and-push" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>Before proceeding, ensure the following tools are installed and configured on your system:</p>
+<ul>
+<li><strong>Docker</strong>: Install the latest version from <a href="https://www.docker.com/">Docker’s website</a>.</li>
+<li><strong>Docker Buildx</strong>: Ensure Buildx is enabled in Docker:</li>
+</ul>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> buildx create <span class="at">--use</span></span></code></pre></div>
+<ul>
+<li><strong>GitHub Account</strong>: With permissions to generate a Personal Access Token (PAT).</li>
+</ul>
+<div id="step-1-generate-a-personal-access-token-pat" class="section level2 hasAnchor" number="4.1">
+<h2><span class="header-section-number">B.1</span> Step 1: Generate a Personal Access Token (PAT)<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-1-generate-a-personal-access-token-pat" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<ol style="list-style-type: decimal">
+<li>Navigate to your GitHub account’s <strong>Personal Access Tokens</strong> page: <a href="https://github.com/settings/tokens">Generate PAT</a>.</li>
+<li>Click <strong>Generate new token</strong>.</li>
+<li>Set the following scopes:
+<ul>
+<li><code>write:packages</code> (to push to the cache).</li>
+<li><code>read:packages</code> (to pull from the cache).</li>
+</ul></li>
+<li>Save the generated token securely (you will need it later).</li>
+</ol>
+</div>
+<div id="step-2-login-to-ghcr-locally" class="section level2 hasAnchor" number="4.2">
+<h2><span class="header-section-number">B.2</span> Step 2: Login to GHCR Locally<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-2-login-to-ghcr-locally" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Authenticate Docker with your PAT:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="op">&lt;</span>YOUR_PERSONAL_ACCESS_TOKEN<span class="op">&gt;</span> <span class="kw">|</span> <span class="ex">docker</span> login ghcr.io <span class="at">-u</span> <span class="op">&lt;</span>YOUR_GITHUB_USERNAME<span class="op">&gt;</span> --password-stdin</span></code></pre></div>
+<p>Replace <code>&lt;YOUR_PERSONAL_ACCESS_TOKEN&gt;</code> and <code>&lt;YOUR_GITHUB_USERNAME&gt;</code> with your GitHub token and username, respectively.</p>
+</div>
+<div id="step-3-create-a-event.json-file" class="section level2 hasAnchor" number="4.3">
+<h2><span class="header-section-number">B.3</span> Step 3: Create a <code>event.json</code> File<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-3-create-a-event.json-file" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Create a <code>event.json</code> file to store the necessary inputs for your local builds:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb33-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb33-2"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;inputs&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb33-3"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb33-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;base_branch&quot;</span><span class="fu">:</span> <span class="st">&quot;main&quot;</span><span class="fu">,</span></span>
+<span id="cb33-4"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb33-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;action&quot;</span><span class="fu">:</span> <span class="st">&quot;build-no-cache&quot;</span></span>
+<span id="cb33-5"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb33-6"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Create a secrets.env file with the connection to ghcr</p>
+<pre class="env"><code>GITHUB_ACTOR=
+GHCR_TOKEN=</code></pre>
+<p>Replace the placeholders with your actual credentials.</p>
+</div>
+<div id="step-4-verify-docker-buildx-installation" class="section level2 hasAnchor" number="4.4">
+<h2><span class="header-section-number">B.4</span> Step 4: Verify Docker Buildx Installation<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-4-verify-docker-buildx-installation" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Ensure Docker Buildx is set up and working:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> buildx version</span></code></pre></div>
+<p>If not, enable Buildx:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> buildx create <span class="at">--use</span></span></code></pre></div>
+</div>
+<div id="step-6-build-with-remote-cache-incoming" class="section level2 hasAnchor" number="4.5">
+<h2><span class="header-section-number">B.5</span> Step 6: Build with Remote Cache (Incoming)<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-6-build-with-remote-cache-incoming" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Use the following <code>docker buildx build</code> command to build your image with caching:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> buildx build <span class="at">--cache-from</span><span class="op">=</span>type=registry,ref=ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache:latest <span class="dt">\</span></span>
+<span id="cb37-2"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb37-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">--cache-to</span><span class="op">=</span>type=registry,ref=ghcr.io/firms-gta/tunaatlas_pie_map_shiny-cache:latest,mode=max <span class="dt">\</span></span>
+<span id="cb37-3"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb37-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">--progress</span><span class="op">=</span>plain <span class="at">-t</span> tunaatlas_pie_map_shiny .</span></code></pre></div>
+<ul>
+<li>Replace <code>firms-gta</code> with your GitHub repository.</li>
+<li>Replace <code>tunaatlas_pie_map_shiny</code> with your desired cache name.</li>
+</ul>
+<div id="explanation" class="section level3 hasAnchor" number="4.5.1">
+<h3><span class="header-section-number">B.5.1</span> Explanation<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#explanation" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<ul>
+<li><code>--cache-from</code>: Pulls cached layers from the remote registry.</li>
+<li><code>--cache-to</code>: Updates the cache in the registry with newly built layers.</li>
+<li><code>-t</code>: Tags the built image.</li>
+</ul>
+</div>
+</div>
+<div id="step-7-verify-cache-usage" class="section level2 hasAnchor" number="4.6">
+<h2><span class="header-section-number">B.6</span> Step 7: Verify Cache Usage<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-7-verify-cache-usage" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Check if the cache was used during the build:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> buildx du</span></code></pre></div>
+<p>This command will display the cache usage.</p>
+</div>
+<div id="step-8-run-locally-with-act" class="section level2 hasAnchor" number="4.7">
+<h2><span class="header-section-number">B.7</span> Step 8: Run Locally with <code>act</code><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#step-8-run-locally-with-act" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>To simulate your GitHub Actions workflow locally, use <code>act</code> with the <code>-s</code> flag for secrets:</p>
+<ol style="list-style-type: decimal">
+<li>Install <code>act</code>:</li>
+</ol>
+<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install act  <span class="co"># macOS</span></span>
+<span id="cb39-2"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install act  <span class="co"># Ubuntu</span></span></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li>Run the workflow:</li>
+</ol>
+<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="ex">act</span> workflow_dispatch <span class="at">-s</span> GITHUB_USERNAME=<span class="op">&lt;</span>your_github_username<span class="op">&gt;</span> -s GITHUB_TOKEN=<span class="op">&lt;</span>your_personal_access_token<span class="op">&gt;</span></span></code></pre></div>
+<p>Replace the placeholders with your actual credentials.</p>
+</div>
+<div id="additional-notes" class="section level2 hasAnchor" number="4.8">
+<h2><span class="header-section-number">B.8</span> Additional Notes<a href="using-buildx-to-create-the-docker-image-in-local-and-push.html#additional-notes" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<ul>
+<li>If you encounter a <code>401 Unauthorized</code> error, verify that:
+<ul>
+<li>Your PAT has the correct permissions (<code>write:packages</code>, <code>read:packages</code>).</li>
+<li>Docker is logged in to GHCR (<code>docker login ghcr.io</code>).</li>
+</ul></li>
+<li>Use public caches for simplified access if authentication is not desired.</li>
+</ul>
+<p>By following these steps, you can efficiently build and test Docker images locally while leveraging remote caching for faster builds.</p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="for-now-to-build-the-shiny-app-in-local.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": null,
+"text": null
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["Documentation on the Dockerfile and the YAML for the Shiny App.pdf", "Documentation on the Dockerfile and the YAML for the Shiny App.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
+"toc": {
+"collapse": "subsection",
+"toc_depth": 2
+}
+});
+});
+</script>
+
+</body>
+
+</html>

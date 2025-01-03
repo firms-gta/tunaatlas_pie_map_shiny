@@ -64,7 +64,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   flog.info("Loading data ")
   # Read the DOI CSV file
   
-  DOI <- read_csv('data/DOI.csv')
+  DOI <- read_csv(here::here('DOI.csv'))
   source(here::here("update_data.R"))
   source(here::here("R/load_data.R"))
   

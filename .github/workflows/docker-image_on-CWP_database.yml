@@ -43,8 +43,8 @@ jobs:
       - name: Calculate DOI.csv hash
         id: doi_csv
         run: |
-          if [ -f data/DOI.csv ]; then
-            echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
+          if [ -f DOI.csv ]; then
+            echo "doi_csv_hash=$(sha256sum DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
           else
             echo "doi_csv_hash=default" >> $GITHUB_ENV
           fi

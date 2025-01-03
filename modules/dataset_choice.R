@@ -63,7 +63,7 @@ dataset_choice_server <- function(id, filters_combinations, default_dataset, def
     
     # Charger les données DOI une fois
     doi_data <- tryCatch(
-      read_csv("data/DOI.csv", show_col_types = FALSE),
+      read_csv("DOI.csv", show_col_types = FALSE),
       error = function(e) {
         flog.error("Erreur lors de la lecture du fichier DOI.csv : %s", e$message)
         data.frame(Filename = character())

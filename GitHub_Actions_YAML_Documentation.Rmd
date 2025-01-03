@@ -76,10 +76,10 @@ steps:
 ```yaml
   - name: Calculate DOI.csv hash
     id: doi_csv
-    run: echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
+    run: echo "doi_csv_hash=$(sha256sum DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
 ```
 
-- Similar to the `renv.lock` step but calculates the hash for `data/DOI.csv`.
+- Similar to the `renv.lock` step but calculates the hash for `DOI.csv`.
 
 ---
 

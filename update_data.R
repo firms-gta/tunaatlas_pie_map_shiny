@@ -3,7 +3,7 @@ require(utils)
 require(downloader)
 
 # Read the DOI file
-DOI <- read_csv("data/DOI.csv")
+DOI <- read_csv("DOI.csv")
 
 # Set a global timeout for downloads
 options(timeout = 6000)

@@ -359,44 +359,71 @@ display: none;
 Environment (VRE), which includes an RStudio server for developers and a
 Shiny proxy server for hosting applications. The VRE aims to simplify
 data exploration through analytical indicators without the need for
-delving into source code.</p>
+delving into source code. To access this inrastructure you can create an
+account into <a href="https://blue-cloud.d4science.org/group/globalfisheriesatlas" class="uri">https://blue-cloud.d4science.org/group/globalfisheriesatlas</a>
+and then access the shiny application.</p>
 </div>
 <div id="running-the-application-outside-the-bluecloud-infrastructure" class="section level1">
 <h1>Running the application outside the BlueCloud Infrastructure</h1>
-<div id="prerequisites" class="section level2">
-<h2>Prerequisites</h2>
-<p>A connection to a populated database with Global Tuna Atlas data and
-metadata is required. Instructions for database creation or connection
-setup are available on the project’s GitHub page. The connection
-identifiers must be provided through a connection_tunaatlas_inv.txt file
-copied in the repository (or copied in the docker if using the docker
-image).</p>
-</div>
 <div id="running-from-rstudio" class="section level2">
 <h2>Running from RStudio</h2>
-<p>Launch the <code>app.R</code> file in RStudio. The app uses the
-<code>renv</code> package for package management. Ensure compatibility
-with the R version specified in the lockfile to avoid loading
-errors.</p>
+<p>Run</p>
+<pre class="r"><code>shiny::runApp()</code></pre>
+<p>The app uses the <code>renv</code> package for package management.
+Ensure compatibility with the R version specified in the lockfile to
+avoid loading errors.</p>
+<div id="to-access-the-total-available-dataset-product-of-the-gta" class="section level3">
+<h3>To access the total available dataset product of the GTA</h3>
+<p>A connection to a populated database with Global Tuna Atlas data and
+metadata is required but no mandatory to observe DOI data. Instructions
+for database creation or connection setup are available on the project’s
+GitHub page. The connection identifiers must be provided through a
+connection_tunaatlas_inv.txt file copied in the repository (or copied in
+the docker if using the docker image).</p>
 </div>
-<div id="running-with-docker" class="section level2">
-<h2>Running with Docker</h2>
+</div>
+<div id="running-with-docker-recommended" class="section level2">
+<h2>Running with Docker (recommended)</h2>
 <div id="pull-and-run" class="section level3">
 <h3>Pull and Run</h3>
+<p>Pullling the image and running it</p>
 <pre class="sh"><code>
 docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
-docker run -p 3838:3838 -v /path/to/your/connection_tunaatlas_inv.txt:connection_tunaatlas_inv.txt ghcr.io/firms-gta/tunaatlas_pie_map_shiny_cwp_database:latdocker image prune
+docker run -p 3838:3838 -v ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest 
 </code></pre>
+</div>
+<div id="to-run-the-image-passing-arguments-inside-as-a-db-connection" class="section level3">
+<h3>To run the image passing arguments inside as a DB connection</h3>
+<p>If you have credential to connect the infrastructure DB or if you
+have replicated the database and want to access it with the shiny
+application</p>
+<pre class="bash"><code>docker run -e DB_HOST=mydbhost -e DB_PORT=5432 -e DB_NAME=mydatabase -e DB_USER_READONLY=myuser -e DB_PASSWORD=mypassword tunaatlas_pie_map_shiny</code></pre>
 <p>Access the app by navigating to <a href="http://localhost:3838" class="uri">http://localhost:3838</a> in your browser.</p>
 </div>
 <div id="build-and-run-locally" class="section level3">
 <h3>Build and Run Locally</h3>
-<pre class="sh"><code>
+<p>If you have cloned the github repository in local you can then:</p>
+<pre class="sh"><code>cd the_repo_where_you_pulled_the_shiny_app
 docker build -t my-shiny-app .
-docker run -p 3838:3838 -v /path/to/your/connection_tunaatlas_inv.txt:/root/tunaatlas_pie_map_shiny/connection_tunaatlas_inv.txt my-shiny-app
+docker run -p 3838:3838 -v my-shiny-app
 </code></pre>
 <p>Access the app by navigating to <a href="http://localhost:3838" class="uri">http://localhost:3838</a>.</p>
 </div>
+</div>
+</div>
+<div id="specific-dataset-to-observe" class="section level1">
+<h1>Specific dataset to observe</h1>
+<p>Every dataset need to match the CWP standard.</p>
+<div id="ran-on-rstudio-or-if-you-build-the-image-locally" class="section level2">
+<h2>Ran on Rstudio or if you build the image locally</h2>
+<p>Create in you repo the default_dataset.qs file wihch contains your
+dataset in CWP standard format and in .qs format. Then run the
+application or create the docker image</p>
+</div>
+<div id="if-you-pull-the-docker-image" class="section level2">
+<h2>If you pull the docker image</h2>
+<p>No easy way found yet. We recommend pulling the repository and
+building the docker image in local (see )</p>
 </div>
 </div>
 

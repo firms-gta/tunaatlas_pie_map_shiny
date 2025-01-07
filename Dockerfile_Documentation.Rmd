@@ -2,7 +2,9 @@
 
 ## Introduction
 
-This document provides a detailed explanation of the Dockerfile used to set up and deploy a Shiny application. The Dockerfile includes steps for configuring the environment, managing dependencies, and running the Shiny app.
+This document provides a detailed explanation of the Dockerfile used to set up and deploy a Shiny application. The Dockerfile includes steps for configuring the environment, managing dependencies, and running the Shiny app. This Dockerfile can be used either on its own or in conjunction with the .yml file designed for the CI/CD pipeline on GitHub.
+
+This Documentation is based on this Dockerfile: https://github.com/firms-gta/tunaatlas_pie_map_shiny/blob/main/Dockerfile, if you want to reproduce something similar, make sure to update the r-ver the label maintaner and the working directory.
 
 ---
 
@@ -10,7 +12,7 @@ This document provides a detailed explanation of the Dockerfile used to set up a
 FROM rocker/r-ver:4.2.3
 ```
 
-- **Base Image**: Uses the `rocker/r-ver` base image with R version 4.2.3 as the foundation for the container.
+- **Base Image**: Uses the `rocker/r-ver` base image with R version 4.2.3 as the foundation for the container. (use the version of R you've been deploying the app on)
 
 ---
 
@@ -53,6 +55,7 @@ RUN apt-get update && apt-get install -y \
 - **System Dependencies**:
   - Installs system libraries required for building and running the Shiny app.
   - Includes dependencies like `pandoc` for document conversion, `libssl-dev` for SSL/TLS, and others for geospatial and network operations.
+If you want lighter app you will have to reduce the system libraries used, this can be done by removing some and testing the app. If you want to do that I recommend doing it in local rather than with the github CI/CD pipeline.
 
 ---
 
@@ -81,6 +84,8 @@ RUN Rscript download_GTA_data.R
   - Copies a script into the container to download necessary datasets, from .zip or .csv files on github.
   - Executes the script using `Rscript`.
 
+This step concern the downloading of data from zip on github. As the script is the less likely to change, this step is at the beggining of the Dockerfile, thus, it will be cached when building.
+
 ---
 
 ```dockerfile
@@ -93,13 +98,15 @@ RUN R -e "remotes::install_version('readr', version = '2.1.5', upgrade = 'never'
 - **Downloading packages for downloading big data**:
   - Download packages to download data from DOI (around 300 MB).
   - This can be done using other packages, it can also be integrated to a script.
+  
+This step is also one of the less likely to change, and the less 
 
 ---
 
 ```dockerfile
 ## Echo the DOI_CSV_HASH for debugging and to to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
 ARG DOI_CSV_HASH
-RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}"
+RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
 
 ## Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
 RUN mkdir -p data 
@@ -111,7 +118,9 @@ COPY update_data.R ./update_data.R
 RUN Rscript update_data.R 
 ```
 
-This download data from zenodo taking in input a .csv file providing every DOI of the dataset to be downloaded. As this operation takes time and bandwidth, we use a cache. For this we check the DOI.csv file and if it didn't change this operation is not reran.
+This download data from zenodo taking in input a .csv file providing every DOI of the dataset to be downloaded. As this operation takes time and bandwidth, it is strongly recommended to use the cache. For this we check the DOI.csv file and if it didn't change this operation is not reran. To strongly invalidate or validate the cache we choose to save the hash in a local file as just echoing showed some limitations.
+
+NB: It is not yet clear if the renv.lock is changing less than the DOI.csv in the developpement of our shiny app, both of this steps are bandwith and time consuming. Once the DOI.csv is set and is supposed not to change it is passed before the renv.lock hashing.
 
 ```dockerfile
 ## ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
@@ -127,7 +136,10 @@ RUN echo "RENV_PATHS_CACHE=${RENV_PATHS_CACHE}"
 
 ## Define the build argument for the hash of renv.lock to stop cache if renv.lock has changed
 ARG RENV_LOCK_HASH
-RUN echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}"
+RUN if [ -z "${RENV_LOCK_HASH}" ]; then \
+      export RENV_LOCK_HASH=$(sha256sum renv.lock | cut -d' ' -f1); \
+    fi && \
+    echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}" > /tmp/renv_lock_hash.txt
 
 ## Create the renv cache directory
 RUN mkdir -p ${RENV_PATHS_ROOT}
@@ -157,7 +169,7 @@ The ARG RENV_LOCK_HASH corresponds in the yml to $(sha256sum renv.lock | cut -d'
 RUN Rscript ./create_or_load_default_dataset.R 
 ```
 
-Those lines are specific to this shiny app but allows the loading of the dataset and the tidying to do it before launching the app and thus reduce the laucning time.
+Those lines are very specific to this shiny app, they allow the loading of the dataset and the tidying before launching the app and thus reduce the launching time. They now include as well the removing of some not-usefull-anymore dataset to reduce the size of the Dockerimage.
 
 ```dockerfile
 
@@ -176,9 +188,9 @@ Exposure and directories are mandatory for the launching.
 RUN R -e "library(sf); library(tmap); library(dplyr); library(ggplot2); library(leaflet); library(data.table)"
 ```
 
-Those lines are to load big packages prior of the launching to avoid time consuming however it is not clear yet if it works well.
+Those lines are to load big packages prior of the launching to avoid time consuming however it is not clear yet if it works well. #Update it does not.
 
-Some good practice can help reducing the time of the launching of the application, they will be detailled in another documentation file.
+Some good practice can help reducing the time of the launching of the application, as reducing the packages used.
 
 ## Final Steps
 

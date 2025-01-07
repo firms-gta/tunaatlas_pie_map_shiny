@@ -50,6 +50,9 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       flog.info("Palette: %s", la_palette)
       la_palette
     })
+    # pas beosin de la sortir du module, c'est très rapide environ 19ms 
+    
+    
     
     output$pie_map <- renderLeaflet({
       flog.info("Rendering pie map")

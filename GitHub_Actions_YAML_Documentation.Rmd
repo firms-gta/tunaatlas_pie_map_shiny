@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document provides a detailed line-by-line explanation of the GitHub Actions workflow for building and deploying a Docker image for a Shiny app.
+This document provides a detailed line-by-line explanation of the GitHub Actions workflow for building and deploying a Docker image for a Shiny app. This documentation is based on this .yml https://github.com/firms-gta/tunaatlas_pie_map_shiny/blob/main/.github/workflows/docker-image_on-CWP_database.yml and linked to this Dockerfile https://github.com/firms-gta/tunaatlas_pie_map_shiny/blob/main/Dockerfile for this specific project. Make sure to apply the changes needed to reproduce this pipeline for your own projects. 
 
 ---
 
@@ -56,8 +56,9 @@ steps:
 ```
 
 - **`steps`**: Defines the sequence of actions within the job.
-  - **`name`**: Descriptive name for the step.
-  - **`uses`**: Utilizes the `actions/checkout@v3` action to clone the repository code into the runner.
+
+- **`name`**: Descriptive name for the step.
+- **`uses`**: Utilizes the `actions/checkout@v3` action to clone the repository code into the runner.
 
 ---
 
@@ -88,7 +89,7 @@ steps:
     id: meta
     uses: docker/metadata-action@v4
     with:
-      images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny_CWP_database
+      images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny
       flavor: latest=true
       tags: |
         type=ref,event=branch
@@ -127,7 +128,7 @@ steps:
 - **`uses`**: Utilizes the `docker/login-action@v2` to authenticate with GHCR.
 - **`with`**: Specifies login details:
   - **`registry`**: Target registry (`ghcr.io`).
-  - **`username`**: Uses the GitHub actor (user or bot triggering the workflow).
+  - **`username`**: Uses the GitHub actor (user triggering the workflow).
   - **`password`**: Uses the `GHCR_TOKEN` secret for authentication.
 
 ---
@@ -141,10 +142,10 @@ steps:
     driver-opts: image=moby/buildkit:master,network=host
 ```
 
-- **`name`**: Sets up Docker Buildx, a tool for building multi-platform Docker images.
+- **`name`**: Sets up Docker Buildx, a tool for building multi-platform Docker images. (https://www.docker.com/blog/how-to-rapidly-build-multi-architecture-images-with-buildx/)
 - **`uses`**: Utilizes the `docker/setup-buildx-action@v2` action to configure Buildx.
 - **`with`**:
-  - **`driver-opts`**: Configures Buildx with a custom driver. The `image=moby/buildkit:master` specifies the Buildkit image, and `network=host` sets the network mode.
+  - **`driver-opts`**: Configures Buildx with a custom driver. The `image=moby/buildkit:master` specifies the Buildkit image, and `network=host` sets the network mode. (https://docs.docker.com/reference/cli/docker/buildx/create/)
 
 ---
 
@@ -260,6 +261,6 @@ steps:
 
 ## Conclusion
 
-This section of the YAML file automates the process of setting up Docker Buildx, building and managing Docker images, and pushing them to a registry, enabling a robust CI/CD pipeline for containerized applications.
+This YAML file automates the process of setting up Docker Buildx, building and managing Docker images, and pushing them to a registry, enabling a robust CI/CD pipeline for containerized applications. Make sure to have a repository with a Dockerfile creating the image and to save your .yml in a folder .github/workflows in your repository.
 
 ---

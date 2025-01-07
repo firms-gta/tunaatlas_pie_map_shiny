@@ -94,7 +94,7 @@ dataset_and_db_server <- function(id, filters_combinations, default_dataset, def
         db_results$status <- "Connecting to the database..."
         if (file.exists("connection_tunaatlas_inv.txt")) {
           try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
-          
+        }
           db_host <- Sys.getenv("DB_HOST")
           db_port <- as.integer(Sys.getenv("DB_PORT"))
           db_name <- Sys.getenv("DB_NAME")
@@ -127,9 +127,6 @@ dataset_and_db_server <- function(id, filters_combinations, default_dataset, def
           }, error = function(e) {
             db_results$status <- paste("Connection error:", e$message)
           })
-        } else {
-          db_results$status <- "Configuration file missing: 'connection_tunaatlas_inv.txt'."
-        }
       }
     })
     

@@ -4,7 +4,7 @@ Detailed explenation on filterings, variables and metadatas
 # Application overview
 
 Please cite this work if you reuse it or find it useful :
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13685479.svg)](https://doi.org/10.5281/zenodo.13685479)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14025108.svg)](https://doi.org/10.5281/zenodo.14025108)
 
 This Shiny application, part of the GlobalTunaAtlas project, is designed
 to facilitate the exploration and analysis of worldwide tuna fisheries

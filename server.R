@@ -95,7 +95,7 @@ server <- function(input, output, session) {
     } else {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
-        qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
+        qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
           dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
           measurement_unit == "no" ~ "Number of fish",
@@ -223,7 +223,7 @@ server <- function(input, output, session) {
       select_input <- paste0("select_", variable)
       unique_values <- unique(final_filtered_data[[variable]])
       flog.info(sprintf("Filtering by %s", variable))
-      if (!is.null(input[[select_input]]) && length(input[[select_input]]) > 0) {
+      if (!is.null(input[[select_input]]) && length(input[[select_input]]) > 0 && input[[select_input]] != "NA") {
         flog.info("Applying filter for %s", variable)
         final_filtered_data <- final_filtered_data %>%
           dplyr::filter(!!sym(variable) %in% input[[select_input]])

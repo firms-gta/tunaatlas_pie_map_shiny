@@ -4,18 +4,18 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Documentation on the Dockerfile and the YAML for the Shiny App</title>
+  <title>Chapter 4 Deploying Docker Images on Blue-Cloud Infrastructure | Documentation on the Dockerfile and the YAML for the Shiny App</title>
   <meta name="description" content="First version, update incoming" />
   <meta name="generator" content="bookdown 0.41 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Documentation on the Dockerfile and the YAML for the Shiny App" />
+  <meta property="og:title" content="Chapter 4 Deploying Docker Images on Blue-Cloud Infrastructure | Documentation on the Dockerfile and the YAML for the Shiny App" />
   <meta property="og:type" content="book" />
   
   <meta property="og:description" content="First version, update incoming" />
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Documentation on the Dockerfile and the YAML for the Shiny App" />
+  <meta name="twitter:title" content="Chapter 4 Deploying Docker Images on Blue-Cloud Infrastructure | Documentation on the Dockerfile and the YAML for the Shiny App" />
   
   <meta name="twitter:description" content="First version, update incoming" />
   
@@ -30,8 +30,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
+<link rel="prev" href="github-actions-yaml-documentation.html"/>
 
-<link rel="next" href="dockerfile-documentation.html"/>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -187,31 +187,94 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="header">
-<h1 class="title">Documentation on the Dockerfile and the YAML for the Shiny App</h1>
-<p class="author"><em>Bastien Grasset</em></p>
-<p class="date"><em>2025-01-08</em></p>
-</div>
-<div id="introduction" class="section level1 hasAnchor" number="1">
-<h1><span class="header-section-number">Chapter 1</span> Introduction<a href="index.html#introduction" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<p>Welcome to the documentation for the Dockerfile and YAML used in the Shiny App project.</p>
-<p>This book covers the following:</p>
+<div id="deploying-docker-images-on-blue-cloud-infrastructure" class="section level1 hasAnchor" number="4">
+<h1><span class="header-section-number">Chapter 4</span> Deploying Docker Images on Blue-Cloud Infrastructure<a href="deploying-docker-images-on-blue-cloud-infrastructure.html#deploying-docker-images-on-blue-cloud-infrastructure" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<div id="introduction-3" class="section level2 hasAnchor" number="4.1">
+<h2><span class="header-section-number">4.1</span> Introduction<a href="deploying-docker-images-on-blue-cloud-infrastructure.html#introduction-3" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>This document explains how to create a ticket for deploying Docker images created for Shiny applications on the Blue-Cloud infrastructure. The process involves specifying the necessary details in the ticket so the infrastructure team can handle the deployment efficiently.</p>
+<hr />
+<div id="preliminary-steps" class="section level3 hasAnchor" number="4.1.1">
+<h3><span class="header-section-number">4.1.1</span> Preliminary Steps<a href="deploying-docker-images-on-blue-cloud-infrastructure.html#preliminary-steps" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>Before creating the ticket, ensure the following steps are completed:</p>
 <ol style="list-style-type: decimal">
-<li><strong>Dockerfile documentation</strong>: Details on the Docker configuration and usage.</li>
-<li><strong>GitHub actions YAML</strong>: An explanation of the CI/CD workflow YAML file.</li>
-<li><strong>Infrastructure deployment documentation</strong>: How to create a ticket for deploying Docker images created for Shiny applications on the Blue-Cloud infrastructure.</li>
-<li><strong>Running GitHub Actions Locally</strong>: Steps for executing GitHub Actions locally for testing. (incoming)</li>
+<li><strong>Pull the Docker Image</strong>:
+Verify that the Docker image can be pulled successfully from the container registry:</li>
 </ol>
-<p>Use the table of contents on the left to navigate the sections.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/username/my_shiny_app:latest</span></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li><strong>Test the Image Locally</strong>:
+Run the Docker image locally to confirm it works as expected:</li>
+</ol>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-p</span> 3838:3838 ghcr.io/username/my_shiny_app:latest</span></code></pre></div>
+<p>Access the app at <code>http://localhost:3838</code> and validate its functionality.</p>
+<hr />
+</div>
+<div id="information-to-include-in-the-ticket" class="section level3 hasAnchor" number="4.1.2">
+<h3><span class="header-section-number">4.1.2</span> Information to include in the ticket<a href="deploying-docker-images-on-blue-cloud-infrastructure.html#information-to-include-in-the-ticket" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<p>When creating a ticket to deploy a Shiny application as a Docker image, ensure the following details are included:</p>
+<div id="docker-image-details" class="section level4 hasAnchor" number="4.1.2.1">
+<h4><span class="header-section-number">4.1.2.1</span> 1. <strong>Docker image details</strong><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#docker-image-details" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<ul>
+<li><strong>Image Name</strong>: Provide the full name and tag of the Docker image (e.g., <code>ghcr.io/username/my_shiny_app:latest</code>).</li>
+<li><strong>Container Registry URL</strong>: Include the URL where the image is hosted (e.g., GitHub Container Registry).</li>
+</ul>
+</div>
+<div id="application-information" class="section level4 hasAnchor" number="4.1.2.2">
+<h4><span class="header-section-number">4.1.2.2</span> 2. <strong>Application information</strong><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#application-information" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<ul>
+<li><strong>App Name</strong>: A descriptive name for the Shiny application.</li>
+<li><strong>Display Name</strong>: The name as it should appear in the VRE.</li>
+<li><strong>Description</strong>: A brief summary of the app’s purpose and functionality.</li>
+</ul>
+</div>
+<div id="run-command" class="section level4 hasAnchor" number="4.1.2.3">
+<h4><span class="header-section-number">4.1.2.3</span> 3. <strong>Run command</strong><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#run-command" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>Provide the exact Docker run command or equivalent details, such as:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">CMD</span> [<span class="st">&quot;R&quot;</span>, <span class="st">&quot;-e&quot;</span>, <span class="st">&quot;shiny::runApp(&#39;/root/my_shiny_app&#39;, host=&#39;0.0.0.0&#39;, port=3838&#39;)&quot;</span>]</span></code></pre></div>
+</div>
+<div id="resource-requirements" class="section level4 hasAnchor" number="4.1.2.4">
+<h4><span class="header-section-number">4.1.2.4</span> 5. <strong>Resource requirements</strong><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#resource-requirements" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>Mention any specific resource requirements for the application, such as:
+- Memory limits
+- CPU requirements.</p>
+</div>
+<div id="testing-and-validation" class="section level4 hasAnchor" number="4.1.2.5">
+<h4><span class="header-section-number">4.1.2.5</span> 6. <strong>Testing and validation</strong><a href="deploying-docker-images-on-blue-cloud-infrastructure.html#testing-and-validation" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<p>Indicate if the image has been tested locally and confirm that it is functional:</p>
+<hr />
+</div>
+</div>
+</div>
+<div id="example-ticket" class="section level2 hasAnchor" number="4.2">
+<h2><span class="header-section-number">4.2</span> Example Ticket<a href="deploying-docker-images-on-blue-cloud-infrastructure.html#example-ticket" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Below is an example of how to structure the ticket:</p>
+<p><strong>Request for Shiny App Deployment</strong></p>
+<ul>
+<li><strong>Docker Image</strong>: <code>ghcr.io/username/my_shiny_app:latest</code></li>
+<li><strong>Container Registry URL</strong>: <code>https://ghcr.io/username/my_shiny_app</code></li>
+<li><strong>App Name</strong>: My Shiny App</li>
+<li><strong>Display Name</strong>: My Shiny App</li>
+<li><strong>Description</strong>: This app provides a visual analysis of XYZ data.</li>
+<li><strong>Run Command</strong>: CMD [“R”, “-e”, “shiny::runApp(‘/root/my_shiny_app’, host=‘0.0.0.0’, port=3838’)”]</li>
+<li><strong>Application Path</strong>: <code>/root/my_shiny_app</code></li>
+<li><strong>Resource Requirements</strong>: 2 GB RAM, 1 CPU</li>
+<li><strong>Testing</strong>: The app has been tested locally using:</li>
+</ul>
+<hr />
+</div>
+<div id="conclusion-1" class="section level2 hasAnchor" number="4.3">
+<h2><span class="header-section-number">4.3</span> Conclusion<a href="deploying-docker-images-on-blue-cloud-infrastructure.html#conclusion-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>By including all the necessary information in your ticket, you can ensure the infrastructure team has what they need to deploy your Shiny app efficiently and correctly.</p>
 
+</div>
 </div>
             </section>
 
           </div>
         </div>
       </div>
+<a href="github-actions-yaml-documentation.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
 
-<a href="dockerfile-documentation.html" class="navigation navigation-next navigation-unique" aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

@@ -1,0 +1,80 @@
+# Deploying Docker Images on Blue-Cloud Infrastructure
+
+## Introduction
+
+This document explains how to create a ticket for deploying Docker images created for Shiny applications on the Blue-Cloud infrastructure. The process involves specifying the necessary details in the ticket so the infrastructure team can handle the deployment efficiently.
+
+---
+
+### Preliminary Steps
+
+Before creating the ticket, ensure the following steps are completed:
+
+1. **Pull the Docker Image**:
+  Verify that the Docker image can be pulled successfully from the container registry:
+   
+```bash
+docker pull ghcr.io/username/my_shiny_app:latest
+```
+
+2. **Test the Image Locally**:
+Run the Docker image locally to confirm it works as expected:
+   
+```bash
+docker run --rm -p 3838:3838 ghcr.io/username/my_shiny_app:latest
+```
+
+Access the app at `http://localhost:3838` and validate its functionality.
+
+---
+
+### Information to include in the ticket
+
+When creating a ticket to deploy a Shiny application as a Docker image, ensure the following details are included:
+
+#### **Docker image details**
+- **Image Name**: Provide the full name and tag of the Docker image (e.g., `ghcr.io/username/my_shiny_app:latest`).
+- **Container Registry URL**: Include the URL where the image is hosted (e.g., GitHub Container Registry).
+
+#### **Application information**
+- **App Name**: A descriptive name for the Shiny application.
+- **Display Name**: The name as it should appear in the VRE.
+- **Description**: A brief summary of the app's purpose and functionality.
+
+#### **Run command**
+Provide the exact Docker run command or equivalent details, such as:
+
+```bash
+CMD ["R", "-e", "shiny::runApp('/root/my_shiny_app', host='0.0.0.0', port=3838')"]
+```
+
+#### **Resource requirements**
+Mention any specific resource requirements for the application, such as:
+- Memory limits
+- CPU requirements.
+
+#### **Testing and validation**
+Indicate if the image has been tested locally and confirm that it is functional:
+
+---
+
+## Example Ticket
+
+Below is an example of how to structure the ticket:
+
+**Request for Shiny App Deployment**
+
+- **Docker Image**: `ghcr.io/username/my_shiny_app:latest`
+- **Container registry URL**: `https://ghcr.io/username/my_shiny_app`
+- **App name**: my_shiny_app
+- **Display name**: My Shiny Applciation
+- **Description**: This app provides a visual analysis of XYZ data.
+- **Docker command**: CMD ["R", "-e", "shiny::runApp('/root/my_shiny_app', host='0.0.0.0', port=3838')"]
+- **Shiny Proxy path**: `/root/my_shiny_app`
+- **Resource Requirements**: if needed
+
+---
+
+## Conclusion
+
+By including all the necessary information in your ticket, you can ensure the infrastructure team has what they need to deploy your Shiny app efficiently and correctly.

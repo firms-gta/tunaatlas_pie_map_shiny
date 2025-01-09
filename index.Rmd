@@ -1,0 +1,24 @@
+---
+title: "Documentation on the Dockerfile and the YAML for the Shiny App"
+author: "Bastien Grasset"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+description: "First version, update incoming"
+documentclass: book
+link-citations: true
+---
+
+# Introduction
+
+Welcome to the documentation for the Dockerfile and YAML used in the Shiny App project.
+
+This book covers the following:
+
+1. **Dockerfile documentation**: Details on the Docker configuration and usage.
+2. **GitHub actions YAML**: An explanation of the CI/CD workflow YAML file.
+3. **Infrastructure deployment documentation**: How to create a ticket for deploying Docker images created for Shiny applications on the Blue-Cloud infrastructure.
+4. **Running GitHub Actions Locally**: Steps for executing GitHub Actions locally for testing. (incoming)
+
+Use the table of contents on the left to navigate the sections.
+

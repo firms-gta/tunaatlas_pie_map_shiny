@@ -8,4 +8,5 @@ rmd_files:
   - "index.Rmd"
   - "Dockerfile_Documentation.Rmd"
   - "GitHub_Actions_YAML_Documentation.Rmd"
-  - "Running_github_action_in_local.Rmd"
+  - "Infrastructure_deployment_documentation.Rmd"
+  # - "Running_github_action_in_local.Rmd"

@@ -39,6 +39,7 @@ source(here::here("download_GTA_data.R"))
 source(here::here("create_or_load_default_dataset.R"))
 
 source(here::here("modules/load_ui_modules.R"))
+source(here::here("modules/report_module.R"))
 source(here::here("modules/db_connect.R"))
 load_ui_modules()
 flog.info("Sourced loading ui modules dataset")

@@ -13,6 +13,10 @@ reportModuleUI <- function(id) {
 # Module Server
 reportModuleServer <- function(id, dataset_reactive, rmd_path) {
   moduleServer(id, function(input, output, session) {
+    require(cowplot)
+    require(flextable)
+    require(bookdown)
+    source(here::here("Markdown/reportmarkdown.R"))
     ns <- session$ns
     
     # Réactive pour stocker le statut
@@ -69,10 +73,9 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         # Dossier temporaire
         output_dir <- tempdir()
         output_file <- file.path(output_dir, "My_report.pdf")
-        
-        # Générer le rapport
+
         bookdown::render_book(
-          input = "index.Rmd",
+          input = file.path(getwd(),"index.Rmd"),
           envir = render_env,
           output_format = "bookdown::pdf_document2",
           output_file = output_file

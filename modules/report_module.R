@@ -56,7 +56,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         child_env_last_result$step_title_t_f <- FALSE
         child_env_last_result$parameter_short <- FALSE
         child_env_last_result$explenation <- FALSE
-        child_env_last_result$coverage <- TRUE
+        child_env_last_result$coverage <- TRUE 
         child_env_last_result$treatment <- FALSE
         child_env_last_result$parameter_mapped <- TRUE
         child_env_last_result$unique_analyse <- TRUE
@@ -70,18 +70,16 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         list2env(child_env_last_result, render_env)
         setwd(here::here("Markdown")) 
         
-        # Dossier temporaire
         output_dir <- tempdir()
-        output_file <- file.path(output_dir, "My_report.pdf")
-
+        output_file <- file.path(output_dir, "My_report.html")
+        
         bookdown::render_book(
           input = file.path(getwd(),"index.Rmd"),
           envir = render_env,
-          output_format = "bookdown::pdf_document2",
+          output_format = "bookdown::html_document2",
           output_file = output_file
         )
         setwd(here::here())
-        # Mettre à jour les réactifs
         report_file(output_file)
         report_status("Report generated")
       }, error = function(e) {
@@ -90,15 +88,22 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
     })
     
     output$download_link <- renderUI({
-      if (!is.null(report_file())) {
-        tags$a(href = paste0("/reports/", basename(report_file())), 
+      report_path <- report_file()
+      
+      if (!is.null(report_path) && file.exists(report_path)) {
+        # Copier le fichier dans le répertoire www
+        www_path <- file.path("www", basename(report_path))
+        file.copy(report_path, www_path, overwrite = TRUE)
+        
+        tags$a(href = paste0("/www/", basename(report_path)), 
                "Downloading the report",
-               target = "_blank", # Ouvre le lien dans un nouvel onglet
+               target = "_blank", 
                class = "btn btn-primary")
       } else {
         "No report for now"
       }
     })
+    
     
     
     # Afficher le statut

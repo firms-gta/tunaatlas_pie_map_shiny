@@ -8,3 +8,5 @@ comparison.Rmd
 template.tex
 Figures
 _bookdown_files
+tableau_recapbookdowntest.Rmd
+*.log

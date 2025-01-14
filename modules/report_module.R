@@ -4,9 +4,9 @@
 reportModuleUI <- function(id) {
   ns <- NS(id)
   tagList(
-    actionButton(ns("generate_report"), "Générer le rapport"),
-    downloadButton(ns("download_report"), "Télécharger le rapport"),
-    textOutput(ns("report_status")) # Affiche le statut
+    actionButton(ns("generate_report"), "Generate report"),
+    uiOutput(ns("download_link")), 
+    textOutput(ns("report_status")) 
   )
 }
 
@@ -81,19 +81,17 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
       })
     })
     
-    output$download_report <- downloadHandler(
-      filename = function() {
-        "My_report.pdf" 
-      },
-      # Contenu du fichier
-      content = function(file) {
-        if (!is.null(report_file())) {
-          file.copy(report_file(), file, overwrite = TRUE)
-        } else {
-          stop("Report not generated yet")
-        }
+    output$download_link <- renderUI({
+      if (!is.null(report_file())) {
+        tags$a(href = paste0("/reports/", basename(report_file())), 
+               "Downloading the report",
+               target = "_blank", # Ouvre le lien dans un nouvel onglet
+               class = "btn btn-primary")
+      } else {
+        "No report for now"
       }
-    )
+    })
+    
     
     # Afficher le statut
     output$report_status <- renderText({

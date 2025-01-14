@@ -90,6 +90,7 @@ source(here::here("tab_panels/sidebar_ui.R"))
 # } else {
 #   default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
 # }
+source(here::here("Markdown/reportmarkdown.R"))
 source(here::here("modules/initialize_reactive_values.R"))
 source(here::here("R/palette_settings.R"))
 source(here::here("global/generate_dimensions_palettes.R"))

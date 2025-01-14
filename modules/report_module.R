@@ -27,6 +27,10 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
       tryCatch({
         # Récupération des données réactives
         default_dataset <- dataset_reactive
+        default_dataset <-   default_dataset %>%
+          dplyr::mutate(
+            Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")) # Combine year and month
+          ) %>% dplyr::rename(GRIDTYPE = gridtype)
         
         child_env_last_result <- comprehensive_cwp_dataframe_analysis(
           parameter_init = default_dataset,
@@ -48,6 +52,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         child_env_last_result$step_title_t_f <- FALSE
         child_env_last_result$parameter_short <- FALSE
         child_env_last_result$explenation <- FALSE
+        child_env_last_result$coverage <- TRUE
         child_env_last_result$treatment <- FALSE
         child_env_last_result$parameter_mapped <- TRUE
         child_env_last_result$unique_analyse <- TRUE
@@ -59,13 +64,13 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         
         render_env <- new.env()
         list2env(child_env_last_result, render_env)
+        setwd(here::here("Markdown")) 
         
         # Dossier temporaire
         output_dir <- tempdir()
         output_file <- file.path(output_dir, "My_report.pdf")
         
         # Générer le rapport
-        setwd("Markdown") 
         bookdown::render_book(
           input = "index.Rmd",
           envir = render_env,

@@ -99,7 +99,7 @@ jobs:
               --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
               --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
               --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
-              --push \
+              --output type=docker,dest=/tmp/docker-image.tar \
               .
           else
             echo "Building with cache..."

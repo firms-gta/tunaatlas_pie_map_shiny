@@ -6,7 +6,9 @@ before_package <-Sys.time()
 print(before_package)
 require(here)
 # source(here::here('install.R'))
-
+require(sf)
+sf::sf_use_s2(FALSE)
+# tempory add
 unique_packages <- c("xts","raster", "ggplot2",
   "RPostgreSQL", "here", "tools", "sf", "dplyr", "qs", 
   "futile.logger", "shinyjs", "tidyr", "bslib", 

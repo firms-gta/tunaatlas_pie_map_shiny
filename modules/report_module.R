@@ -30,6 +30,8 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
       report_status("Génération en cours...")
       tryCatch({
         # Récupération des données réactives
+        setwd(here::here("Markdown")) # changer le repo au début et pas juste avant de lancer le bookdown sinon shiny est pas assez reactif
+        futile.logger::flog.info(paste0("new repository: ", getwd()))
         default_dataset <- dataset_reactive
         default_dataset <-   default_dataset %>%
           dplyr::mutate(
@@ -68,20 +70,21 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         
         render_env <- new.env()
         list2env(child_env_last_result, render_env)
-        setwd(here::here("Markdown")) 
         
-        output_dir <- tempdir()
+        # output_dir <- tempdir()
+        output_dir <- here::here("www")
         output_file <- file.path(output_dir, "My_report.html")
-        
         bookdown::render_book(
-          input = file.path(getwd(),"index.Rmd"),
+          input = "index.Rmd",
           envir = render_env,
           output_format = "bookdown::html_document2",
           output_file = output_file
         )
-        setwd(here::here())
         report_file(output_file)
         report_status("Report generated")
+        setwd(here::here())
+        futile.logger::flog.info(paste0("new repository: ", getwd()))
+        
       }, error = function(e) {
         report_status(paste("Error while generating :", e$message))
       })

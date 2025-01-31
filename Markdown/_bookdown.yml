@@ -3,5 +3,5 @@ output_dir: "docs"
 delete_merged_file: true
 new_session: false
 rmd_files:
-  - "Markdown/index.Rmd"
-  - "Markdown/comparison.Rmd"
+  - "index.Rmd"
+  - "comparison.Rmd"

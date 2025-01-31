@@ -5,38 +5,35 @@ reportModuleUI <- function(id) {
   ns <- NS(id)
   tagList(
     actionButton(ns("generate_report"), "Generate report"),
-    uiOutput(ns("download_link")), 
-    textOutput(ns("report_status")) 
+    uiOutput(ns("report_links")), 
+    textOutput(ns("report_status"))
   )
 }
 
 # Module Server
 reportModuleServer <- function(id, dataset_reactive, rmd_path) {
   moduleServer(id, function(input, output, session) {
-    require(cowplot)
-    require(flextable)
-    require(bookdown)
     source(here::here("Markdown/reportmarkdown.R"))
     ns <- session$ns
     
-    # Réactive pour stocker le statut
-    report_status <- reactiveVal("En attente...")
+    # Réactive pour stocker le statut du rapport
+    report_status <- reactiveVal("Waiting...")
     
-    # Réactive pour stocker le chemin du rapport généré
+    # Réactive pour stocker le chemin du fichier généré
     report_file <- reactiveVal()
     
     # Observer pour générer le rapport
     observeEvent(input$generate_report, {
-      report_status("Génération en cours...")
+      report_status("Generating report...")
       tryCatch({
-        # Récupération des données réactives
-        setwd(here::here("Markdown")) # changer le repo au début et pas juste avant de lancer le bookdown sinon shiny est pas assez reactif
-        futile.logger::flog.info(paste0("new repository: ", getwd()))
-        default_dataset <- dataset_reactive
-        default_dataset <-   default_dataset %>%
-          dplyr::mutate(
-            Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")) # Combine year and month
-          ) %>% dplyr::rename(GRIDTYPE = gridtype)
+        # Changer de répertoire avant de lancer `bookdown`
+        setwd(here::here("Markdown"))
+        futile.logger::flog.info(paste0("Current repository: ", getwd()))
+        
+        # Préparation des données
+        default_dataset <- dataset_reactive %>%
+          dplyr::mutate(Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01"))) %>%
+          dplyr::rename(GRIDTYPE = gridtype)
         
         child_env_last_result <- comprehensive_cwp_dataframe_analysis(
           parameter_init = default_dataset,
@@ -54,7 +51,10 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
           unique_analyse = TRUE
         )
         
-        
+        # Configuration des paramètres du rapport
+        child_env_last_result$title_markdown <- "Customized report for specific data from Global Tuna Atlas"
+        child_env_last_result$fig.path <- "Figures"
+        child_env_last_result$Add_lines <- "Add_lines.Rmd"
         child_env_last_result$step_title_t_f <- FALSE
         child_env_last_result$parameter_short <- FALSE
         child_env_last_result$explenation <- FALSE
@@ -64,50 +64,66 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         child_env_last_result$unique_analyse <- TRUE
         child_env_last_result$parameter_titre_dataset_1 <- "My dataset"
         child_env_last_result$child_header <- "#"
-        child_env_last_result$title_markdown <- "Customized report for specific data from Global Tuna Atlas"
-        child_env_last_result$fig.path <- "Figures"
-        child_env_last_result$Add_lines <- "Add_lines.Rmd"
         
         render_env <- new.env()
         list2env(child_env_last_result, render_env)
         
-        # output_dir <- tempdir()
+        # Définition des chemins du rapport
         output_dir <- here::here("www")
         output_file <- file.path(output_dir, "My_report.html")
+        
+        # Supprimer toute version précédente
+        if (file.exists(output_file)) {
+          unlink(output_file)
+        }
+        
+        # Génération du rapport avec Bookdown
         bookdown::render_book(
           input = "index.Rmd",
           envir = render_env,
           output_format = "bookdown::html_document2",
           output_file = output_file
         )
-        report_file(output_file)
-        report_status("Report generated")
+        
+        # Vérification de l'existence du fichier
+        if (file.exists(output_file)) {
+          report_file(output_file)
+          report_status("Report generated successfully.")
+        } else {
+          report_status("Report generation failed: File not found")
+        }
+        
+        # Retour au répertoire initial
         setwd(here::here())
-        futile.logger::flog.info(paste0("new repository: ", getwd()))
+        futile.logger::flog.info(paste0("Back to repository: ", getwd()))
         
       }, error = function(e) {
-        report_status(paste("Error while generating :", e$message))
+        report_status(paste("Error while generating:", e$message))
       })
     })
     
-    output$download_link <- renderUI({
-      report_path <- report_file()
-      
-      if (!is.null(report_path) && file.exists(report_path)) {
-        # Copier le fichier dans le répertoire www
-        www_path <- file.path("www", basename(report_path))
-        file.copy(report_path, www_path, overwrite = TRUE)
-        
-        tags$a(href = paste0("/www/", basename(report_path)), 
-               "Downloading the report",
-               target = "_blank", 
-               class = "btn btn-primary")
+    # Télécharger le rapport
+    output$download_report <- downloadHandler(
+      filename = function() {
+        "My_report.html"
+      },
+      content = function(file) {
+        file.copy(report_file(), file)
+      },
+      contentType = "text/html"
+    )
+    
+    # Interface de prévisualisation et téléchargement
+    output$report_links <- renderUI({
+      if (!is.null(report_file()) && file.exists(report_file())) {
+        tagList(
+          tags$p("Preview the report:", tags$a(href = "My_report.html", "Click here", target = "_blank")),
+          downloadButton(ns("download_report"), "Download the report", class = "btn btn-primary")
+        )
       } else {
-        "No report for now"
+        "No report available"
       }
     })
-    
-    
     
     # Afficher le statut
     output$report_status <- renderText({

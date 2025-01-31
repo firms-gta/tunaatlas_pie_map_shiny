@@ -16,7 +16,7 @@ unique_packages <- c("xts","raster", "ggplot2",
   "DT", "viridis", "leaflet", "geojsonsf", "scales", 
   "dotenv", "zoo", "RColorBrewer", "shinycssloaders", "data.table", "htmlwidgets",
   "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
-  "pool", "jsonlite", "tmap"
+  "pool", "jsonlite", "tmap", "flextable", "cowplot"
 )
 require(futile.logger)
 

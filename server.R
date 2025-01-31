@@ -12,7 +12,6 @@ server <- function(input, output, session) {
   # Initialize resource paths and modules*
   # addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
-  
   # Initialize reactive values
   submitTrigger <- reactiveVal(FALSE)
   firstSubmit <- reactiveVal(TRUE)
@@ -716,6 +715,13 @@ server <- function(input, output, session) {
     req(data_without_geom())
     head(data_without_geom())
   })
+  
+  
+  reportModuleServer(
+    id = "report_module_1",
+    dataset_reactive = default_dataset,
+    rmd_path = here::here("Markdown") # Chemin vers le fichier RMarkdown
+  )
   
   onStop(function() {
     try(poolClose(pool), silent = TRUE)

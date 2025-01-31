@@ -1,0 +1,38 @@
+---
+title: "Main charactersitics of a specific dataset"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::gitbook:
+    config:
+      toc:
+        collapse: subsection
+        scroll_highlight: true
+        before: null
+        after: null
+  bookdown::pdf_document2:
+    latex_engine: lualatex 
+    extra_dependencies: ["adjustbox", "subfig", "flafter", "makecell"]
+    toc: TRUE
+    keep_tex: TRUE
+    template: template.tex
+    #md_extensions: "-autolink_bare_uris"
+    number_sections: TRUE
+    citation_package: default # Can also be "natbib"
+    always_allow_html: TRUE
+    keep_md: TRUE
+geometry: "margin=13mm"
+papersize: a4
+endfloat: FALSE
+numberlines: FALSE
+authblk: FALSE
+footnotehyper: FALSE
+urlcolor: blue
+linkcolor: blue
+citecolor: blue
+graphics: TRUE
+tables: TRUE
+---
+
+# Introduction
+
+This report provides some major caractersitics of a specified dataset from GlobalTunaAtlas DOI.

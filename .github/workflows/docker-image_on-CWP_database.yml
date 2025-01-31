@@ -50,6 +50,7 @@ jobs:
           fi
       - name: Docker meta
         id: meta
+        if: ${{ contains(github.event.inputs.action, 'push') }}
         uses: docker/metadata-action@v4
         with:
           images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny

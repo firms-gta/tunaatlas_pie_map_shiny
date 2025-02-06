@@ -94,7 +94,7 @@ server <- function(input, output, session) {
     } else {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
-        qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
+        qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
           dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
           measurement_unit == "no" ~ "Number of fish",

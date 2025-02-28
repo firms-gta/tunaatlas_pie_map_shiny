@@ -114,7 +114,8 @@ COPY . .
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
 RUN Rscript ./create_or_load_default_dataset.R 
 
-COPY . . #ajout pour être plus rapide au lancement
+COPY . . 
+#ajout pour être plus rapide au lancement
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838

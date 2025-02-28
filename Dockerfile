@@ -106,10 +106,14 @@ RUN R -e "renv::activate()"
 RUN R -e "renv::restore()" 
 
 # Copy the rest of the application code
-COPY . .
+COPY . .  
+# attention copy . . invalide le cache, eput expliquer pourquoi create_or_load_default_dataset 
+#n'est jamais caché, pourrait copier uniquement les choses utiles pour run la fonction puis le reste
 
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
 RUN Rscript ./create_or_load_default_dataset.R 
+
+COPY . .
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838

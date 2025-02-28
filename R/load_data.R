@@ -70,7 +70,9 @@ load_data <- function(DOI) {
       }
       
       # Save the loaded data to .qs for faster future access
+      if(file.exists(qs_file_path)){
       file.remove(qs_file_path)
+      }
       qs::qsave(data, qs_file_path)
       flog.info("Saved %s as .qs", filename)
       

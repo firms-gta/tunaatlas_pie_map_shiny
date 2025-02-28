@@ -6,7 +6,9 @@ before_package <-Sys.time()
 print(before_package)
 require(here)
 # source(here::here('install.R'))
-
+require(sf)
+sf::sf_use_s2(FALSE)
+# tempory add
 unique_packages <- c("xts","raster", "ggplot2",
   "RPostgreSQL", "here", "tools", "sf", "dplyr", "qs", 
   "futile.logger", "shinyjs", "tidyr", "bslib", 
@@ -14,7 +16,7 @@ unique_packages <- c("xts","raster", "ggplot2",
   "DT", "viridis", "leaflet", "geojsonsf", "scales", 
   "dotenv", "zoo", "RColorBrewer", "shinycssloaders", "data.table", "htmlwidgets",
   "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
-  "pool", "jsonlite", "tmap"
+  "pool", "jsonlite", "tmap", "flextable", "cowplot"
 )
 require(futile.logger)
 
@@ -39,6 +41,7 @@ source(here::here("download_GTA_data.R"))
 source(here::here("create_or_load_default_dataset.R"))
 
 source(here::here("modules/load_ui_modules.R"))
+source(here::here("modules/report_module.R"))
 source(here::here("modules/db_connect.R"))
 load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
@@ -89,6 +92,7 @@ source(here::here("tab_panels/sidebar_ui.R"))
 # } else {
 #   default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
 # }
+source(here::here("Markdown/reportmarkdown.R"))
 source(here::here("modules/initialize_reactive_values.R"))
 source(here::here("R/palette_settings.R"))
 source(here::here("global/generate_dimensions_palettes.R"))

@@ -50,7 +50,11 @@ ui <- tagList(
           # dataset_choice_ui("dataset_choice"),
           dataset_and_db_ui("dataset_and_db_module"),
           outputmoreabout,
-          main_panel_ui()
+          main_panel_ui(),
+          mainPanel(
+            h3("Module de génération de rapport"),
+            reportModuleUI("report_module_1") # Appeler le module
+          )
           )
         )
     )

@@ -12,7 +12,6 @@ server <- function(input, output, session) {
   # Initialize resource paths and modules*
   # addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
-  
   # Initialize reactive values
   submitTrigger <- reactiveVal(FALSE)
   firstSubmit <- reactiveVal(TRUE)
@@ -95,7 +94,7 @@ server <- function(input, output, session) {
     } else {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
-        qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
+        qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
           dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
           measurement_unit == "no" ~ "Number of fish",
@@ -716,6 +715,13 @@ server <- function(input, output, session) {
     req(data_without_geom())
     head(data_without_geom())
   })
+  
+  
+  reportModuleServer(
+    id = "report_module_1",
+    dataset_reactive = default_dataset,
+    rmd_path = here::here("Markdown") # Chemin vers le fichier RMarkdown
+  )
   
   onStop(function() {
     try(poolClose(pool), silent = TRUE)

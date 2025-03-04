@@ -17,7 +17,8 @@ mapCatchesServer <- function(id, data, submitTrigger, geom) {
     sum_all <- reactive({
       req(data())
       df <- data()
-      geom <- geom()
+      geom <- geom() %>% 
+        dplyr::select(-gridtype)
       df <- st_as_sf(as.data.frame(df %>%
         dplyr::group_by(geographic_identifier) %>%
         dplyr::summarise(measurement_value = sum(measurement_value)) %>%

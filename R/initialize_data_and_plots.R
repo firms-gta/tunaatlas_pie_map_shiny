@@ -75,8 +75,8 @@
 # dir.create(output_dir, showWarnings = FALSE)
 # 
 # # Vérifiez si tous les fichiers nécessaires existent
-# sql_query_file <- file.path("tab_panels", "sql_query_init.rds")
-# data_init_file <- file.path("data", "datasf.rds")
+# sql_query_file <- file.path("tab_panels", "sql_query_init.qs")
+# data_init_file <- file.path("data", "datasf.qs")
 # files_exist <- file.exists(file.path(output_dir, "map_init.html")) &&
 #   file.exists(here::here("tab_panels/plot_init.png")) &&
 #   file.exists(sql_query_file) &&
@@ -86,15 +86,15 @@
 #   # sql_query_init <- createSQLQuery(limit = 1000)
 #   
 #   flog.info("Reading big data")
-#   default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+#   default_dataset_preloaded <- qs::qread(here::here("data/datasf.qs"))
 #   default_dataset_preloaded_without_geom <- default_dataset_preloaded
 #   default_dataset_preloaded_without_geom$geom <- NULL
 #   default_dataset_preloaded_without_geom$geom_wkt <- NULL
 #   flog.info("Finished Reading big data")
 #   
 #   # Sauvegarder sql_query_init et data_init
-#   # saveRDS(sql_query_init, sql_query_file)
-#   # saveRDS(data_init, data_init_file)
+#   # qs::qsave(sql_query_init, sql_query_file)
+#   # qs::qsave(data_init, data_init_file)
 #   
 #   map_init <- initialize_data_and_plots(data_init, pool, sql_query_init, output_dir)
 # } else {
@@ -102,10 +102,10 @@
 # flog.info("All initialization files already exist. Loading from files.")
 # flog.info("loading inital data")
 # 
-# sql_query_init <- readRDS(here::here("tab_panels/sql_query_init.rds"))
+# sql_query_init <- qs::qread(here::here("tab_panels/sql_query_init.qs"))
 # flog.info("SQl query loaded")
 # 
-# default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+# default_dataset_preloaded <- qs::qread(here::here("data/datasf.qs"))
 # flog.info("Data sf loaded")
 # 
 # map_init <- read_html(here::here("www/map_init.html"))

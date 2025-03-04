@@ -120,10 +120,10 @@ server <- function(input, output, session) {
       }
       default_dataset <- dataset_not_init$data_for_filters
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
-      # saveRDS(default_dataset, file = "default_dataset.rds")
+      # qs::qsave(default_dataset, file = "default_dataset.qs")
       variable_to_display_ancient <- variable_to_display
       variable_to_display <- intersect(variable,colnames(default_dataset))
-      # saveRDS(variable_to_display, file = "variable_to_display")
+      # qs::qsave(variable_to_display, file = "variable_to_display")
       
       flog.info(sprintf("Variable to display %s:", variable_to_display))
       for (col in variable_to_display) {
@@ -197,7 +197,7 @@ server <- function(input, output, session) {
       # Your spatial filtering code
       sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
       final_filtered_data <- final_filtered_data %>% 
-        dplyr::inner_join(initial_data(), by = c("geographic_identifier"))
+        dplyr::inner_join(initial_data() %>% dplyr::select(-gridtype), by = c("geographic_identifier"))
       # Step 1: Select unique geographic identifiers and their associated geometries
       unique_id_geom <- final_filtered_data %>%
         dplyr::select(geographic_identifier, geom_wkt) %>%
@@ -217,8 +217,8 @@ server <- function(input, output, session) {
         dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
       final_filtered_data$geom_wkt <- NULL
     }
-    
     for (variable in variable_to_display) {
+      
       select_input <- paste0("select_", variable)
       unique_values <- unique(final_filtered_data[[variable]])
       flog.info(sprintf("Filtering by %s", variable))

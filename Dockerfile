@@ -128,6 +128,7 @@ RUN R -e "renv::restore()"
 RUN R -e "renv::repair()" 
 
 COPY update_data.R ./update_data.R 
+COPY R/load_data.R ./R/load_data.R 
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 RUN Rscript update_data.R 

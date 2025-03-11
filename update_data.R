@@ -42,14 +42,5 @@ download_with_downloader <- function(doi, filename, data_dir = "data") {
   })
 }
 
-# Download all files from the DOI list
-lapply(1:nrow(DOI), function(i) {
-  filepath <- file.path("data", DOI$Filename[i])
-  
-  # Check if the file already exists
-  if (!file.exists(filepath)) {
-    download_with_downloader(doi = DOI$DOI[i], filename = DOI$Filename[i])
-  } else {
-    message(sprintf("File '%s' already exists. Skipping download.", DOI$Filename[i]))
-  }
-})
+source(here::here("R/load_data.R"))
+load_data(DOI)

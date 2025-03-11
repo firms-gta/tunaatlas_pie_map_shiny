@@ -11,10 +11,10 @@ plotTotalCatchesServer <- function(id, data) {
       req(data())
       
       flog.info("Creating overall time series data")
-      
-      result <- data() %>%
-        dplyr::group_by(year) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) # Handle NA values
+      result <- data.table::setDT(data())[, .(measurement_value = sum(measurement_value, na.rm = TRUE)), by = year]
+      # result <- data() %>%
+      #   dplyr::group_by(year) %>%
+      #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) # Handle NA values
       
       flog.info("Overall time series data: %s", head(data))
       result

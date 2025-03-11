@@ -67,7 +67,7 @@ RUN mkdir -p data
 COPY DOI.csv ./DOI.csv
 
 # Appliquer dos2unix pour éviter les problèmes de formatage
-RUN dos2unix ./DOI.csv && cat -A ./DOI.csv
+RUN dos2unix DOI.csv && cat -A ./DOI.csv
 
 # Télécharger les fichiers depuis Zenodo
 RUN echo "📥 Downloading files..." \

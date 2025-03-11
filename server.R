@@ -82,8 +82,8 @@ server <- function(input, output, session) {
       flog.info("Initial Data loaded")
       initial_data(data$initial_data)
       flog.info("Inital data loaded")
-      
-      data_for_filters(data$data_for_filters)
+          
+      data_for_filters(data$data_for_filters%>% dplyr::filter(measurement_unit == "Tons" & species == "ALB"))
       flog.info("Filters loaded")
       
       show(TRUE)
@@ -198,7 +198,7 @@ server <- function(input, output, session) {
       # Your spatial filtering code
       sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
       final_filtered_data <- final_filtered_data %>% 
-        dplyr::inner_join(initial_data(), by = c("geographic_identifier"))
+        dplyr::inner_join(initial_data() %>% dplyr::select(-gridtype), by = c("geographic_identifier"))
       # Step 1: Select unique geographic identifiers and their associated geometries
       unique_id_geom <- final_filtered_data %>%
         dplyr::select(geographic_identifier, geom_wkt) %>%

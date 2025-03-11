@@ -31,11 +31,13 @@ mapCatchesServer <- function(id, data, submitTrigger, geom) {
       req(sum_all())
       flog.info("Rendering total catch map")
       a <- sum_all()
-      flog.info("Sum all data: %s", head(a))
+      a <- st_simplify(a, dTolerance = 0.01)  
+      flog.info("Sum all data finished (tons per geoometry)")
       
       qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n = 10)
+      flog.info("Colorquantile finished")
       
-      leaflet() %>%
+      map <- leaflet() %>%
         addProviderTiles("Esri.NatGeoWorldMap") %>%
         clearBounds() %>%
         addPolygons(
@@ -77,6 +79,9 @@ mapCatchesServer <- function(id, data, submitTrigger, geom) {
           position = "bottomleft",  
           className = "legend-popup"
         )
+      flog.info("Map finished")
+      
+      map
     })
     
     observeEvent(input$submit_draw_total, {

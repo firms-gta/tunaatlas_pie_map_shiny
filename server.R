@@ -83,7 +83,7 @@ server <- function(input, output, session) {
       initial_data(data$initial_data)
       flog.info("Inital data loaded")
           
-      data_for_filters(data$data_for_filters%>% dplyr::filter(measurement_unit == "Tons" & species == "ALB"))
+      data_for_filters(data$data_for_filters)
       flog.info("Filters loaded")
       
       show(TRUE)
@@ -164,7 +164,7 @@ server <- function(input, output, session) {
       shinyjs::show("main_content")
       wkt(global_wkt)
       
-      shinyjs::delay(1000,{
+      shinyjs::delay(100,{
         shinyjs::click("submit")
         data_for_filters_trigger(data_for_filters_trigger() + 1)
         updateNavbarPage(session, "main", selected = "generaloverview")
@@ -346,7 +346,7 @@ server <- function(input, output, session) {
     # shinyjs::show("main_content")
     # wkt(global_wkt)
     
-    shinyjs::delay(1000,{
+    shinyjs::delay(100,{
       shinyjs::click("submit")
       data_for_filters_trigger(data_for_filters_trigger() + 1)
       updateNavbarPage(session, "main", selected = "generaloverview")
@@ -651,8 +651,13 @@ server <- function(input, output, session) {
   # }, deleteFile = TRUE)
   
   catches_by_variable_moduleServer("catches_by_variable_month", data_without_geom)
+  flog.info("Catches by variable done: outmodule")
+  
   newwkt <- mapCatchesServer("total_catch", data = data_without_geom, submitTrigger = submitTrigger, geom = initial_data)
+  flog.info("Newwkt done: outmodule")
+  
   plotTotalCatchesServer("catch_by_year", data = data_without_geom)
+  flog.info("Catch by year done: outmodule")
   
   observeEvent(newwkt$newwkt(), { #if newwkt from mapCatchesserver is updated 
     req(wkt())
@@ -665,7 +670,7 @@ server <- function(input, output, session) {
   observeEvent(firstSubmit(), {
     if (!firstSubmit()) {
       flog.info("delay")
-      shinyjs::delay(100, {   
+      shinyjs::delay(50, {   
         data_for_filters_trigger(data_for_filters_trigger() + 1)
         # show(TRUE)
         flog.info("delay finished")

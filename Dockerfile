@@ -117,11 +117,5 @@ EXPOSE 3838
 # Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
-RUN R -e "library(sf); library(tmap); library(dplyr); library(ggplot2); library(leaflet); library(data.table)"
-# Running the library making a lot of time to load as tmap (6 seconds)
-# Run the global script to load packages and data prior to running the shiny app 
-# Removed as global.R need connection to DB for now to implement everything #not anymore
-# RUN Rscript global.R maybe creating errors
-  
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]

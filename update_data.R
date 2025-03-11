@@ -53,3 +53,5 @@ lapply(1:nrow(DOI), function(i) {
     message(sprintf("File '%s' already exists. Skipping download.", DOI$Filename[i]))
   }
 })
+
+source(here::here("R/load_data.R"))

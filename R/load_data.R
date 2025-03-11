@@ -36,49 +36,54 @@ load_data <- function(DOI) {
     
     # Define file paths
     base_filename <- tools::file_path_sans_ext(filename)
-    qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
-    csv_file_path <- file.path('data', paste0(base_filename, '.csv'))
-    rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
+    qs_file_path <- here::here('data', paste0(base_filename, '.qs'))
+    csv_file_path <- here::here('data', paste0(base_filename, '.csv'))
+    rds_file_path <- here::here('data', paste0(base_filename, '.rds'))
     
-    # Check if .qs file exists
-    if (file.exists(here::here(qs_file_path))) {
-      flog.info("Load from qs")
-      data <- qs::qread(here::here(qs_file_path))
+    # Load from .qs if it exists to avoid unnecessary reprocessing
+    if (file.exists(qs_file_path)) {
+      flog.info("Load from .qs")
+      data <- qs::qread(qs_file_path)
       flog.info("Loaded %s from .qs", filename)
-      loaded_data[[base_filename]] <- data
-      
     } else {
-      # If .qs does not exist, try to load from CSV or RDS
-      if (file.exists(here::here(csv_file_path))) {
-        # Load from CSV with specific column type
-        data <- read_csv(here::here(csv_file_path), col_types = cols(gear_type = col_character()))
+      # If .qs does not exist, try loading from CSV or RDS
+      if (file.exists(csv_file_path)) {
+        # Load from CSV
+        data <- read_csv(csv_file_path, col_types = cols(gear_type = col_character()))
         flog.info("Loaded %s from CSV", filename)
         
-      } else if (file.exists(here::here(rds_file_path))) {
+        # Save data as .qs for future access
+        qs::qsave(data, qs_file_path)
+        flog.info("Saved %s as .qs", filename)
+        
+        # Delete the CSV file after successfully saving the .qs file
+        unlink(csv_file_path)
+        flog.info("Deleted CSV file: %s", csv_file_path)
+        
+      } else if (file.exists(rds_file_path)) {
         # Load from RDS
-        data <- readRDS(here::here(rds_file_path))
+        data <- readRDS(rds_file_path)
         flog.info("Loaded %s from RDS", filename)
         
         # Ensure gear_type is character after reading from RDS
         if ("gear_type" %in% names(data)) {
           data$gear_type <- as.character(data$gear_type)
         }
+        
+        # Save data as .qs for future access
+        qs::qsave(data, qs_file_path)
+        flog.info("Saved %s as .qs", filename)
+        
       } else {
         # File not found
         warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
         next
       }
-      
-      # Save the loaded data to .qs for faster future access
-      file.remove(qs_file_path)
-      qs::qsave(data, qs_file_path)
-      flog.info("Saved %s as .qs", filename)
-      
-      # Add to the loaded_data list and assign to global environment
-      loaded_data[[base_filename]] <- data
     }
     
-    # Assign the loaded data to the global environment
+    # Store the loaded data and assign it to the global environment
+    loaded_data[[base_filename]] <- data
     assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
   }
 }
+

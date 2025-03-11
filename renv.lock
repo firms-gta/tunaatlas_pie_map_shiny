@@ -2781,9 +2781,9 @@
     },
     "sf": {
       "Package": "sf",
-      "Version": "1.0-15",
+      "Version": "1.0-19",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "DBI",
         "R",
@@ -2800,7 +2800,7 @@
         "units",
         "utils"
       ],
-      "Hash": "f432b3379fb1a47046e253468b6b6b6d"
+      "Hash": "fe02eec2f6b3ba0e24afe83d5ccfb528"
     },
     "sfheaders": {
       "Package": "sfheaders",
@@ -3281,14 +3281,9 @@
     },
     "tmap": {
       "Package": "tmap",
-      "Version": "3.99.9002",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "tmap",
-      "RemoteUsername": "r-tmap",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "c9d0c0836365e8f56bad3ec4820c60a131439eab",
+      "Version": "4.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "classInt",
@@ -3305,14 +3300,15 @@
         "leafsync",
         "methods",
         "rlang",
+        "s2",
+        "servr",
         "sf",
         "stars",
         "stats",
         "tmaptools",
-        "units",
-        "widgetframe"
+        "units"
       ],
-      "Hash": "17330fd953255ce627cb57f75686ef39"
+      "Hash": "984decf95d1e5d976214b581f0d4c2ce"
     },
     "tmaptools": {
       "Package": "tmaptools",
@@ -3608,7 +3604,7 @@
       "Package": "xfun",
       "Version": "0.49",
       "Source": "Repository",
-      "Repository": "https://packagemanager.posit.co/cran/__linux__/jammy/latest",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "grDevices",

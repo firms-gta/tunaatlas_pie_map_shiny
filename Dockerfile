@@ -39,6 +39,8 @@ RUN apt-get update && apt-get install -y \
 # Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y
 
+RUN apt-get update && apt-get install -y dos2unix
+
 # Install R core package dependencies the following line install httpuv that is usually used in shiny apps
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 
@@ -53,6 +55,7 @@ RUN Rscript download_GTA_data.R
 #those packages are essential to download the data in update_data.R, they are ran before renv because the renv.lock would change more than the DOI2.csv
 RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org'); \
                 remotes::install_version('qs', version = '0.26.3', upgrade = 'never', repos = 'https://cran.r-project.org'); \
+                remotes::install_version('jsonlite', version = '1.9.1', upgrade = 'never', repos = 'https://cran.r-project.org'); \
                 remotes::install_version('readr', version = '2.1.5', upgrade = 'never', repos = 'https://cran.r-project.org')"
 
 # Echo the DOI_CSV_HASH for debugging and to to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)

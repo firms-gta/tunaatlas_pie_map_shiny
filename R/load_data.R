@@ -29,6 +29,10 @@
 #' @importFrom utils readRDS
 #' @export
 load_data <- function(DOI) {
+  library(here)
+  library(futile.logger)
+  library(qs)
+  library(readr)
   # Load datasets from DOI list efficiently
   loaded_data <- list()
   

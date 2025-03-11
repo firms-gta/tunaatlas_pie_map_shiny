@@ -82,8 +82,8 @@ server <- function(input, output, session) {
       flog.info("Initial Data loaded")
       initial_data(data$initial_data)
       flog.info("Inital data loaded")
-      
-      data_for_filters(data$data_for_filters)
+          
+      data_for_filters(data$data_for_filters%>% dplyr::filter(measurement_unit == "Tons" & species == "ALB"))
       flog.info("Filters loaded")
       
       show(TRUE)

@@ -51,9 +51,9 @@ COPY download_GTA_data.R ./download_GTA_data.R
 RUN Rscript download_GTA_data.R
 
 #those packages are essential to download the data in update_data.R, they are ran before renv because the renv.lock would change more than the DOI2.csv
-RUN R -e "install.packages('remotes', repos='https://cran.r-project.org/')" 
-RUN R -e "remotes::install_version('downloader', version = '0.4', upgrade = 'never', repos = 'https://cran.r-project.org/')"
-RUN R -e "remotes::install_version('readr', version = '2.1.5', upgrade = 'never',  repos = 'https://cran.r-project.org/')"
+RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org')" \
+    && Rscript -e "remotes::install_version('qs', version = '0.26.3', upgrade = 'never', repos = 'https://cran.r-project.org/')" \
+    && Rscript -e "remotes::install_version('readr', version = '2.1.5', upgrade = 'never', repos = 'https://cran.r-project.org/)"
 
 # Echo the DOI_CSV_HASH for debugging and to to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
 ARG DOI_CSV_HASH
@@ -64,12 +64,31 @@ RUN mkdir -p data
 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
-COPY DOI.csv ./DOI.csv 
-COPY update_data.R ./update_data.R 
+COPY DOI.csv ./DOI.csv
 
-# Run the data update script Downloading the data (cached if DOI.csv did not change).
-RUN Rscript update_data.R 
-# Some errors due to the timeout may appear, for now fixed by raising the  timeout in yml file
+# Appliquer dos2unix pour éviter les problèmes de formatage
+RUN dos2unix ./DOI.csv && cat -A ./DOI.csv
+
+# Télécharger les fichiers depuis Zenodo
+RUN echo "📥 Downloading files..." \
+    && bash -c "tail -n +2 ./DOI.csv | tr -d '\r' | while IFS=',' read -r DOI FILE; do \
+        RECORD_ID=\$(echo \"\$DOI\" | awk -F '/' '{print \$NF}' | sed 's/zenodo\\.//'); \
+        FILE_PATH=\"./data/\$FILE\"; \
+        NEWNAME=\"./data/\${FILE%.*}_\${RECORD_ID}.\${FILE##*.}\"; \
+        URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
+        
+        echo \"📥 Downloading \$FILE (Record ID: \$RECORD_ID)\"; \
+        
+        if wget -nv --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"\$FILE_PATH\" \"\$URL\"; then \
+            mv \"\$FILE_PATH\" \"\$NEWNAME\"; \
+            echo \"✅ File downloaded and renamed: \$NEWNAME\"; \
+            Rscript -e 'qs::qsave(readr::read_csv(Sys.getenv(\"NEWNAME\")), sub(\"\\\\..*\", \".qs\", Sys.getenv(\"NEWNAME\")))' \
+            && rm \"\$NEWNAME\"; \
+        else \
+            echo \"⚠️ Download failed, adding to failed list\"; \
+            echo \"\$DOI,\$FILE\" >> ./DOI_failed.csv; \
+        fi; \
+    done"
 
 # ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
 ARG RENV_PATHS_ROOT=/root/.cache/R/renv
@@ -92,18 +111,23 @@ RUN if [ -z "${RENV_LOCK_HASH}" ]; then \
 # Create the renv cache directory
 RUN mkdir -p ${RENV_PATHS_ROOT}
 
-# Install renv package that records the packages used in the shiny app
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
-
 # Copy renv configuration and lockfile
 COPY renv.lock ./
 COPY renv/activate.R renv/
 COPY renv/settings.json renv/
 
+RUN R -e "lockfile <- jsonlite::fromJSON('renv.lock'); renv_version <- lockfile$Packages[['renv']]$Version; install.packages('renv', repos='https://cran.r-project.org/', type='source', version=renv_version)"
+
 # Restore renv packages
 RUN R -e "renv::activate()" 
 # Used to setup the environment (with the path cache)
 RUN R -e "renv::restore()" 
+RUN R -e "renv::repair()" 
+
+COPY update_data.R ./update_data.R 
+
+# Run the data update script Downloading the data (cached if DOI.csv did not change).
+RUN Rscript update_data.R 
 
 # Copy the rest of the application code
 COPY . .

@@ -68,14 +68,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   source(here::here("update_data.R"))
   source(here::here("R/load_data.R"))
   
-  
-  load_data(DOI) # load and convert to .qs if not
-  for (i in 1:length(DOI$Filename)){ # update the data
-  
-  object <- tools::file_path_sans_ext(DOI$Filename[i])
   source(here::here("download_GTA_data.R"))
-  # Load the shapefile
-  
   flog.info("Loading species data")
   species <- qs::qread("data/cl_species.qs")
   flog.info("Loaded species and species_group data")
@@ -85,10 +78,13 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   flog.info("Loaded cl_cwp_gear_level2 data")
   
   flog.info(sprintf("Time %s:", Sys.time()))
+  load_data(DOI) # load and convert to .qs if not
+  for (i in 1:length(DOI$Filename)){ # update the data
   
+  object <- tools::file_path_sans_ext(DOI$Filename[i])
   flog.info("Loading default dataset")
   default_dataset <- base::get(object)
-  
+  default_dataset <- as.data.table(default_dataset[, setdiff(names(default_dataset), c("geom_wkt", "geom"))])
   flog.info("Converting default_dataset to data.table to make all the operations from 30 seconds to 15 seconds")
   setDT(default_dataset)
   

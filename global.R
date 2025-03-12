@@ -44,10 +44,9 @@ load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
 variable <- c("source_authority",
-              "fishing_fleet",
-              "species_group", 
+              # "fishing_fleet",
               "Gear",
-              "gear_type", 
+              # "gear_type", 
               "species_name",
               "fishing_mode", 
               "measurement_unit",
@@ -55,7 +54,8 @@ variable <- c("source_authority",
               "issue",
               # "measurement", 
               # "measurement_type",
-              "species"
+              # "species",
+              "species_group"
               )
 
 flog.info(sprintf("Variables: %s", paste0(variable)))
@@ -100,6 +100,8 @@ more_about = function(){
   generateRmdNavMenu("rmd_docs", nav_bar_menu_html)
 }
 outputmoreabout <- more_about()
+source(here::here("R/data_loading.R"))
+data <- load_initial_data(default_dataset)
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

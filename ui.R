@@ -9,20 +9,36 @@ ui <- tagList(
       src = "www/map_init.html",
       style = "width: 100%; height: 100%; border: none;"
     ),
+    
     div(
       style = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255, 255, 255, 0.8); padding: 20px; border-radius: 10px; text-align: center;",
       
       tags$h1("Welcome to the GlobalTunaAtlas shiny app"),
       
-      tags$p("Please wait for data to load")
-    )
+      tags$p("Please wait for data to load"),
+      
+      tags$h2(id = "countdown", "10")  # Affiche le compteur de 10 secondes
+    ),
+    
+    # JavaScript pour le décompte (on ne masque par la page car géré dans server.R)
+    tags$script(HTML("
+    var countdown = 10;
+    function updateCountdown() {
+      document.getElementById('countdown').innerText = countdown;
+      if (countdown > 0) {
+        countdown--;
+        setTimeout(updateCountdown, 1200);
+      }
+    }
+    setTimeout(updateCountdown, 1200);
+"))
   ),
   hidden(
     div(id = "main_content",
         page_navbar(
           id = "main",
           title = "Tuna Atlas: Interactive Indicator",
-          selected = "datasetchoicevalue",
+          selected = "generaloverview",
           collapsible = TRUE,
           theme = bslib::bs_theme(),
           # sidebar = uiOutput("sidebar_ui_with_variable_to_display"),

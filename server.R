@@ -12,7 +12,6 @@ server <- function(input, output, session) {
   # Initialize resource paths and modules*
   # addResourcePath("www", here::here("www"))
   serveRmdContents("rmd_docs", nav_bar_menu_html)
-  
   # Initialize reactive values
   submitTrigger <- reactiveVal(FALSE)
   firstSubmit <- reactiveVal(TRUE)
@@ -111,7 +110,7 @@ server <- function(input, output, session) {
       } else {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
-        qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
+        qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
           dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
           measurement_unit == "no" ~ "Number of fish",
@@ -137,10 +136,10 @@ server <- function(input, output, session) {
       }
       default_dataset <- dataset_not_init$data_for_filters
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
-      # saveRDS(default_dataset, file = "default_dataset.rds")
+      # qs::qsave(default_dataset, file = "default_dataset.qs")
       variable_to_display_ancient <- variable_to_display
       variable_to_display <- intersect(variable,colnames(default_dataset))
-      # saveRDS(variable_to_display, file = "variable_to_display")
+      # qs::qsave(variable_to_display, file = "variable_to_display")
       
       flog.info(sprintf("Variable to display %s:", variable_to_display))
       for (col in variable_to_display) {
@@ -229,8 +228,8 @@ server <- function(input, output, session) {
         dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
       final_filtered_data$geom_wkt <- NULL
     }
-    
     for (variable in variable_to_display) {
+      
       select_input <- paste0("select_", variable)
       unique_values <- unique(final_filtered_data[[variable]])
       flog.info(sprintf("Filtering by %s", variable))
@@ -786,6 +785,14 @@ server <- function(input, output, session) {
     updateNavbarPage(session, "main", selected = "generaloverview")
     shinyjs::click("dataset_and_db_module-submitDataset") 
   })
+  
+  
+  reportModuleServer(
+    id = "report_module_1",
+    dataset_reactive = default_dataset,
+    rmd_path = here::here("Markdown") # Chemin vers le fichier RMarkdown
+  )
+  
   onStop(function() {
     try(poolClose(pool), silent = TRUE)
   })

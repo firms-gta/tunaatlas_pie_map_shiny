@@ -1,8 +1,8 @@
 #' Load and Cache Data from Various File Formats
 #'
-#' This function loads datasets from various file formats (.qs, .csv, .rds) based on the filenames
+#' This function loads datasets from various file formats (.qs, .csv, .qs) based on the filenames
 #' provided in the `DOI` input. The data is loaded and cached in memory for future use. If the `.qs`
-#' file is found, it is loaded first, otherwise, the function will try to load data from `.csv` or `.rds`
+#' file is found, it is loaded first, otherwise, the function will try to load data from `.csv` or `.qs`
 #' formats. It also saves the data in `.qs` format after loading to speed up future accesses.
 #'
 #' @param DOI A data frame or tibble with at least one column `Filename` containing the filenames (with extensions)
@@ -13,7 +13,7 @@
 #'
 #' @examples
 #' # Assuming `DOI` is a data frame with filenames to load
-#' DOI <- data.frame(Filename = c("dataset1.csv", "dataset2.rds"))
+#' DOI <- data.frame(Filename = c("dataset1.csv", "dataset2.qs"))
 #' load_data(DOI)
 #'
 #' # After calling the function, datasets will be available in the global environment
@@ -26,7 +26,7 @@
 #' @importFrom readr read_csv cols col_character
 #' @importFrom qs qread qsave
 #' @importFrom base warning next assign
-#' @importFrom utils readRDS
+#' @importFrom utils qs::qread
 #' @export
 load_data <- function(DOI) {
   library(here)

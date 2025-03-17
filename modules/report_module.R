@@ -33,12 +33,10 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         setwd(here::here("Markdown")) # changer le repo au début et pas juste avant de lancer le bookdown sinon shiny est pas assez reactif
         futile.logger::flog.info(paste0("new repository: ", getwd()))
         default_dataset <- dataset_reactive
-        default_dataset <-   default_dataset %>%
-          dplyr::mutate(
-            Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")) # Combine year and month
-          ) %>% dplyr::rename(GRIDTYPE = gridtype)
-        
-        child_env_last_result <- comprehensive_cwp_dataframe_analysis(
+        default_dataset <- default_dataset %>%
+          dplyr::mutate(Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01"))) %>% dplyr::rename(GRIDTYPE = gridtype)
+        qs::qsave(default_dataset, "default_dataset.qs")
+        child_env_last_result <- CWP.dataset::comprehensive_cwp_dataframe_analysis(
           parameter_init = default_dataset,
           parameter_final = NULL,
           parameter_time_dimension = "Time",
@@ -50,7 +48,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
           shapefile_fix = shapefile.fix %>% dplyr::rename(code = geographic_identifier, geom = geom_wkt, GRIDTYPE = gridtype),
           continent = NULL,
           parameter_resolution_filter = NULL,
-          parameter_titre_dataset_1 = "My_dataset",
+          parameter_titre_dataset_1 = "Mydataset",
           unique_analyse = TRUE
         )
         
@@ -70,7 +68,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         
         render_env <- new.env()
         list2env(child_env_last_result, render_env)
-        
+        qs::qsave(child_env_last_result, "child_env_last_results.qs")
         # output_dir <- tempdir()
         output_dir <- here::here("www")
         output_file <- file.path(output_dir, "My_report.html")

@@ -18,6 +18,7 @@ unique_packages <- c("xts","raster", "ggplot2",
   "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
   "pool", "jsonlite", "tmap"
 )
+require(CWP.dataset)
 require(futile.logger)
 
 lapply(unique_packages, function(pkg) {

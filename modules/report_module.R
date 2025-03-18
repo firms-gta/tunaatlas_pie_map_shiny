@@ -71,7 +71,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         list2env(child_env_last_result, render_env)
         qs::qsave(child_env_last_result, "child_env_last_results.qs")
         # output_dir <- tempdir()
-        output_dir <- here::here("www")
+        output_dir <- here::here()
         output_file <- file.path(output_dir, "My_report.html")
         bookdown::render_book(
           input = "index.Rmd",

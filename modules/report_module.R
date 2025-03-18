@@ -35,6 +35,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         default_dataset <- dataset_reactive
         default_dataset <- default_dataset %>%
           dplyr::mutate(Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01"))) %>% dplyr::rename(GRIDTYPE = gridtype)
+        file.remove("default_dataset.qs")
         qs::qsave(default_dataset, "default_dataset.qs")
         child_env_last_result <- CWP.dataset::comprehensive_cwp_dataframe_analysis(
           parameter_init = default_dataset,

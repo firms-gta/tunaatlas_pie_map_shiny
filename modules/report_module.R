@@ -35,7 +35,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
           dplyr::mutate(Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01"))) %>%
           dplyr::rename(GRIDTYPE = gridtype)
         
-        child_env_last_result <- comprehensive_cwp_dataframe_analysis(
+        child_env_last_result <- CWP.dataset::comprehensive_cwp_dataframe_analysis(
           parameter_init = default_dataset,
           parameter_final = NULL,
           parameter_time_dimension = "Time",

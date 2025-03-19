@@ -32,7 +32,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       dt_wide[, total := rowSums(.SD), .SDcols = target_var]
       
       # Join geometry back using the identifier column
-      geometry_data <- geom()
+      geometry_data <- geom() %>% dplyr::select(-gridtype)
       # geometry_data <- unique(data()[, .(geographic_identifier, geom_wkt)])
       dt_wide <- as.data.frame(dt_wide)
       dt_wide <- st_as_sf(dt_wide %>% dplyr::left_join(st_as_sf(geometry_data)))

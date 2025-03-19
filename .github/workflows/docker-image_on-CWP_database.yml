@@ -125,6 +125,14 @@ jobs:
         run: |
           TAG_NAME=$(basename ${GITHUB_REF})
           BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g') # Sanitize branch name
-          docker tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
-          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME}
-          docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
+
+          # Check if the branch is main
+          if [ "$BRANCH_NAME" = "main" ]; then
+            docker tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
+            docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
+          else
+            docker tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
+            docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME}
+            docker push ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${TAG_NAME}
+          fi
+

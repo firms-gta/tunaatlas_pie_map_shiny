@@ -16,7 +16,7 @@ unique_packages <- c("xts","raster", "ggplot2",
   "DT", "viridis", "leaflet", "geojsonsf", "scales", 
   "dotenv", "zoo", "RColorBrewer", "shinycssloaders", "data.table", "htmlwidgets",
   "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
-  "pool", "jsonlite", "tmap"
+  "pool", "jsonlite", "tmap", "flextable", "cowplot"
 )
 require(CWP.dataset)
 require(futile.logger)
@@ -48,10 +48,9 @@ load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
 variable <- c("source_authority",
-              "fishing_fleet",
-              "species_group", 
+              # "fishing_fleet",
               "Gear",
-              "gear_type", 
+              # "gear_type", 
               "species_name",
               "fishing_mode", 
               "measurement_unit",
@@ -59,7 +58,8 @@ variable <- c("source_authority",
               "issue",
               # "measurement", 
               # "measurement_type",
-              "species"
+              # "species",
+              "species_group"
               )
 
 flog.info(sprintf("Variables: %s", paste0(variable)))
@@ -76,7 +76,7 @@ getTarget <- function(category) {
 # Adding resource path to display html -------------------------------------
 # addResourcePath("www", here::here("www"))
 
-sql_query_init <- readRDS(here::here("tab_panels/sql_query_init.rds"))
+# sql_query_init <- qs::qread(here::here("tab_panels/sql_query_init.qs"))
 flog.info("SQl query loaded")
 
 # map_init <- read_html(here::here("www/map_init.html"))
@@ -89,9 +89,9 @@ source(here::here("tab_panels/sidebar_ui.R"))
 # Générer targetVariables et targettes
 
 # if(exists("debug_mode") && debug_mode){
-# default_dataset_preloaded <- readRDS(here::here("data/default_dataset_preloaded.rds"))
+# default_dataset_preloaded <- qs::qread(here::here("data/default_dataset_preloaded.qs"))
 # } else {
-#   default_dataset_preloaded <- readRDS(here::here("data/datasf.rds"))
+#   default_dataset_preloaded <- qs::qread(here::here("data/datasf.qs"))
 # }
 source(here::here("Markdown/reportmarkdown.R"))
 source(here::here("modules/initialize_reactive_values.R"))
@@ -105,6 +105,8 @@ more_about = function(){
   generateRmdNavMenu("rmd_docs", nav_bar_menu_html)
 }
 outputmoreabout <- more_about()
+source(here::here("R/data_loading.R"))
+data <- load_initial_data(default_dataset)
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

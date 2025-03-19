@@ -97,7 +97,7 @@ dataset_and_db_server <- function(id, filters_combinations, default_dataset, def
         }
           db_host <- Sys.getenv("DB_HOST")
           db_port <- as.integer(Sys.getenv("DB_PORT"))
-          db_name <- Sys.getenv("DB_NAME")
+          db_name <- "tunaatlas_sandbox"
           db_user_readonly <- Sys.getenv("DB_USER_READONLY")
           db_password <- Sys.getenv("DB_PASSWORD")
           

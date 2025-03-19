@@ -49,7 +49,15 @@ load_query_data <- function(selected_dataset, selected_gridtype, selected_measur
     AND gridtype IN ({selected_gridtype*})
     AND measurement_unit IN ({selected_measurement_unit*})
     GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit, source_authority, issue"
-  } else{
+  } else if (selected_view == "public.shinyeffort"){
+    base_query <- "
+    SELECT gridtype, codesource_area, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month
+    FROM {selected_view}
+    WHERE dataset = {selected_dataset}
+    AND gridtype IN ({selected_gridtype*})
+    AND measurement_unit IN ({selected_measurement_unit*})
+    GROUP BY gridtype, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit"
+  } else {
     stop("Provide a view to request")
   }
 

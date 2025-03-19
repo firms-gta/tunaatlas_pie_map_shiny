@@ -85,7 +85,7 @@ db_connect_server <- function(id, filters_combinations) {
         # Requête SQL
         filters_query <- glue_sql("
           SELECT DISTINCT dataset, measurement_unit, gridtype 
-          FROM public.shinycatch;", .con = pool)
+          FROM public.shinyeffort;", .con = pool)
         
         filters_data <- DBI::dbGetQuery(pool, filters_query)
         

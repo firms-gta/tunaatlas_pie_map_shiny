@@ -116,8 +116,8 @@ dataset_and_db_server <- function(id, filters_combinations, default_dataset, def
               # Récupérer les filtres de la base de données
               filters_query <- glue_sql("
                 SELECT DISTINCT dataset, measurement_unit, gridtype 
-                FROM public.issueddata;", .con = pool)
-              filters_data <- DBI::dbGetQuery(pool, filters_query)
+                FROM public.shinyeffort;", .con = pool)
+              filters_data <- DBI::dbGetQuery(pool, filters_query) %>% dplyr::filter(dataset == "global_georeferenced_effort_ird")
               
               filters_combinations(filters_data)
               db_results$status <- "Connected successfully!"

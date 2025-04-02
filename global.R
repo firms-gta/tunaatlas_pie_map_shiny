@@ -48,7 +48,7 @@ load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
 variable <- c("source_authority",
-              # "fishing_fleet",
+              "fishing_fleet",
               "Gear",
               # "gear_type", 
               "species_name",

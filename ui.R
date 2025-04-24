@@ -68,7 +68,7 @@ ui <- tagList(
           outputmoreabout,
           main_panel_ui(),
           mainPanel(
-            h3("Module de génération de rapport"),
+            h3("Report generation module"),
             reportModuleUI("report_module_1") # Appeler le module
           )
           )

@@ -39,7 +39,7 @@ db_connect_server <- function(id, filters_combinations) {
     try_db_connection <- function() {
       db_host <- Sys.getenv("DB_HOST")
       db_port <- as.integer(Sys.getenv("DB_PORT"))
-      db_name <- Sys.getenv("DB_NAME")
+      db_name <- "tunaatlas_sandbox"
       db_user_readonly <- Sys.getenv("DB_USER_READONLY")
       db_password <- Sys.getenv("DB_PASSWORD")
       
@@ -85,7 +85,7 @@ db_connect_server <- function(id, filters_combinations) {
         # Requête SQL
         filters_query <- glue_sql("
           SELECT DISTINCT dataset, measurement_unit, gridtype 
-          FROM public.shinycatch;", .con = pool)
+          FROM public.shinyeffort;", .con = pool)
         
         filters_data <- DBI::dbGetQuery(pool, filters_query)
         

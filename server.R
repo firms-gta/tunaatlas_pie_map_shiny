@@ -125,11 +125,11 @@ server <- function(input, output, session) {
       
       # shinyjs::hide("main_content")
       # shinyjs::show("loading_page")
-      issueddata <- TRUE
+      issueddata <- FALSE
       if(issueddata){
         selected_viewissued = "public.issueddata"
       } else {
-        selected_viewissued = "public.shinycatch"
+        selected_viewissued = "public.shinyeffort"
       }
       dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
       flog.info("Default dataset loaded")

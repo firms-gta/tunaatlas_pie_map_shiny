@@ -108,7 +108,7 @@ server <- function(input, output, session) {
         # })
         
       } else {
-      if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$")) {
+      if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$") | stringr::str_detect(dataset_choices$selected_dataset(), "\\.qs$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
         qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 

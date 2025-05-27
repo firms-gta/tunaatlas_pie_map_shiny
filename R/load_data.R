@@ -84,6 +84,7 @@ load_data <- function(DOI) {
       if ("gear_type" %in% names(data)) data$gear_type <- as.character(data$gear_type)
       
       # Enrich and strip geometry
+      data$geographic_identifier <- as.character(data$geographic_identifier)
       data <- CWP.dataset::enrich_dataset_if_needed(data, shp_raw = shp_raw)$without_geom
       
       # Add temporal columns

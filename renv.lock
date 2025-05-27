@@ -3229,13 +3229,13 @@
     },
     "pbdZMQ": {
       "Package": "pbdZMQ",
-      "Version": "0.3-11",
+      "Version": "0.3-14",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "96432d2e7560d5242824427ecdf0fa98"
+      "Hash": "adf471ce7cf132086922a6c11977a449"
     },
     "pbkrtest": {
       "Package": "pbkrtest",

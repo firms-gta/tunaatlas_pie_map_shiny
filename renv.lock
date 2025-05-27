@@ -24,8 +24,8 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "CWP.dataset",
       "RemoteUsername": "bastienird",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "7b621386cdde4197816c31b6e5b42e5ef2b0e1d1",
+      "RemoteRef": "master",
+      "RemoteSha": "dbb57d7de832de0157c65bb1c23d50737a2f265a",
       "Requirements": [
         "DBI",
         "DT",
@@ -65,7 +65,7 @@
         "xts",
         "yaml"
       ],
-      "Hash": "a97fb1c4efd12bd15755526449fa0ddc"
+      "Hash": "f29db7f2a724753e3e50b394da2dbe79"
     },
     "DBI": {
       "Package": "DBI",

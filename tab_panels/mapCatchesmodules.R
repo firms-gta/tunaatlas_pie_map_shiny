@@ -9,17 +9,16 @@ mapCatchesUI <- function(id) {
 }
 
 # Module Server
-mapCatchesServer <- function(id, data) {
+mapCatchesServer <- function(id, data, geom_sf) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     newwkt <- reactiveVal()
-    geom_sf <- qs::qread("data/cl_areal_grid.qs")
     sum_all <- reactive({
       req(data())
       # flog.info("Calcul du total des captures")
       # 
       # # if (firstSubmit) {
-      # #   flog.info("🛑 firstSubmit est TRUE, pas de calcul de sum_all")
+      # #   flog.info("firstSubmit est TRUE, pas de calcul de sum_all")
       # #   return(NULL)
       # # }
       # 
@@ -40,7 +39,7 @@ mapCatchesServer <- function(id, data) {
       
       # # ✅ Utilise firstSubmit() pour savoir si on charge la carte pré-enregistrée
       # if (firstSubmit) {
-      #   flog.info("🛑 firstSubmit est TRUE, chargement de la carte pré-enregistrée")
+      #   flog.info("firstSubmit est TRUE, chargement de la carte pré-enregistrée")
       #   file.remove("data/test.qs")
       #   return(qs::qread("data/map_init.qs"))
       # }
@@ -52,7 +51,6 @@ mapCatchesServer <- function(id, data) {
       a <- st_simplify(a, dTolerance = 0.01)  
       
       qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n = 10)
-      
       map <- leaflet() %>%
         addProviderTiles("Esri.NatGeoWorldMap") %>%
         clearBounds() %>%

@@ -1,98 +1,106 @@
-#' Load and Cache Data from Various File Formats
+#' Load and Cache Data with Enrichment and Tracking
 #'
-#' This function loads datasets from various file formats (.qs, .csv, .qs) based on the filenames
-#' provided in the `DOI` input. The data is loaded and cached in memory for future use. If the `.qs`
-#' file is found, it is loaded first, otherwise, the function will try to load data from `.csv` or `.qs`
-#' formats. It also saves the data in `.qs` format after loading to speed up future accesses.
+#' This function loads datasets from various file formats (e.g., .csv, .rds)
+#' based on the filenames provided in the `DOI` input. It enriches data
+#' (via `enrich_data()`), adds time-based columns, and caches the result
+#' in an "_updated.qs" file. On subsequent runs, it loads directly from
+#' this updated cache when available.
 #'
-#' @param DOI A data frame or tibble with at least one column `Filename` containing the filenames (with extensions)
-#'            of the datasets to be loaded.
+#' @param DOI A data frame or tibble with columns `Filename` (with extensions)
+#'            and `DOI` for downloading missing files.
 #'
-#' @return The function does not return any value but assigns the loaded data to the global environment.
-#'         Each dataset is stored in a variable with the base name of the file (without extension).
+#' @return Invisibly returns a named list of loaded datasets (base names).
+#'         Each list element is the enriched data; updated caches are
+#'         saved to "data/<base>_updated.qs".
 #'
 #' @examples
-#' # Assuming `DOI` is a data frame with filenames to load
-#' DOI <- data.frame(Filename = c("dataset1.csv", "dataset2.qs"))
-#' load_data(DOI)
+#' DOI <- tibble(
+#'   Filename = c("dataset1.csv", "dataset2.rds"),
+#'   DOI      = c("10.0000/abc", "10.0000/def")
+#' )
+#' loaded_list <- load_data(DOI)
 #'
-#' # After calling the function, datasets will be available in the global environment
-#' # with names corresponding to the base filenames (e.g., dataset1, dataset2)
-#' # The data will be loaded and saved in `.qs` format for future access.
-#'
-#' @importFrom tools file_path_sans_ext
+#' @importFrom tools file_path_sans_ext file_ext
 #' @importFrom here here
-#' @importFrom flog flog.info
-#' @importFrom readr read_csv cols col_character
+#' @importFrom futile.logger flog.info
+#' @importFrom readr read_csv cols col_guess
 #' @importFrom qs qread qsave
-#' @importFrom base warning next assign
-#' @importFrom utils qs::qread
+#' @importFrom dplyr mutate
+#' @importFrom lubridate year month
+#' @importFrom sf st_read
 #' @export
 load_data <- function(DOI) {
+  # Dependencies
   library(here)
   library(futile.logger)
   library(qs)
   library(readr)
-  # Load datasets from DOI list efficiently
-  loaded_data <- list()
+  library(dplyr)
+  library(lubridate)
+  library(sf)
+  
+  # Prepare enrichment tools
+  cwp_grid_file <- system.file("extdata", "cl_areal_grid.csv", package = "CWP.dataset")
+  shp_raw       <- sf::st_read(cwp_grid_file, show_col_types = FALSE)
+  
+  # Storage for results
+  data_dir <- here::here("data")
   
   for (i in seq_len(nrow(DOI))) {
-    filename <- DOI$Filename[i]
-    base_filename <- tools::file_path_sans_ext(filename)
-    qs_file_path <- here::here("data", paste0(base_filename, ".qs"))
-    csv_file_path <- here::here("data", paste0(base_filename, ".csv"))
-    rds_file_path <- here::here("data", paste0(base_filename, ".rds"))
-    filepath <- here::here("data", filename)
+    filename    <- DOI$Filename[i]
+    doi_value   <- DOI$DOI[i]
+    base_name   <- tools::file_path_sans_ext(filename)
+    raw_path    <- file.path(data_dir, filename)
+    cache_path  <- file.path(data_dir, paste0(base_name, "_updated.qs"))
     
-    flog.info("Processing dataset: %s", filename)
+    flog.info("Processing %s", filename)
     
-    # If .qs exists, load it and skip downloading
-    if (file.exists(qs_file_path)) {
-      flog.info("Loading from existing .qs file: %s", filename)
-      data <- qs::qread(qs_file_path)
-      
+    # Load from updated cache if exists
+    if (file.exists(cache_path)) {
+      flog.info("Loading cached updated .qs: %s", cache_path)
+      data <- qread(cache_path)
     } else {
-      # If .qs doesn't exist, ensure file is downloaded
-      if (!file.exists(filepath)) {
-        flog.info("Downloading file: %s", filename)
-        download_with_downloader(doi = DOI$DOI[i], filename = filename)
+      # Ensure raw file present or download
+      if (!file.exists(raw_path)) {
+        flog.info("Downloading missing file: %s", filename)
+        download_with_downloader(doi = doi_value, filename = filename)
       } else {
-        flog.info("File already exists, skipping download: %s", filename)
+        flog.info("Raw file exists: %s", raw_path)
       }
       
-      # Load from CSV or RDS
-      if (file.exists(csv_file_path)) {
-        data <- read_csv(csv_file_path, col_types = cols(gear_type = col_character()))
-        flog.info("Loaded from CSV: %s", filename)
-        
-        # Save as .qs and delete CSV
-        qs::qsave(data, qs_file_path)
-        flog.info("Saved as .qs and deleted CSV: %s", filename)
-        unlink(csv_file_path)
-        
-      } else if (file.exists(rds_file_path)) {
-        data <- readRDS(rds_file_path)
-        flog.info("Loaded from RDS: %s", filename)
-        
-        # Ensure gear_type is character
-        if ("gear_type" %in% names(data)) {
-          data$gear_type <- as.character(data$gear_type)
-        }
-        
-        # Save as .qs
-        qs::qsave(data, qs_file_path)
-        flog.info("Saved as .qs: %s", filename)
-        
+      # Load raw data by extension
+      ext <- tolower(tools::file_ext(filename))
+      flog.info("Reading raw %s as %s", filename, ext)
+      if (ext == "csv") {
+        data <- read_csv(raw_path, col_types = cols(.default = col_guess()))
+      } else if (ext == "rds") {
+        data <- readRDS(raw_path)
       } else {
-        warning(sprintf("File not found for %s: neither CSV nor RDS exists.", filename))
+        warning("Unsupported extension: ", ext)
         next
       }
+      
+      # Type fixes
+      if ("gear_type" %in% names(data)) data$gear_type <- as.character(data$gear_type)
+      
+      # Enrich and strip geometry
+      data <- CWP.dataset::enrich_dataset_if_needed(data, shp_raw = shp_raw)$without_geom
+      
+      # Add temporal columns
+      data <- data %>%
+        dplyr::mutate(
+          year  = year(time_start),
+          month = month(time_start)
+        )
+      
+      # Save updated cache
+      qsave(data, cache_path)
+      flog.info("Saved updated cache: %s", cache_path)
+      
+      # Option: remove raw CSV to save space
+      if (ext == "csv") unlink(raw_path)
     }
     
-    # Assign data to global environment
-    loaded_data[[base_filename]] <- data
-    assign(base_filename, as.data.frame(data), envir = .GlobalEnv)
   }
+  
 }
-
-

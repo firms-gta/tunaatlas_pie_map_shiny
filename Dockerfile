@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y \
     librdf0-dev \
     libtbb-dev \
     libzmq3-dev \
+    libpoppler-cpp-dev \
     redland-utils && \
     apt-get clean
     

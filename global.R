@@ -48,19 +48,24 @@ load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
 variable <- c("source_authority",
-              "fishing_fleet",
-              "Gear",
+              "species_label",
+              "fishing_fleet_label",
+              # "fishing_fleet",
+              "gear_label",
               # "gear_type", 
-              "species_name",
-              "fishing_mode", 
-              "measurement_unit",
+              # "species_name",
+              # "fishing_mode", 
+              "fishing_mode_label", 
+              # "measurement_unit",
+              "measurement_unit_label",
               "gridtype",
-              "issue",
-              # "measurement", 
+              # "measurement",
               # "measurement_type",
-              # "species",
-              "species_group"
-              )
+              "measurement_type_label",
+              "species_group", 
+              # "species", 
+              "issue"
+)
 
 flog.info(sprintf("Variables: %s", paste0(variable)))
 
@@ -93,7 +98,7 @@ source(here::here("tab_panels/sidebar_ui.R"))
 # } else {
 #   default_dataset_preloaded <- qs::qread(here::here("data/datasf.qs"))
 # }
-source(here::here("Markdown/reportmarkdown.R"))
+# source(here::here("Markdown/reportmarkdown.R"))
 source(here::here("modules/initialize_reactive_values.R"))
 source(here::here("R/palette_settings.R"))
 source(here::here("global/generate_dimensions_palettes.R"))

@@ -313,7 +313,7 @@ server <- function(input, output, session) {
   variable_choicesintersect <- reactive({
     req(data_for_filters())
     
-    priority_vars <- c("source_authority", "species", "Gear")
+    priority_vars <- c("source_authority", "species_label", "gear_type_label", "fishing_fleet_label")
     
     variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
     
@@ -445,7 +445,6 @@ server <- function(input, output, session) {
       })
     })
   })
-  
   
   output$year_input <- renderUI({
     req(data_for_filters())
@@ -715,7 +714,7 @@ server <- function(input, output, session) {
   plotTotalCatchesServer("catch_by_year", data = data_without_geom)
   flog.info("Catch by year done: outmodule")
   
-  newwkt <- mapCatchesServer("total_catch", data = data_without_geom)
+  newwkt <- mapCatchesServer("total_catch", data = data_without_geom, geom_sf = shapefile.fix)
   flog.info("Newwkt done: outmodule")
   
   observeEvent(newwkt$newwkt(), { #if newwkt from mapCatchesserver is updated 

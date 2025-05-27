@@ -22,7 +22,8 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       flog.info("Generating pie map data for category: %s", category_var)
       req(data())
       # Convert to data.table
-      dt <- as.data.table(data()[, setdiff(names(data()), c("geom_wkt", "geom"))])
+      # dt <- as.data.table(data()[, setdiff(names(data()), c("geom_wkt", "geom"))])
+      dt <- as.data.table(data())
       
       dt <- dt[, .(measurement_value = sum(measurement_value)), by = c(category_var, "geographic_identifier")]
       # Spread the data to wide format
@@ -35,7 +36,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       geometry_data <- geom() %>% dplyr::select(-gridtype)
       # geometry_data <- unique(data()[, .(geographic_identifier, geom_wkt)])
       dt_wide <- as.data.frame(dt_wide)
-      dt_wide <- st_as_sf(dt_wide %>% dplyr::left_join(st_as_sf(geometry_data)))
+      dt_wide <- st_as_sf(dt_wide %>% dplyr::left_join(geometry_data))
       # dt_wide <- merge(dt_wide, geometry_data, by = "geographic_identifier", all.x = TRUE)
       
       flog.info("Pie map data created")

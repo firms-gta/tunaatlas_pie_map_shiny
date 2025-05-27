@@ -41,6 +41,10 @@ download_with_downloader <- function(doi, filename, data_dir = "data") {
     stop(sprintf("Failed to download file '%s' from DOI: %s", filename, doi))
   })
 }
+
 require(here)
 source(here::here("R/load_data.R"))
 load_data(DOI)
+
+
+

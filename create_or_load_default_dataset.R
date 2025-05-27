@@ -146,7 +146,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
     file.remove(file.path("data",paste0(object, "updated.qs")))
   }
   qs::qsave(default_dataset, file.path("data",paste0(object, "updated.qs")))
-  if(i ==1){
+  if(i == 3){
     if(file.exists("data/default_dataset.qs")){
       file.remove(file.path("data/default_dataset.qs"))
     }

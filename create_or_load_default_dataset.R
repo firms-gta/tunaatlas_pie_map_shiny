@@ -27,7 +27,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   
   flog.info("Loading data ")
   # Read the DOI CSV file
-  i <- 1
+  i <- 3
   dataset <- tools::file_path_sans_ext(DOI$Filename[i])
   default_dataset <- qs::qread(file.path("data",paste0(dataset, "_updated.qs")))
  } else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){

@@ -8,6 +8,11 @@ LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
 # Install additional libraries for redland
 # libcurl4-openssl-dev is to install libraptor2-dev ued to install protobuf
 
+RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 && \
+    apt-get update && apt-get install -y wget … && \
+    rm -rf /var/lib/apt/lists/*
+
+
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \

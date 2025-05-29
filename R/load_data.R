@@ -29,79 +29,73 @@
 #' @importFrom lubridate year month
 #' @importFrom sf st_read
 #' @export
+
+#' Charger, enrichir et mettre en cache les datasets
+#'
+#' @param DOI tibble avec colonnes `Filename` et `DOI`
+#' @export
 load_data <- function(DOI) {
-  # Dependencies
-  library(here)
-  library(futile.logger)
-  library(qs)
-  library(readr)
-  library(dplyr)
-  library(lubridate)
-  library(sf)
+  library(qs); library(readr); library(dplyr)
+  library(lubridate); library(sf); library(futile.logger)
+  library(tools); library(here)
   
-  # Prepare enrichment tools
-  cwp_grid_file <- system.file("extdata", "cl_areal_grid.csv", package = "CWP.dataset")
-  shp_raw       <- sf::st_read(cwp_grid_file, show_col_types = FALSE)
+  # préparer shapefile pour enrichissement
+  shp <- sf::st_read(system.file("extdata","cl_areal_grid.csv",package="CWP.dataset"),
+                     show_col_types=FALSE)
   
-  # Storage for results
   data_dir <- here::here("data")
   
   for (i in seq_len(nrow(DOI))) {
-    filename    <- DOI$Filename[i]
-    doi_value   <- DOI$DOI[i]
-    base_name   <- tools::file_path_sans_ext(filename)
-    raw_path    <- file.path(data_dir, filename)
-    cache_path  <- file.path(data_dir, paste0(base_name, "_updated.qs"))
+    filename  <- DOI$Filename[i]
+    doi_value <- DOI$DOI[i]
+    base      <- file_path_sans_ext(filename)
+    record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", doi_value)
     
-    flog.info("Processing %s", filename)
+    # Phase 1: téléchargement/rename + .qs
+    renamed   <- download_and_rename(doi_value, filename, data_dir)
+    qs_path   <- sub("\\.[^.]+$", ".qs", renamed)
     
-    # Load from updated cache if exists
-    if (file.exists(cache_path)) {
-      flog.info("Loading cached updated .qs: %s", cache_path)
-      data <- qread(cache_path)
-    } else {
-      # Ensure raw file present or download
-      if (!file.exists(raw_path)) {
-        flog.info("Downloading missing file: %s", filename)
-        download_with_downloader(doi = doi_value, filename = filename)
-      } else {
-        flog.info("Raw file exists: %s", raw_path)
-      }
-      
-      # Load raw data by extension
-      ext <- tolower(tools::file_ext(filename))
-      flog.info("Reading raw %s as %s", filename, ext)
-      if (ext == "csv") {
-        data <- read_csv(raw_path, col_types = cols(.default = col_guess()))
+    if (!file.exists(qs_path)) {
+      ext <- tolower(file_ext(renamed))
+      if (ext == "qs") {
+        file.copy(renamed, qs_path)
+      } else if (ext == "csv") {
+        tbl <- read_csv(renamed, col_types = cols(.default = col_guess()))
+        qs::qsave(tbl, qs_path)
       } else if (ext == "rds") {
-        data <- readRDS(raw_path)
+        obj <- readRDS(renamed)
+        qs::qsave(obj, qs_path)
       } else {
         warning("Unsupported extension: ", ext)
         next
       }
-      
-      # Type fixes
-      if ("gear_type" %in% names(data)) data$gear_type <- as.character(data$gear_type)
-      
-      # Enrich and strip geometry
-      data$geographic_identifier <- as.character(data$geographic_identifier)
-      data <- CWP.dataset::enrich_dataset_if_needed(data, shp_raw = shp_raw)$without_geom
-      
-      # Add temporal columns
-      data <- data %>%
-        dplyr::mutate(
-          year  = year(time_start),
-          month = month(time_start)
-        )
-      
-      # Save updated cache
-      qsave(data, cache_path)
-      flog.info("Saved updated cache: %s", cache_path)
-      
-      # Option: remove raw CSV to save space
-      if (ext == "csv") unlink(raw_path)
+    } else {
+      message("✅ .qs already exists: ", qs_path)
     }
     
+    # Phase 2: enrichissement + cache_updated
+    cache_path <- file.path(data_dir, paste0(base, "_", record_id, "_updated.qs"))
+    if (file.exists(cache_path)) {
+      message("🔄 loading cached updated: ", cache_path)
+      data_tbl <- qs::qread(cache_path)
+    } else {
+      message("✨ enriching data from: ", qs_path)
+      data_tbl <- qs::qread(qs_path)
+      # fix types
+      if ("gear_type" %in% names(data_tbl)) 
+        data_tbl$gear_type <- as.character(data_tbl$gear_type)
+      data_tbl$geographic_identifier <- as.character(data_tbl$geographic_identifier)
+      # enrichir
+      data_tbl <- CWP.dataset::enrich_dataset_if_needed(data_tbl, shp_raw = shp)$without_geom
+      # ajouter year/month
+      data_tbl <- dplyr::mutate(data_tbl,
+                         year  = year(time_start),
+                         month = month(time_start))
+      # sauvegarder cache
+      qs::qsave(data_tbl, cache_path)
+      message("💾 saved updated cache: ", cache_path)
+    }
   }
-  
+  invisible(NULL)
 }
+

@@ -3,42 +3,53 @@ require(utils)
 require(downloader)
 
 # Read the DOI file
-DOI <- read_csv("DOI.csv")
+DOI <- readr::read_csv("DOI.csv")
 
 # Set a global timeout for downloads
 options(timeout = 6000)
 
 # Function to download files using curl
-download_with_downloader <- function(doi, filename, data_dir = "data") {
-  # S'assurer que le répertoire des données existe
-  if (!dir.exists(data_dir)) dir.create(data_dir)
+#' Télécharger et renommer un fichier depuis Zenodo
+#'
+#' @param doi    Le DOI Zenodo (ex. "10.5281/zenodo.1234567")
+#' @param filename Nom de fichier attendu (ex. "data.csv")
+#' @param data_dir  Répertoire cible (par défaut "data")
+#' @return Chemin vers le fichier renommé (avant conversion .qs)
+download_and_rename <- function(doi, filename, data_dir = "data") {
+  if (!dir.exists(data_dir)) dir.create(data_dir, recursive = TRUE)
+  record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", doi)
+  ext       <- tools::file_ext(filename)
+  base      <- tools::file_path_sans_ext(filename)
   
-  record_id <- sub("10\\.5281/zenodo\\.", "", doi)
+  raw_path    <- file.path(data_dir, filename)
+  renamed     <- file.path(data_dir, paste0(base, "_", record_id, ".", ext))
   
-  # Construire l'URL brute
-  raw_url <- paste0("https://zenodo.org/record/", record_id, "/files/", filename, "?download=1")
+  # 1) Si déjà renommé, on ne fait rien
+  if (file.exists(renamed)) {
+    message("📦 found renamed file: ", renamed)
+    return(renamed)
+  }
   
-  # Encoder les caractères spéciaux dans l'URL
-  encoded_url <- URLencode(raw_url)
+  # 2) Si le brut existe, on le renomme
+  if (file.exists(raw_path)) {
+    message("📦 copying local file → ", renamed)
+    file.copy(raw_path, renamed)
+    return(renamed)
+  }
   
-  # Chemin de destination
-  destfile <- file.path(data_dir, filename)
-  
-  # Télécharger le fichier
+  # 3) Sinon on download
+  url <- sprintf("https://zenodo.org/record/%s/files/%s?download=1",
+                 sub(".*zenodo\\.([0-9]+)$", "\\1", doi),
+                 filename)
+  message("🌐 downloading ", filename)
   tryCatch({
-    downloader::download(encoded_url, destfile, mode = "wb")
-    message(sprintf("File '%s' downloaded successfully.", filename))
-    
-    
-    # Vérifier si le fichier a été correctement téléchargé
-    if (file.exists(destfile)) {
-      message(sprintf("File '%s' downloaded successfully from DOI: %s", filename, doi))
-    } else {
-      stop(sprintf("File '%s' could not be downloaded from DOI: %s", filename, doi))
-    }
+    downloader::download(URLencode(url), raw_path, mode = "wb")
+    if (!file.exists(raw_path)) stop("Download failed")
+    file.rename(raw_path, renamed)
+    message("✅ downloaded & renamed → ", renamed)
+    return(renamed)
   }, error = function(e) {
-    message(sprintf("Curl download failed for file '%s': %s", filename, e$message))
-    stop(sprintf("Failed to download file '%s' from DOI: %s", filename, doi))
+    stop("Failed to download '", filename, "': ", e$message)
   })
 }
 

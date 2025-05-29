@@ -19,7 +19,6 @@ if(!file.exists(cl_areal_grid_path)){
 } else {
   shapefile.fix <- qs::qread(cl_areal_grid_path)
 }
-shapefile.fix <- shapefile.fix %>% dplyr::rename(geom = geom_wkt)
 
 DOI <- read_csv("DOI.csv")
 
@@ -27,9 +26,15 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   
   flog.info("Loading data ")
   # Read the DOI CSV file
-  i <- 3
-  dataset <- tools::file_path_sans_ext(DOI$Filename[i])
-  default_dataset <- qs::qread(file.path("data",paste0(dataset, "_updated.qs")))
+  i <- 1
+  record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", DOI$DOI[i])
+  
+  filename <- DOI$Filename[i]
+  dataset <- tools::file_path_sans_ext(filename)
+  renamed <- file.path("data", paste0(dataset, "_", record_id, "_updated.qs"))
+  default_dataset <- qs::qread(renamed)
+  # updated <- file.path("data", paste0(dataset, "_updated.qs"))
+  
  } else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){
   flog.info("reading the data from qs file")
   default_dataset <- qs::qread("data/default_dataset.qs")

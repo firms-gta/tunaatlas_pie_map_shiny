@@ -9,36 +9,37 @@ LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
 # libcurl4-openssl-dev is to install libraptor2-dev ued to install protobuf
 
 RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 && \
-    apt-get update && apt-get install -y wget … && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      sudo \
+      pandoc \
+      pandoc-citeproc \
+      libssl-dev \
+      libcurl4-gnutls-dev \
+      libxml2-dev \
+      libudunits2-dev \
+      libproj-dev \
+      libgeos-dev \
+      libgdal-dev \
+      libv8-dev \
+      libsodium-dev \
+      libsecret-1-dev \
+      git \
+      libnetcdf-dev \
+      curl \
+      libjq-dev \
+      cmake \
+      protobuf-compiler \
+      libprotobuf-dev \
+      wget \
+      librdf0 \
+      librdf0-dev \
+      libtbb-dev \
+      libzmq3-dev \
+      libpoppler-cpp-dev \
+      redland-utils && \
     rm -rf /var/lib/apt/lists/*
 
-
-RUN apt-get update && apt-get install -y \
-    sudo \
-    pandoc \
-    pandoc-citeproc \
-    libssl-dev \
-    libcurl4-gnutls-dev \
-    libxml2-dev \
-    libudunits2-dev \
-    libproj-dev \
-    libgeos-dev \
-    libgdal-dev \
-    libv8-dev \
-    libsodium-dev \
-    libsecret-1-dev \
-    git \
-    libnetcdf-dev \
-    curl \
-    libjq-dev \
-    cmake \
-    protobuf-compiler \
-    libprotobuf-dev \
-    librdf0 \
-    librdf0-dev \
-    libtbb-dev \
-    redland-utils && \
-    apt-get clean
     
 # Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates some errors
 
@@ -78,26 +79,35 @@ COPY DOI.csv ./DOI.csv
 # Appliquer dos2unix pour éviter les problèmes de formatage
 RUN dos2unix DOI.csv && cat -A ./DOI.csv
 
+COPY data/ ./data/
+
 # Télécharger les fichiers depuis Zenodo
 RUN echo "📥 Downloading files..." \
-    && bash -c "tail -n +2 ./DOI.csv | tr -d '\r' | while IFS=',' read -r DOI FILE; do \
-        RECORD_ID=\$(echo \"\$DOI\" | awk -F '/' '{print \$NF}' | sed 's/zenodo\\.//'); \
-        FILE_PATH=\"./data/\$FILE\"; \
-        NEWNAME=\"./data/\${FILE%.*}_\${RECORD_ID}.\${FILE##*.}\"; \
-        URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
-        
-        echo \"📥 Downloading \$FILE (Record ID: \$RECORD_ID)\"; \
-        
-        if wget -nv --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"\$FILE_PATH\" \"\$URL\"; then \
-            mv \"\$FILE_PATH\" \"\$NEWNAME\"; \
-            echo \"✅ File downloaded and renamed: \$NEWNAME\"; \
-            Rscript -e 'qs::qsave(readr::read_csv(Sys.getenv(\"NEWNAME\")), sub(\"\\\\..*\", \".qs\", Sys.getenv(\"NEWNAME\")))' \
-            && rm \"\$NEWNAME\"; \
-        else \
-            echo \"⚠️ Download failed, adding to failed list\"; \
-            echo \"\$DOI,\$FILE\" >> ./DOI_failed.csv; \
-        fi; \
-    done"
+ && bash -c "tail -n +2 ./DOI.csv | tr -d '\r' | while IFS=',' read -r DOI FILE; do \
+     RECORD_ID=\$(echo \"\$DOI\" | awk -F '/' '{print \$NF}' | sed 's/zenodo\\.//'); \
+     FILE_PATH=\"./data/\$FILE\"; \
+     NEWNAME=\"./data/\${FILE%.*}_\${RECORD_ID}.\${FILE##*.}\"; \
+     NEWQS=\${NEWNAME%.*}.qs; \
+     URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
+     \
+     if [ -f \"\$NEWQS\" ]; then \
+         echo \"✅ .qs file already exists: \$NEWQS\"; \
+     elif [ -f \"\$NEWNAME\" ]; then \
+         echo \"📦 File exists locally, converting: \$NEWNAME\"; \
+         Rscript -e \"qs::qsave(readr::read_csv('$NEWNAME'), '$NEWQS')\" && rm \"\$NEWNAME\"; \
+     else \
+         echo \"📥 Downloading \$FILE (Record ID: \$RECORD_ID)\"; \
+         if wget -nv --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"\$FILE_PATH\" \"\$URL\"; then \
+             mv \"\$FILE_PATH\" \"\$NEWNAME\"; \
+             echo \"✅ File downloaded and renamed: \$NEWNAME\"; \
+             Rscript -e \"qs::qsave(readr::read_csv('$NEWNAME'), '$NEWQS')\" && rm \"\$NEWNAME\"; \
+         else \
+             echo \"⚠️ Download failed, adding to failed list\"; \
+             echo \"\$DOI,\$FILE\" >> ./DOI_failed.csv; \
+         fi; \
+     fi; \
+ done"
+
 
 # ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
 ARG RENV_PATHS_ROOT=/root/.cache/R/renv
@@ -140,14 +150,22 @@ COPY R/load_data.R ./R/load_data.R
 RUN Rscript update_data.R 
 
 # Copy the rest of the application code
-COPY . .  
+COPY global.R server.R ui.R app_debug.R install.R ./
+COPY create_or_load_default_dataset.R update_data.R download_GTA_data.R ./
+COPY R/ R/
+COPY modules/ modules/
+COPY tab_panels/ tab_panels/
+COPY www/ www/
+COPY .here .Rprofile tunaatlas_pie_map_shiny.Rproj ./
+COPY .zenodo.json ./
+COPY README.md README.Rmd LICENSE ./
+ 
 # attention copy . . invalide le cache, eput expliquer pourquoi create_or_load_default_dataset 
 #n'est jamais caché, pourrait copier uniquement les choses utiles pour run la fonction puis le reste
 
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
 RUN Rscript ./create_or_load_default_dataset.R 
 
-COPY . . 
 #ajout pour être plus rapide au lancement
 
 # Expose port 3838 for the Shiny app

@@ -39,6 +39,7 @@ flog.info("All libraries loaded successfully in %s seconds", Sys.time() - before
 flog.info("All libraries loaded successfully.")
 #create default_dataset
 source(here::here("download_GTA_data.R"))
+source(here::here("update_data.R"))
 source(here::here("create_or_load_default_dataset.R"))
 
 source(here::here("modules/load_ui_modules.R"))
@@ -56,7 +57,7 @@ variable <- c("source_authority",
               # "species_name",
               # "fishing_mode", 
               "fishing_mode_label", 
-              # "measurement_unit",
+              "measurement_unit",
               "measurement_unit_label",
               "gridtype",
               # "measurement",
@@ -103,7 +104,6 @@ source(here::here("modules/initialize_reactive_values.R"))
 source(here::here("R/palette_settings.R"))
 source(here::here("global/generate_dimensions_palettes.R"))
 source(here::here("R/get_html_title.R"))
-source(here::here("R/load_data.R"))
 source(here::here("R/getPalette.R")) # do not knwo why we should run it as it is supposed to be ran after global.R but yet it is not
 addResourcePath("www", here::here("www"))
 more_about = function(){

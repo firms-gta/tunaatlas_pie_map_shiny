@@ -76,8 +76,6 @@ RUN sed -i -e '$a\' DOI.csv
 
 COPY data/ ./data/
 
-RUN echo "🔎 Contenu de ./data avant la boucle :" && ls -l ./data
-
 # 2) Télécharger, renommer, convertir puis nettoyer
 RUN echo "📥 Downloading and converting files..." && \
     bash -c "tail -n +2 DOI.csv | tr -d '\r' | \
@@ -178,8 +176,18 @@ COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
 RUN Rscript ./create_or_load_default_dataset.R 
 
-COPY . . 
-#ajout pour être plus rapide au lancement
+# Copy the rest of the application code
+COPY global.R server.R ui.R app_debug.R install.R ./
+COPY download_GTA_data.R ./
+COPY R/ R/
+COPY modules/ modules/
+COPY tab_panels/ tab_panels/
+COPY www/ www/
+COPY .here .Rprofile tunaatlas_pie_map_shiny.Rproj ./
+COPY .zenodo.json ./
+COPY README.md README.Rmd LICENSE ./
+COPY rmd/ rmd/
+COPY global/ global/
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838

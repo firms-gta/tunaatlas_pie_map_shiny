@@ -4,13 +4,15 @@ data/*
 secrets.env
 # 2) Réinclure le dossier parent data/
 !data/
+!data/cl_areal_grid.qs
+!data/default_dataset.qs
 *.csv
 *.txt
 *.zip
 doc/*
 docs/*
 materialized_view/
-rmd/*
+rmd/metadata_dcmi.rds
 Markdown/*
 !DOI.csv
 # 3) Réinclure uniquement les fichiers .qs voulus

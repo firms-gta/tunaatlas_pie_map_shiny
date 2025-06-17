@@ -69,14 +69,14 @@
     },
     "DBI": {
       "Package": "DBI",
-      "Version": "1.2.3",
+      "Version": "1.2.2",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
         "R",
         "methods"
       ],
-      "Hash": "065ae649b05f1ff66bb0c793107508f5"
+      "Hash": "164809cd72e1d5160b4cb3aa57f510fe"
     },
     "DT": {
       "Package": "DT",
@@ -863,7 +863,7 @@
     },
     "classInt": {
       "Package": "classInt",
-      "Version": "0.4-11",
+      "Version": "0.4-10",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
@@ -875,7 +875,7 @@
         "graphics",
         "stats"
       ],
-      "Hash": "f2af70314a63d7f025ae668f08bd933a"
+      "Hash": "f5a40793b1ae463a7ffb3902a95bf864"
     },
     "cli": {
       "Package": "cli",
@@ -1350,7 +1350,7 @@
     },
     "e1071": {
       "Package": "e1071",
-      "Version": "1.7-16",
+      "Version": "1.7-14",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
@@ -1362,7 +1362,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "27a09ca40266a1066d62ef5402dd51d6"
+      "Hash": "4ef372b716824753719a8a38b258442d"
     },
     "ellipsis": {
       "Package": "ellipsis",
@@ -4176,7 +4176,7 @@
     },
     "s2": {
       "Package": "s2",
-      "Version": "1.1.9",
+      "Version": "1.1.6",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
@@ -4184,7 +4184,7 @@
         "Rcpp",
         "wk"
       ],
-      "Hash": "4e664a5d610d58f27ec196e96cdb7f6f"
+      "Hash": "32f7b1a15bb01ae809022960abad5363"
     },
     "sass": {
       "Package": "sass",
@@ -4727,15 +4727,15 @@
     },
     "terra": {
       "Package": "terra",
-      "Version": "1.8-50",
+      "Version": "1.8-54",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "Rcpp",
         "methods"
       ],
-      "Hash": "057783c6c0f092168a8fef1efbb3adb8"
+      "Hash": "6765f52689ca88d789852c9db01f3f83"
     },
     "testthat": {
       "Package": "testthat",
@@ -4979,14 +4979,14 @@
     },
     "units": {
       "Package": "units",
-      "Version": "0.8-7",
+      "Version": "0.8-5",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
         "R",
         "Rcpp"
       ],
-      "Hash": "5d0b024902d5da97a2b64f002e92a869"
+      "Hash": "119d19da480e873f72241ff6962ffd83"
     },
     "urlchecker": {
       "Package": "urlchecker",
@@ -5206,13 +5206,13 @@
     },
     "wk": {
       "Package": "wk",
-      "Version": "0.9.4",
+      "Version": "0.9.1",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
         "R"
       ],
-      "Hash": "37be35d733130f1de1ef51672cf7cdc0"
+      "Hash": "5d4545e140e36476f35f20d0ca87963e"
     },
     "writexl": {
       "Package": "writexl",

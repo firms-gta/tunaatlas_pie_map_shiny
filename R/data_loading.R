@@ -24,6 +24,9 @@ load_initial_data <- function(default_dataset_preloaded) {
   # }
   default_dataset_preloaded_without_geom$geom_wkt <- NULL
   default_dataset_preloaded_without_geom$geom <- NULL
+  if(!"geographic_identifier" %in% colnames(geom)){
+    geom$geographic_identifier <- geom$code 
+  }
   flog.info("geometry of preloaded data removed")
   geom <- geom %>% dplyr::semi_join(default_dataset_preloaded_without_geom, by = "geographic_identifier")
   list(initial_data = geom,

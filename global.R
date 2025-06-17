@@ -38,7 +38,6 @@ flog.info("All libraries loaded successfully in %s seconds", Sys.time() - before
 # Log the loading of libraries
 flog.info("All libraries loaded successfully.")
 #create default_dataset
-source(here::here("download_GTA_data.R"))
 source(here::here("update_data.R"))
 source(here::here("create_or_load_default_dataset.R"))
 
@@ -52,8 +51,8 @@ variable <- c("source_authority",
               "species_label",
               "fishing_fleet_label",
               # "fishing_fleet",
-              "gear_label",
-              # "gear_type", 
+              "gear_type_label",
+              # "gear_type",
               # "species_name",
               # "fishing_mode", 
               "fishing_mode_label", 

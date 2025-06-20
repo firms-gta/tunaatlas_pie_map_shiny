@@ -31,16 +31,6 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     zoom_level <- reactiveVal(1)
     target_var <- getTarget(category_var)
     
-    observeEvent(data(), {
-      cats <- unique(data()[[category_var]])
-      ncat <- length(cats)
-      updateSliderInput(
-        session, "n_vars",
-        max   = ncat,
-        value = min(global_topn, ncat)  # on conserve la valeur si elle reste valide
-      )
-    }, ignoreInit = TRUE)
-    
     data_pie_map <- reactive({
       flog.info("Generating pie map data for category: %s", category_var)
       req(data(),input$n_vars)

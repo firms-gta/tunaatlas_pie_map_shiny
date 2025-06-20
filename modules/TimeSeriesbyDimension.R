@@ -31,7 +31,7 @@ TimeSeriesbyDimensionServer <- function(id, category_var, data, global_topn) {
       # 4) Now aggregate by (possibly recoded) category and year
       df <- dt[, .(measurement_value = sum(measurement_value)),
                by = c(category_var, "year")]
-      flog.info("Time series data after grouping: %s", head(df))
+      # flog.info("Time series data after grouping: %s", head(df))
       df
     })
     

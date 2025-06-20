@@ -9,7 +9,6 @@ secrets.env
 *.csv
 *.txt
 *.zip
-doc/*
 docs/*
 materialized_view/
 rmd/metadata_dcmi.rds

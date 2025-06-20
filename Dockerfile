@@ -188,7 +188,7 @@ COPY .zenodo.json ./
 COPY README.md README.Rmd LICENSE ./
 COPY rmd/ rmd/
 COPY global/ global/
-
+COPY doc/ doc/
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 

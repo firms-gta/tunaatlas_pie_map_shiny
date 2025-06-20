@@ -62,6 +62,7 @@ initialiserPalettes <- function(targetVariables, seed = 2643598) {
     # Ajuster la longueur de palette à celle de dataframe[[columnName]]
     palette <- rep(palette, length.out = nUnique)
     names(palette) <- dataframe[[columnName]]
+    palette <- c(palette, Other = "#000000")
     
     flog.info("Generated palette for %s: %s", variableName, paste(palette, collapse = ", "))
     

@@ -65,74 +65,75 @@ server <- function(input, output, session) {
   #   default_gridtype = "5deg_x_5deg",
   #   default_measurement_unit = "t"
   # )
-
-    observeEvent(dataset_choices$submit(), {
-      flog.info("Submit dataset clicked")
+  
+  observeEvent(dataset_choices$submit(), {
+    # browser()
+    flog.info("Submit dataset clicked")
+    
+    selected_dataset <- dataset_choices$selected_dataset()
+    selected_gridtype <- dataset_choices$selected_gridtype()
+    selected_measurement_unit <- dataset_choices$selected_measurement_unit()
+    firstsubmit <- firstSubmit()
+    if (firstsubmit) {
+      flog.info("First submit")
+      flog.info("All initialization files already exist. Loading from files.")
+      flog.info("loading initial data")
+      # data <- load_initial_data(default_dataset)
+      flog.info("Initial Data loaded")
+      initial_data(data$initial_data)
+      flog.info("Inital data loaded")
       
-      selected_dataset <- dataset_choices$selected_dataset()
-      selected_gridtype <- dataset_choices$selected_gridtype()
-      selected_measurement_unit <- dataset_choices$selected_measurement_unit()
-      firstsubmit <- firstSubmit()
-      if (firstsubmit) {
-        flog.info("First submit")
-        flog.info("All initialization files already exist. Loading from files.")
-        flog.info("loading initial data")
-        # data <- load_initial_data(default_dataset)
-        flog.info("Initial Data loaded")
-        initial_data(data$initial_data)
-        flog.info("Inital data loaded")
-        
-        data_for_filters(data$data_for_filters)
-        flog.info("Filters loaded")
-        
-        data_for_filters_trigger(data_for_filters_trigger() + 1)
-        # show(TRUE)
-        # flog.info("delay finished")
-        shinyjs::hide("loading_page")
-        shinyjs::show("main_content")
-        shinyjs::show("loading_page")
-        
-        # showModal(                   modalDialog(
-        #   title = "Information",
-        #   # includeHTML("doc/ribbon_GH.html"),
-        #   includeMarkdown("doc/popup.md"),
-        #   size = "l",
-        #   easyClose = TRUE,
-        #   footer=modalButton("OK", icon =icon("check"))
-        # ))
-        
-        # show(TRUE)
-        # observeEvent(TRUE, {
-        #   show(FALSE)
-        #   shinyjs::show("loading_page")
-        # })
-        
-      } else {
+      data_for_filters(data$data_for_filters)
+      flog.info("Filters loaded")
+      
+      data_for_filters_trigger(data_for_filters_trigger() + 1)
+      # show(TRUE)
+      # flog.info("delay finished")
+      shinyjs::hide("loading_page")
+      shinyjs::show("main_content")
+      shinyjs::show("loading_page")
+      
+      # showModal(                   modalDialog(
+      #   title = "Information",
+      #   # includeHTML("doc/ribbon_GH.html"),
+      #   includeMarkdown("doc/popup.md"),
+      #   size = "l",
+      #   easyClose = TRUE,
+      #   footer=modalButton("OK", icon =icon("check"))
+      # ))
+      
+      # show(TRUE)
+      # observeEvent(TRUE, {
+      #   show(FALSE)
+      #   shinyjs::show("loading_page")
+      # })
+      
+    } else {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$") | stringr::str_detect(dataset_choices$selected_dataset(), "\\.qs$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
         qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
           dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
-          measurement_unit == "no" ~ "Number of fish",
-          TRUE ~ measurement_unit))
+                                                     measurement_unit == "no" ~ "Number of fish",
+                                                     TRUE ~ measurement_unit))
         dataset_not_init <- load_initial_data(default_dataset)
       } else {
-      showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
-      
-      flog.info("Loading dataset")
-      req(pool())
-      flog.info("Connection to DB accessible, querying the data")
-      
-      # shinyjs::hide("main_content")
-      # shinyjs::show("loading_page")
-      issueddata <- FALSE
-      if(issueddata){
-        selected_viewissued = "public.issueddata"
-      } else {
-        selected_viewissued = "public.shinyeffort"
-      }
-      dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
-      flog.info("Default dataset loaded")
+        showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
+        
+        flog.info("Loading dataset")
+        req(pool())
+        flog.info("Connection to DB accessible, querying the data")
+        
+        # shinyjs::hide("main_content")
+        # shinyjs::show("loading_page")
+        issueddata <- FALSE
+        if(issueddata){
+          selected_viewissued = "public.issueddata"
+        } else {
+          selected_viewissued = "public.shinyeffort"
+        }
+        dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
+        flog.info("Default dataset loaded")
       }
       default_dataset <- dataset_not_init$data_for_filters
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
@@ -216,6 +217,7 @@ server <- function(input, output, session) {
       
       # Step 2: Convert to sf object
       unique_id_geom <- st_as_sf(unique_id_geom)
+      st_crs(unique_id_geom) <- st_crs(sf_wkt)
       
       # Step 3: Perform spatial intersection
       within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
@@ -227,6 +229,10 @@ server <- function(input, output, session) {
       final_filtered_data <- final_filtered_data %>%
         dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
       final_filtered_data$geom_wkt <- NULL
+    }
+    if(firstSubmit()){
+      final_filtered_data <- final_filtered_data %>%
+        dplyr::filter(species_label == "Albacore")
     }
     for (variable in variable_to_display) {
       
@@ -282,7 +288,7 @@ server <- function(input, output, session) {
     
     final_filtered_data
   }, ignoreNULL = FALSE)
-
+  
   # Calculate the centroid of the map
   centroid <- reactive({
     final_filtered_data <- final_filtered_data() %>% 
@@ -416,28 +422,36 @@ server <- function(input, output, session) {
     req(data_for_filters())
     req(variable_choicesintersect())
     data_for_filters <- data_for_filters()
+    
     lapply(variable_choicesintersect(), function(variable) {
       local({
         variable <- variable
         flog.info(paste("Initialising", variable))
-        
-        variable_data <- data_for_filters %>% dplyr::select(all_of(variable)) %>% dplyr::distinct()
-        # flog.info(paste(variable, "data after distinct:", paste(head(variable_data), collapse = ", ")))
+        # récupère les valeurs distinctes pour cette variable
+        variable_data <- data_for_filters %>%
+          dplyr::select(all_of(variable)) %>%
+          dplyr::distinct() %>%
+          pull(!!sym(variable))
+        req(final_filtered_data())
+        selected <- final_filtered_data() %>%
+          dplyr::select(all_of(variable)) %>%
+          dplyr::distinct() %>%
+          pull(!!sym(variable))
         
         output[[paste0("select_", variable)]] <- renderUI({
           shinyWidgets::pickerInput(
-            paste0('select_', variable), 
-            paste('Select', gsub("_", " ", variable)), 
-            choices = variable_data[[variable]], 
+            inputId  = paste0('select_', variable), 
+            label    = paste('Select', gsub("_", " ", variable)), 
+            choices  = variable_data, 
             multiple = TRUE,
-            selected = variable_data[[variable]],  # Sélectionner tout par défaut
-            options = list(
-              `actions-box` = TRUE,  # Ajoute un bouton "Tout sélectionner"
-              `live-search` = TRUE,  # Ajoute un champ de recherche
-              `size` = 100,          # Affiche seulement 5 éléments à la fois
-              `selected-text-format` = "count > 5"  # N'affiche que le nombre d’éléments sélectionnés si plus de 5
+            selected = selected,     # sélectionne tout (ici pour species_label c’est 1 seule valeur)
+            options  = list(
+              `actions-box`         = TRUE,
+              `live-search`         = TRUE,
+              `size`                = 100,
+              `selected-text-format`= "count > 5"
             ),
-            width = "100%"  # Agrandir la largeur du sélecteur
+            width = "100%"
           )
         })
         
@@ -445,6 +459,7 @@ server <- function(input, output, session) {
       })
     })
   })
+  
   
   output$year_input <- renderUI({
     req(data_for_filters())
@@ -481,12 +496,15 @@ server <- function(input, output, session) {
     observeEvent(input[[paste0("all_", variable)]], {
       flog.info(paste("Select all", variable))
       req(data_for_filters())
-      all_values <- data_for_filters() %>% dplyr::select(!!sym(variable)) %>% dplyr::distinct() %>% pull(!!sym(variable))
+      all_values <- data_for_filters() %>% dplyr::select(!!sym(variable)) %>% dplyr::distinct() %>%
+        pull(!!sym(variable))
       updateSelectInput(session, paste0("select_", variable), selected = all_values)
     })
   })
   
   newwkttest <- reactiveVal(NULL)
+  global_topn <- reactiveVal(5)
+  
   
   # Map and time series
   # Loop through variables and set up the modules
@@ -500,9 +518,13 @@ server <- function(input, output, session) {
         centroid = centroid, 
         submitTrigger = submitTrigger, 
         geom = initial_data,
-        newwkttest = newwkttest  # Pass the single newwkt reactive value to each module
+        newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
+        global_topn = global_topn
       )
     })
+  })
+  observeEvent(global_topn(), {
+    cat("Parent sees new top N:", global_topn(), "\n")
   })
   
   observeEvent(newwkttest(), {
@@ -517,7 +539,7 @@ server <- function(input, output, session) {
   lapply(variable_to_display, function(variable) {
     local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
       variable <- variable
-      categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom)
+      categoryGlobalPieChartServer(paste0(variable, "_chart"), variable, data_without_geom, global_topn = global_topn)
     })
   })
   
@@ -525,7 +547,7 @@ server <- function(input, output, session) {
   lapply(variable_to_display, function(variable) {
     local({
       variable <- variable
-      TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom)
+      TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom, global_topn = global_topn)
     })
   })
   
@@ -560,7 +582,7 @@ server <- function(input, output, session) {
   
   output$sidebar_ui_with_variable_to_display <- renderUI({
     req(variable_choicesintersect())
-        variable_choicesintersect <- variable_choicesintersect()
+    variable_choicesintersect <- variable_choicesintersect()
     variable_choices <- reactive({
       req(variable_choicesintersect())  # Vérifie que la variable existe
       variable_choicesintersect()  # Renvoie la liste des choix valides
@@ -588,67 +610,67 @@ server <- function(input, output, session) {
       ),
       div(style = "overflow-y: auto; max-height: 80vh; padding-right: 10px;",
           tags$br(),
-      # Year input and toggle
-      uiOutput("year_input"),
-      checkboxInput("toggle_year", "Discrete selection of year", value = FALSE),
-      tags$br(),
-      
-      # Dynamic variable filters
-      do.call(tagList, lapply(variable_choicesintersect, function(variable) {
-        if(variable == "species"){
-          tagList(
-            div(uiOutput("select_species")),
-            div(class = "row", 
-                # div(class = "col-6", 
-                #     actionButton("all_species", "Select All Species")
-                # ),
-                div(class = "col-6", 
-                    actionButton("major_tunas", "Select Major Tunas")
-                )
-            ),
-            tags$br(),
-            tags$br()
-          )
-        } else if(variable == "species_name") {
-          tagList(
-            div(uiOutput("select_species_name")),
-            div(class = "row", 
-                # div(class = "col-6", 
-                #     actionButton("all_species_name", "Select All Species")
-                # ),
-                div(class = "col-6", 
-                    actionButton("major_tunas_name", "Select Major Tunas")
-                )
-            ),
-            tags$br(),
-            tags$br()
-          )
-        } else {
-          tagList(
-            div(uiOutput(paste0("select_", variable))
-              #   ,
-              # actionButton(paste0("all_", variable), paste("Select All", gsub("_", " ", variable))) # solution adhoc maintenant géré par hsinywidget
-            ),
-            tags$br(),
-            tags$br()
-          )
-        }
-      })),
-      
-      # Reset buttons
-      div(class = "row", 
-          div(class = "col-6", 
-              actionButton("resetWkt", "Reset WKT to global")
+          # Year input and toggle
+          uiOutput("year_input"),
+          checkboxInput("toggle_year", "Discrete selection of year", value = FALSE),
+          tags$br(),
+          
+          # Dynamic variable filters
+          do.call(tagList, lapply(variable_choicesintersect, function(variable) {
+            if(variable == "species"){
+              tagList(
+                div(uiOutput("select_species")),
+                div(class = "row", 
+                    # div(class = "col-6", 
+                    #     actionButton("all_species", "Select All Species")
+                    # ),
+                    div(class = "col-6", 
+                        actionButton("major_tunas", "Select Major Tunas")
+                    )
+                ),
+                tags$br(),
+                tags$br()
+              )
+            } else if(variable == "species_name") {
+              tagList(
+                div(uiOutput("select_species_name")),
+                div(class = "row", 
+                    # div(class = "col-6", 
+                    #     actionButton("all_species_name", "Select All Species")
+                    # ),
+                    div(class = "col-6", 
+                        actionButton("major_tunas_name", "Select Major Tunas")
+                    )
+                ),
+                tags$br(),
+                tags$br()
+              )
+            } else {
+              tagList(
+                div(uiOutput(paste0("select_", variable))
+                    #   ,
+                    # actionButton(paste0("all_", variable), paste("Select All", gsub("_", " ", variable))) # solution adhoc maintenant géré par hsinywidget
+                ),
+                tags$br(),
+                tags$br()
+              )
+            }
+          })),
+          
+          # Reset buttons
+          div(class = "row", 
+              div(class = "col-6", 
+                  actionButton("resetWkt", "Reset WKT to global")
+              ),
+              div(class = "col-6", 
+                  actionButton("resetFilters", "Reset Filters")
+              )
           ),
-          div(class = "col-6", 
-              actionButton("resetFilters", "Reset Filters")
-          )
-      ),
-      tags$br(),
-      
-      # Dataset change button
-      actionButton("change_dataset", "Choose another dataset")
-    )
+          tags$br(),
+          
+          # Dataset change button
+          actionButton("change_dataset", "Choose another dataset")
+      )
     )
   })
   
@@ -661,9 +683,34 @@ server <- function(input, output, session) {
         geographic_catches_by_variable_ui(column_name)
       )
     })
-    do.call(navset_card_tab, panel_list)
+    # do.call(navset_card_tab, panel_list)
+    do.call(navset_card_tab, c(list(id = "variable_tabs"), panel_list))
     
   })
+  
+  # after you have all your modules wired up...
+  observeEvent(input$variable_tabs, {
+    sel <- input$variable_tabs            # e.g. "ICCAT", "WCPFC", etc.
+    
+    # figure out how many distinct cats for this variable
+    df   <- data_without_geom()
+    ncat <- length(unique(df[[ sel ]]))
+    
+    # build the full sliderInput id inside that module:
+    slider_id <- paste0(sel, "_module-n_vars")
+    old_val <- global_topn()
+    if (is.null(old_val)) old_val <- 1
+    
+    
+    updateSliderInput(
+      session,
+      inputId = slider_id,
+      max   = ncat,
+      value = min(old_val, ncat)
+    )
+  })
+  
+  
   # Data and graphics outputs
   output$sql_query_init <- renderText({ 
     paste(sql_query_init)

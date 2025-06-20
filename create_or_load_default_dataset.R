@@ -5,12 +5,14 @@ flog.info("Sourced create or load default dataset")
 # Paths for processed files
 default_dataset_path <- here::here("data/default_dataset.qs")
 cl_areal_grid_path <- here::here("data/cl_areal_grid.qs")
-cwp_grid_file <- system.file("extdata", "cl_areal_grid.csv", package = "CWP.dataset")
-if (!file.exists(cwp_grid_file)) {
-  stop("cl_areal_grid.csv not found in inst/extdata - run data-raw/download_codelists.R")
-}
-shp_raw <- sf::st_read(cwp_grid_file, show_col_types = FALSE)
+
+
 if(!file.exists(cl_areal_grid_path)){
+  cwp_grid_file <- system.file("extdata", "cl_areal_grid.csv", package = "CWP.dataset")
+  if (!file.exists(cwp_grid_file)) {
+    stop("cl_areal_grid.csv not found in inst/extdata - run data-raw/download_codelists.R")
+  }
+  shp_raw <- sf::st_read(cwp_grid_file, show_col_types = FALSE)
   shapefile.fix <- sf::st_as_sf(shp_raw, wkt = "geom_wkt", crs = 4326)
   shapefile.fix <- dplyr::rename(shapefile.fix,
                                  geom     = geom_wkt)

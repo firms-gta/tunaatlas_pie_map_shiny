@@ -5,7 +5,7 @@ categoryGlobalPieChartUI <- function(id) {
 
 
 
-categoryGlobalPieChartServer <- function(id, category, reactive_data, sql_query = NULL) {
+categoryGlobalPieChartServer <- function(id, category, reactive_data, sql_query = NULL, global_topn) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -21,33 +21,67 @@ categoryGlobalPieChartServer <- function(id, category, reactive_data, sql_query 
     
     # Reactive expression to fetch and prepare data
     data_for_chart <- reactive({
-      req(reactive_data())
-      flog.info("Preparing data for pie chart for category: %s", category)
-      df <- reactive_data() %>%
-        dplyr::group_by(!!sym(category)) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value)) %>%
-        dplyr::arrange(!!sym(category))
-      flog.info("Data for pie chart: %s", head(df))
-      df
+      req(reactive_data(), global_topn())
+      
+      df_raw <- reactive_data()
+      N <- global_topn()
+      
+      # 1) calculer les totaux globaux par catégorie
+      sums <- df_raw %>%
+        dplyr::group_by(cat = .data[[category]]) %>%
+        dplyr::summarise(total = sum(measurement_value), .groups = "drop") %>%
+        dplyr::arrange(desc(total))
+      
+      # 2) extraire les N premiers niveaux
+      top_cats <- head(sums$cat, N)
+      
+      # 3) recoder en "Other" et regrouper
+      df_raw %>%
+        dplyr::mutate(
+          cat2 = ifelse(.data[[category]] %in% top_cats,
+                        .data[[category]],
+                        "Other")
+        ) %>%
+        dplyr::group_by(cat2) %>%
+        dplyr::summarise(
+          measurement_value = sum(measurement_value),
+          .groups = "drop"
+        ) %>%
+        dplyr::rename(!!category := cat2) %>%
+        dplyr::arrange(desc(measurement_value))
     })
     
     
     
     # Render the Plotly pie chart
     output$pie_chart <- renderPlotly({
-      flog.info("Rendering pie chart for category: %s", category)
       df <- data_for_chart()
-      flog.info("Data used for pie chart: %s", head(df))
       
-      palette <- getPalette(category)
-      palette <- palette[names(palette) %in% unique(df[[category]])]
-      # flog.info("Palette used for pie chart: %s", paste(names(palette), collapse = ", "))
+      # 1) Grab your full named palette
+      pal <- getPalette(category)
       
-      plot_ly(df, labels = as.formula(paste0("~`", category, "`")), values = ~measurement_value, type = 'pie',
-              marker = list(colors = palette, line = list(color = '#FFFFFF', width = 1))) %>%
-        layout(title = sprintf('Distribution for %s', category),
-               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-               yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+      # 2) Keep only the entries actually present
+      pal <- pal[names(pal) %in% df[[category]]]
+      
+      # 3) Now replicate/reorder it so it's exactly one color per row of df:
+      colors <- unname(pal[df[[category]]])
+      
+      plot_ly(
+        df,
+        labels = as.formula(paste0("~`", category, "`")),
+        values = ~measurement_value,
+        type   = 'pie',
+        marker = list(
+          colors = colors,
+          line   = list(color = '#FFFFFF', width = 1)
+        )
+      ) %>%
+        layout(
+          title = sprintf('Distribution for %s', category),
+          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+        )
     })
+    
   })
 }

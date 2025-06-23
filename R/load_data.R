@@ -92,6 +92,26 @@ load_data <- function(DOI) {
       data_tbl$geographic_identifier <- as.character(data_tbl$geographic_identifier)
       # enrichir
       data_tbl <- CWP.dataset::enrich_dataset_if_needed(data_tbl, shp_raw = shp)$without_geom
+      simplify_labels <- function(df) {
+        # Trouver toutes les colonnes avec un suffixe "_label"
+        label_cols <- grep("_label$", names(df), value = TRUE)
+        
+        for (label_col in label_cols) {
+          # Trouver la colonne sans "_label"
+          base_col <- sub("_label$", "", label_col)
+          
+          # Vérifier que la colonne de base existe aussi
+          if (base_col %in% names(df)) {
+            # Remplacer la colonne de base par la concaténation
+            df[[base_col]] <- paste(df[[base_col]], "-", df[[label_col]])
+          }
+        }
+        
+        # Retourner le dataframe sans les colonnes "_label"
+        df[ , !(names(df) %in% label_cols), drop = FALSE]
+      }
+      
+      data_tbl <- simplify_labels(data_tbl)
       # ajouter year/month
       data_tbl <- dplyr::mutate(data_tbl,
                          year  = year(time_start),

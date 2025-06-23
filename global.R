@@ -48,23 +48,25 @@ load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
 variable <- c("source_authority",
-              "species_label",
-              "fishing_fleet_label",
-              # "fishing_fleet",
-              "gear_type_label",
-              # "gear_type",
+              "species",
+              # "species_label",
+              # "fishing_fleet_label",
+              "fishing_fleet",
+              # "gear_type_label",
+              "gear_type",
               # "species_name",
-              # "fishing_mode", 
-              "fishing_mode_label", 
+              "fishing_mode",
+              # "fishing_mode_label", 
               "measurement_unit",
-              "measurement_unit_label",
+              # "measurement_unit_label",
               "gridtype",
               # "measurement",
-              # "measurement_type",
-              "measurement_type_label",
+              "measurement_type",
+              # "measurement_type_label",
               "species_group", 
               # "species", 
-              "issue"
+              "issue", 
+              "species_group"
 )
 
 flog.info(sprintf("Variables: %s", paste0(variable)))

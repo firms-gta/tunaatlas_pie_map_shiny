@@ -234,7 +234,7 @@ server <- function(input, output, session) {
     }
     if(firstSubmit()){
       final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(species_label == "Albacore") %>% dplyr::filter(measurement_unit == "t")
+        dplyr::filter(species == "ALB - Albacore") %>% dplyr::filter(measurement_unit == "t")
     }
     for (variable in variable_to_display) {
       

@@ -1,4 +1,4 @@
-FROM rocker/r-ver:4.2.3
+FROM rocker/r-ver:4.3.1
 
 # Maintainer information
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"

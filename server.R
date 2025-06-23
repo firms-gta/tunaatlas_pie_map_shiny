@@ -321,7 +321,7 @@ server <- function(input, output, session) {
   variable_choicesintersect <- reactive({
     req(data_for_filters())
     
-    priority_vars <- c("source_authority", "species_label", "gear_type_label", "fishing_fleet_label")
+    priority_vars <- c("source_authority", "species", "gear_type", "fishing_fleet")
     
     variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
     
@@ -482,17 +482,17 @@ server <- function(input, output, session) {
   observeEvent(input$major_tunas, {
     flog.info("Select major tunas")
     req(data_for_filters())
-    species <- data_for_filters() %>% dplyr::select(species)%>% dplyr::filter(species %in% c("YFT", "SKJ", "ALB", "BET", "SBF"))  %>% dplyr::distinct() %>% pull(species)
+    species <- data_for_filters() %>% dplyr::select(species)%>% dplyr::filter(species %in% c("YFT - Yellowfin tuna", "SKJ - Skipjack tuna", "ALB - Albacore", "BET - Bigeye tuna", "SBF - Southern bluefin tuna"))  %>% dplyr::distinct() %>% pull(species)
     updateSelectInput(session, "select_species", selected = species)
   })
   
-  observeEvent(input$major_tunas_name, {
-    flog.info("Select major tunas")
-    req(data_for_filters())
-    species_name <- data_for_filters()%>% dplyr::select(species_name) %>% dplyr::filter(species_name %in% c("Albacore", "Bigeye tuna", "Skipjack tuna", "Yellowfin tuna", "Southern bluefin tuna"))  %>% 
-      dplyr::distinct() %>% pull(species_name)
-    updateSelectInput(session, "select_species_name", selected = species_name)
-  })
+  # observeEvent(input$major_tunas_name, {
+  #   flog.info("Select major tunas")
+  #   req(data_for_filters())
+  #   species_name <- data_for_filters()%>% dplyr::select(species_name) %>% dplyr::filter(species_name %in% c("Albacore", "Bigeye tuna", "Skipjack tuna", "Yellowfin tuna", "Southern bluefin tuna"))  %>% 
+  #     dplyr::distinct() %>% pull(species_name)
+  #   updateSelectInput(session, "select_species_name", selected = species_name)
+  # })
   
   lapply(variable_to_display, function(variable) {
     observeEvent(input[[paste0("all_", variable)]], {
@@ -526,7 +526,8 @@ server <- function(input, output, session) {
         label = paste("Number of", sel, "to display"),
         min = 1,
         max = max(ncat, 1),
-        value = min(old_val, ncat)
+        value = min(old_val, ncat), 
+        round = TRUE
       )
     })
   })

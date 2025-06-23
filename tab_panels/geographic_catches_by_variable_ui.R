@@ -16,9 +16,7 @@ geographic_catches_by_variable_ui <- function(variable) {
               gap_size = "10px",
               # grid_card_plot(area = "plot"),
               grid_card_text(
-                # Here, use HTML tags directly to embed the image and hyperlink
-                content = create_logo_panel(),
-                alignment = "start",
+                content = shinycssloaders::withSpinner(uiOutput(paste0("slider_ui_", variable))),
                 area = "logo"
               ),
               grid_card(

@@ -192,6 +192,8 @@ server <- function(input, output, session) {
     
   })
   
+
+  
   # Filtering the final data
   final_filtered_data <- eventReactive(input$submit, {
     flog.info("Submit button clicked")
@@ -232,7 +234,7 @@ server <- function(input, output, session) {
     }
     if(firstSubmit()){
       final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(species_label == "Albacore")
+        dplyr::filter(species_label == "Albacore") %>% dplyr::filter(measurement_unit == "t")
     }
     for (variable in variable_to_display) {
       
@@ -505,7 +507,37 @@ server <- function(input, output, session) {
   newwkttest <- reactiveVal(NULL)
   global_topn <- reactiveVal(5)
   
+  global_topn <- reactive({
+    req(input$variable_tabs)
+    input[[paste0("topn_", input$variable_tabs)]]
+  })
   
+  observeEvent(input$variable_tabs, {
+    req(input$variable_tabs)
+    sel <- input$variable_tabs
+    df <- data_without_geom()
+    ncat <- length(unique(df[[sel]]))
+    old_val <- global_topn()
+    if (is.null(old_val)) old_val <- 1
+    
+    output[[paste0("slider_ui_", sel)]] <- renderUI({
+      sliderInput(
+        inputId = paste0("topn_", sel),
+        label = paste("Number of", sel, "to display"),
+        min = 1,
+        max = max(ncat, 1),
+        value = min(old_val, ncat)
+      )
+    })
+  })
+  
+  # observe({
+  #   sel <- input$variable_tabs
+  #   req(sel)
+  #   val <- input[[paste0("topn_", sel)]]
+  #   if (!is.null(val)) global_topn(val)
+  # })
+  # 
   # Map and time series
   # Loop through variables and set up the modules
   lapply(variable_to_display, function(variable) {
@@ -674,7 +706,6 @@ server <- function(input, output, session) {
     )
   })
   
-  
   output$dynamic_panels <- renderUI({
     req(variable_choicesintersect())
     panel_list <- lapply(variable_choicesintersect(), function(column_name) {
@@ -686,28 +717,6 @@ server <- function(input, output, session) {
     # do.call(navset_card_tab, panel_list)
     do.call(navset_card_tab, c(list(id = "variable_tabs"), panel_list))
     
-  })
-  
-  # after you have all your modules wired up...
-  observeEvent(input$variable_tabs, {
-    sel <- input$variable_tabs            # e.g. "ICCAT", "WCPFC", etc.
-    
-    # figure out how many distinct cats for this variable
-    df   <- data_without_geom()
-    ncat <- length(unique(df[[ sel ]]))
-    
-    # build the full sliderInput id inside that module:
-    slider_id <- paste0(sel, "_module-n_vars")
-    old_val <- global_topn()
-    if (is.null(old_val)) old_val <- 1
-    
-    
-    updateSliderInput(
-      session,
-      inputId = slider_id,
-      max   = ncat,
-      value = min(old_val, ncat)
-    )
   })
   
   

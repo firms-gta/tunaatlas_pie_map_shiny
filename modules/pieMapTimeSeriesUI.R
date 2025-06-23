@@ -1,16 +1,6 @@
 pieMapTimeSeriesUI <- function(id) {
   ns <- NS(id)
   tagList(
-    # ───────────────────────────────────────────────
-    # NEW: slider to pick how many categories to show
-    sliderInput(
-      ns("n_vars"),
-      "Top N categories to display (all others “Other”):",
-      min   = 1,
-      max   = 10,      
-      value = 5
-    ),
-    # ───────────────────────────────────────────────
     div(
       style = "height: 400px;",
       leafletOutput(ns("pie_map")) %>% withSpinner(),
@@ -31,12 +21,18 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     zoom_level <- reactiveVal(1)
     target_var <- getTarget(category_var)
     
+    observeEvent(global_topn(), {
+      # Force a zoom refresh to trigger leaflet redraw
+      flog.info("Triggering zoom reset due to topn change")
+      zoom_level(zoom_level())  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
+    })
+    
     data_pie_map <- reactive({
       flog.info("Generating pie map data for category: %s", category_var)
-      req(data(),input$n_vars)
-      observeEvent(input$n_vars, {
-        global_topn(input$n_vars)
-      }, ignoreInit = TRUE)
+      req(data(),global_topn())
+      # observeEvent(input$n_vars, {
+      #   global_topn(input$n_vars)
+      # }, ignoreInit = TRUE)
       dt <- as.data.table(data())
       
       # 1) Sum by category & geoid
@@ -47,7 +43,10 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       totals <- dt[, .(grand = sum(measurement_value)), by = category_var][
         order(-grand)
       ]
-      topn <- head(totals[[category_var]], input$n_vars)
+      
+      N <- global_topn()
+      
+      topn <- head(totals[[category_var]], N)
       
       # 3) Recode everything else as "Other"
       dt[!(get(category_var) %in% topn), (category_var) := "Other"]
@@ -99,7 +98,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       
       # 2) Filtrer et réordonner la palette pour coller à ces colonnes
       pal <- la_pal[names(la_pal) %in% chart_cols]
-      pal <- pal[chart_cols]    # → maintenant length(pal) == ncol(chartdata_df)
+      pal <- pal[chart_cols]    # 
       pal_vec <- unname(pal)    # on enlève les noms
       
       leaflet() %>% 
@@ -208,7 +207,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       flog.info("submittrigger")
       
       newwkttest(wkt_val)
-      global_topn(input$n_vars)
+      # global_topn(input$n_vars)
       # shinyjs::click("submit")
       
     })

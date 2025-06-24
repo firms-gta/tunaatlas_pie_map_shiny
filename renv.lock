@@ -24,8 +24,8 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "CWP.dataset",
       "RemoteUsername": "bastienird",
-      "RemoteRef": "master",
-      "RemoteSha": "dbb57d7de832de0157c65bb1c23d50737a2f265a",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "d389f8deaa183e70057dd04d02bfeb0ec4f385fb",
       "Requirements": [
         "DBI",
         "DT",
@@ -65,18 +65,18 @@
         "xts",
         "yaml"
       ],
-      "Hash": "f29db7f2a724753e3e50b394da2dbe79"
+      "Hash": "532867f6c538d0656e19b9d6bf7f54a3"
     },
     "DBI": {
       "Package": "DBI",
-      "Version": "1.2.2",
+      "Version": "1.2.3",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
         "R",
         "methods"
       ],
-      "Hash": "164809cd72e1d5160b4cb3aa57f510fe"
+      "Hash": "065ae649b05f1ff66bb0c793107508f5"
     },
     "DT": {
       "Package": "DT",
@@ -863,7 +863,7 @@
     },
     "classInt": {
       "Package": "classInt",
-      "Version": "0.4-10",
+      "Version": "0.4-11",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
@@ -875,7 +875,7 @@
         "graphics",
         "stats"
       ],
-      "Hash": "f5a40793b1ae463a7ffb3902a95bf864"
+      "Hash": "f2af70314a63d7f025ae668f08bd933a"
     },
     "cli": {
       "Package": "cli",
@@ -1350,7 +1350,7 @@
     },
     "e1071": {
       "Package": "e1071",
-      "Version": "1.7-14",
+      "Version": "1.7-16",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
@@ -1362,7 +1362,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "4ef372b716824753719a8a38b258442d"
+      "Hash": "27a09ca40266a1066d62ef5402dd51d6"
     },
     "ellipsis": {
       "Package": "ellipsis",
@@ -4176,7 +4176,7 @@
     },
     "s2": {
       "Package": "s2",
-      "Version": "1.1.6",
+      "Version": "1.1.9",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
@@ -4184,7 +4184,7 @@
         "Rcpp",
         "wk"
       ],
-      "Hash": "32f7b1a15bb01ae809022960abad5363"
+      "Hash": "4e664a5d610d58f27ec196e96cdb7f6f"
     },
     "sass": {
       "Package": "sass",
@@ -4727,15 +4727,15 @@
     },
     "terra": {
       "Package": "terra",
-      "Version": "1.8-54",
+      "Version": "1.8-50",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "Rcpp",
         "methods"
       ],
-      "Hash": "6765f52689ca88d789852c9db01f3f83"
+      "Hash": "057783c6c0f092168a8fef1efbb3adb8"
     },
     "testthat": {
       "Package": "testthat",
@@ -4979,14 +4979,14 @@
     },
     "units": {
       "Package": "units",
-      "Version": "0.8-5",
+      "Version": "0.8-7",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
         "R",
         "Rcpp"
       ],
-      "Hash": "119d19da480e873f72241ff6962ffd83"
+      "Hash": "5d0b024902d5da97a2b64f002e92a869"
     },
     "urlchecker": {
       "Package": "urlchecker",
@@ -5206,13 +5206,13 @@
     },
     "wk": {
       "Package": "wk",
-      "Version": "0.9.1",
+      "Version": "0.9.4",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
         "R"
       ],
-      "Hash": "5d4545e140e36476f35f20d0ca87963e"
+      "Hash": "37be35d733130f1de1ef51672cf7cdc0"
     },
     "writexl": {
       "Package": "writexl",

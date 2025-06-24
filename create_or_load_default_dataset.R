@@ -15,7 +15,8 @@ if(!file.exists(cl_areal_grid_path)){
   shp_raw <- sf::st_read(cwp_grid_file, show_col_types = FALSE)
   shapefile.fix <- sf::st_as_sf(shp_raw, wkt = "geom_wkt", crs = 4326)
   shapefile.fix <- dplyr::rename(shapefile.fix,
-                                 geom     = geom_wkt)
+                                 geom     = geom_wkt) %>% 
+      dplyr::select(geom, geographic_identifier = code, gridtype = GRIDTYPE) %>% dplyr::distinct()
   
   qs::qsave(shapefile.fix, cl_areal_grid_path)
 } else {

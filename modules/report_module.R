@@ -13,7 +13,7 @@ reportModuleUI <- function(id) {
 # Module Server
 reportModuleServer <- function(id, dataset_reactive, rmd_path) {
   moduleServer(id, function(input, output, session) {
-    source(here::here("Markdown/reportmarkdown.R"))
+    # source(here::here("Markdown/reportmarkdown.R"))
     ns <- session$ns
     
     # Réactive pour stocker le statut du rapport
@@ -31,7 +31,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         futile.logger::flog.info(paste0("new repository: ", getwd()))
         default_dataset <- dataset_reactive
         default_dataset <- default_dataset %>%
-          dplyr::mutate(Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01"))) %>% dplyr::rename(GRIDTYPE = gridtype)
+          dplyr::mutate(Time = as.Date(paste0(year, "-", sprintf("%02d", month), "-01")))
         child_env_last_result <- CWP.dataset::comprehensive_cwp_dataframe_analysis(
           parameter_init = default_dataset,
           parameter_final = NULL,
@@ -39,9 +39,9 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
           fig.path = NULL,
           parameter_fact = "catch",
           parameter_geographical_dimension_groupping = "GRIDTYPE",
-          parameter_colnames_to_keep = setdiff(c(variable_to_display, "measurement_value"), c("GRIDTYPE", "gear_type", "species")),
+          parameter_colnames_to_keep = setdiff(c(variable_to_display, "measurement_value"), c("GRIDTYPE", "gear_type_label", "species_label")),
           coverage = TRUE,
-          shapefile_fix = shapefile.fix %>% dplyr::rename(code = geographic_identifier, geom = geom_wkt, GRIDTYPE = gridtype),
+          shapefile_fix = shapefile.fix %>% dplyr::rename(code = geographic_identifier),
           continent = NULL,
           parameter_resolution_filter = NULL,
           parameter_titre_dataset_1 = "Mydataset",
@@ -74,13 +74,11 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         }
         
         # Génération du rapport avec Bookdown
-        bookdown::render_book(
-          input = "index.Rmd",
-          envir = render_env,
-          output_format = "bookdown::html_document2",
-          output_file = output_file
-        )
-        
+        rmarkdown::render(system.file("rmd/comparison.Rmd", package = "CWP.dataset"),
+                          envir = render_env,
+                          output_file = output_file,
+                          output_format = "html_document2")
+         
         # Vérification de l'existence du fichier
         if (file.exists(output_file)) {
           report_file(output_file)

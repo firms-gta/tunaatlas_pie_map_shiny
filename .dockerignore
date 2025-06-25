@@ -1,0 +1,17 @@
+renv/library
+# 1) Exclure tout le dossier data
+data/*
+secrets.env
+# 2) Réinclure le dossier parent data/
+!data/
+!data/cl_areal_grid.qs
+*.csv
+*.txt
+*.zip
+docs/*
+materialized_view/
+rmd/metadata_dcmi.rds
+Markdown/*
+!DOI.csv
+# 3) Réinclure uniquement les fichiers .qs voulus
+!data/global_catch_tunaatlasird_level2_1950_2023_15496164.qs

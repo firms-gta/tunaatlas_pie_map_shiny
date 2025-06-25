@@ -1,4 +1,4 @@
-FROM rocker/r-ver:4.2.3
+FROM rocker/r-ver:4.3.1
 
 # Maintainer information
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
@@ -8,38 +8,35 @@ LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
 # Install additional libraries for redland
 # libcurl4-openssl-dev is to install libraptor2-dev ued to install protobuf
 
-RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-      sudo \
-      pandoc \
-      pandoc-citeproc \
-      libssl-dev \
-      libcurl4-gnutls-dev \
-      libxml2-dev \
-      libudunits2-dev \
-      libproj-dev \
-      libgeos-dev \
-      libgdal-dev \
-      libv8-dev \
-      libsodium-dev \
-      libsecret-1-dev \
-      git \
-      libnetcdf-dev \
-      curl \
-      libjq-dev \
-      cmake \
-      protobuf-compiler \
-      libprotobuf-dev \
-      wget \
-      librdf0 \
-      librdf0-dev \
-      libtbb-dev \
-      libzmq3-dev \
-      libpoppler-cpp-dev \
-      redland-utils && \
-    rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y \
+    sudo \
+    pandoc \
+    pandoc-citeproc \
+    libssl-dev \
+    libcurl4-gnutls-dev \
+    libxml2-dev \
+    libudunits2-dev \
+    libproj-dev \
+    libgeos-dev \
+    libgdal-dev \
+    libv8-dev \
+    libsodium-dev \
+    libsecret-1-dev \
+    git \
+    libnetcdf-dev \
+    curl \
+    libjq-dev \
+    cmake \
+    protobuf-compiler \
+    libprotobuf-dev \
+    wget \
+    librdf0 \
+    librdf0-dev \
+    libtbb-dev \
+    libzmq3-dev \
+    libpoppler-cpp-dev \
+    redland-utils && \
+    apt-get clean
     
 # Be Careful, I think the comments shouldn't be on the same line than the instruction of the dockerfile as it creates some errors
 
@@ -53,11 +50,6 @@ RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 
 # Set the working directory
 WORKDIR /root/tunaatlas_pie_map_shiny
-
-COPY download_GTA_data.R ./download_GTA_data.R
-
-# Run the data to donwload GTA data for species label, species group, cwp_shape
-RUN Rscript download_GTA_data.R
 
 #those packages are essential to download the data in update_data.R, they are ran before renv because the renv.lock would change more than the DOI2.csv
 RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org'); \
@@ -79,35 +71,59 @@ COPY DOI.csv ./DOI.csv
 # Appliquer dos2unix pour éviter les problèmes de formatage
 RUN dos2unix DOI.csv && cat -A ./DOI.csv
 
+# 1) Assurer le \n à la fin de DOI.csv
+RUN sed -i -e '$a\' DOI.csv
+
 COPY data/ ./data/
 
-# Télécharger les fichiers depuis Zenodo
-RUN echo "📥 Downloading files..." \
- && bash -c "tail -n +2 ./DOI.csv | tr -d '\r' | while IFS=',' read -r DOI FILE; do \
-     RECORD_ID=\$(echo \"\$DOI\" | awk -F '/' '{print \$NF}' | sed 's/zenodo\\.//'); \
-     FILE_PATH=\"./data/\$FILE\"; \
-     NEWNAME=\"./data/\${FILE%.*}_\${RECORD_ID}.\${FILE##*.}\"; \
-     NEWQS=\${NEWNAME%.*}.qs; \
-     URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
-     \
-     if [ -f \"\$NEWQS\" ]; then \
-         echo \"✅ .qs file already exists: \$NEWQS\"; \
-     elif [ -f \"\$NEWNAME\" ]; then \
-         echo \"📦 File exists locally, converting: \$NEWNAME\"; \
-         Rscript -e \"qs::qsave(readr::read_csv('$NEWNAME'), '$NEWQS')\" && rm \"\$NEWNAME\"; \
-     else \
-         echo \"📥 Downloading \$FILE (Record ID: \$RECORD_ID)\"; \
-         if wget -nv --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"\$FILE_PATH\" \"\$URL\"; then \
-             mv \"\$FILE_PATH\" \"\$NEWNAME\"; \
-             echo \"✅ File downloaded and renamed: \$NEWNAME\"; \
-             Rscript -e \"qs::qsave(readr::read_csv('$NEWNAME'), '$NEWQS')\" && rm \"\$NEWNAME\"; \
-         else \
-             echo \"⚠️ Download failed, adding to failed list\"; \
-             echo \"\$DOI,\$FILE\" >> ./DOI_failed.csv; \
-         fi; \
-     fi; \
- done"
+# 2) Télécharger, renommer, convertir puis nettoyer
+RUN echo "📥 Downloading and converting files..." && \
+    bash -c "tail -n +2 DOI.csv | tr -d '\r' | \
+    while IFS=',' read -r DOI FILE; do \
+        # Extraire l'ID Zenodo et les noms
+        RECORD_ID=\$(echo \"\$DOI\" | awk -F/ '{print \$NF}' | sed 's/zenodo\\.//'); \
+        EXT=\${FILE##*.}; BASE=\${FILE%.*}; \
+        ORIGINAL=\"./data/\$FILE\"; \
+        # Pour CSV/RDS on télécharge/renomme vers NEWNAME, sinon pour QS directement vers FINAL_QS
+        if [ \"\$EXT\" = \"qs\" ]; then \
+            TARGET=\"./data/\${BASE}_\${RECORD_ID}.qs\"; \
+        else \
+            TARGET_CSV=\"./data/\${BASE}_\${RECORD_ID}.\${EXT}\"; \
+            TARGET=\"\${TARGET_CSV%.*}.qs\"; \
+        fi; \
+        URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
+        echo \"➡️ Processing \$FILE (ID=\$RECORD_ID) → \$TARGET\"; \
+        # 1) Si le .qs final existe -> skip
+        if [ -f \"\$TARGET\" ]; then \
+            echo \"   ✅ Already exists: \$TARGET\"; \
+            continue; \
+        fi; \
+        # 2) Récupérer le source local ou télécharger
+        if [ -f \"\$ORIGINAL\" ]; then \
+            echo \"   📦 Local copy found: \$ORIGINAL\"; \
+            if [ \"\$EXT\" = \"qs\" ]; then \
+                cp \"\$ORIGINAL\" \"\$TARGET\"; \
+            else \
+                cp \"\$ORIGINAL\" \"\$TARGET_CSV\"; \
+            fi; \
+        else \
+            echo \"   🌐 Downloading from Zenodo\"; \
+            if [ \"\$EXT\" = \"qs\" ]; then \
+                wget -nv -O \"\$TARGET\" \"\$URL\" || { echo \"   ⚠️ Download failed: \$FILE\" >> DOI_failed.csv; continue; } \
+            else \
+                wget -nv -O \"\$TARGET_CSV\" \"\$URL\" || { echo \"   ⚠️ Download failed: \$FILE\" >> DOI_failed.csv; continue; } \
+            fi; \
+        fi; \
+        # 3) Si besoin, convertir en .qs
+        if [ \"\$EXT\" != \"qs\" ]; then \
+            Rscript -e \"qs::qsave(readr::read_csv('\$TARGET_CSV'), '\$TARGET')\"; \
+            rm -f \"\$TARGET_CSV\"; \
+        fi; \
+    done"
 
+
+    
+RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 
 # ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
 ARG RENV_PATHS_ROOT=/root/.cache/R/renv
@@ -143,6 +159,8 @@ RUN R -e "renv::activate()"
 RUN R -e "renv::restore()" 
 RUN R -e "renv::repair()" 
 
+RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
+
 COPY update_data.R ./update_data.R 
 COPY R/load_data.R ./R/load_data.R 
 
@@ -150,8 +168,17 @@ COPY R/load_data.R ./R/load_data.R
 RUN Rscript update_data.R 
 
 # Copy the rest of the application code
+COPY R ./R
+COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R 
+# attention copy . . invalide le cache, eput expliquer pourquoi create_or_load_default_dataset 
+#n'est jamais caché, pourrait copier uniquement les choses utiles pour run la fonction puis le reste
+
+# Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
+RUN Rscript ./create_or_load_default_dataset.R 
+
+# Copy the rest of the application code
 COPY global.R server.R ui.R app_debug.R install.R ./
-COPY create_or_load_default_dataset.R update_data.R download_GTA_data.R ./
+COPY download_GTA_data.R ./
 COPY R/ R/
 COPY modules/ modules/
 COPY tab_panels/ tab_panels/
@@ -159,15 +186,9 @@ COPY www/ www/
 COPY .here .Rprofile tunaatlas_pie_map_shiny.Rproj ./
 COPY .zenodo.json ./
 COPY README.md README.Rmd LICENSE ./
- 
-# attention copy . . invalide le cache, eput expliquer pourquoi create_or_load_default_dataset 
-#n'est jamais caché, pourrait copier uniquement les choses utiles pour run la fonction puis le reste
-
-# Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
-RUN Rscript ./create_or_load_default_dataset.R 
-
-#ajout pour être plus rapide au lancement
-
+COPY rmd/ rmd/
+COPY global/ global/
+COPY doc/ doc/
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 

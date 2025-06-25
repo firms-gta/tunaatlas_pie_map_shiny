@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.2.3",
+    "Version": "4.5.0",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -67,11 +67,60 @@
       ],
       "Hash": "532867f6c538d0656e19b9d6bf7f54a3"
     },
+    "CWP.dataset": {
+      "Package": "CWP.dataset",
+      "Version": "0.1.4",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "CWP.dataset",
+      "RemoteUsername": "bastienird",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "a024dea4df336d46283e86ad01c2d6c29113c60e",
+      "Requirements": [
+        "DBI",
+        "DT",
+        "R",
+        "RColorBrewer",
+        "bookdown",
+        "cowplot",
+        "data.table",
+        "dplyr",
+        "dygraphs",
+        "flextable",
+        "futile.logger",
+        "ggplot2",
+        "googledrive",
+        "grDevices",
+        "grid",
+        "gridExtra",
+        "here",
+        "janitor",
+        "knitr",
+        "lubridate",
+        "plotrix",
+        "purrr",
+        "qs",
+        "readr",
+        "rlang",
+        "rmarkdown",
+        "scales",
+        "sf",
+        "stringr",
+        "tibble",
+        "tidyr",
+        "tmap",
+        "tools",
+        "utils",
+        "xts"
+      ],
+      "Hash": "feb6bc652479a584b75ebcb8619b7913"
+    },
     "DBI": {
       "Package": "DBI",
       "Version": "1.2.3",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "methods"
@@ -175,9 +224,9 @@
     },
     "Matrix": {
       "Package": "Matrix",
-      "Version": "1.6-3",
+      "Version": "1.7-3",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "grDevices",
@@ -188,7 +237,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "1d1b6901cf9b6b1b446bc56a7d47efa4"
+      "Hash": "fb578c2b5d796882c60e9f770352f7c4"
     },
     "MatrixModels": {
       "Package": "MatrixModels",
@@ -302,7 +351,7 @@
     },
     "RPostgreSQL": {
       "Package": "RPostgreSQL",
-      "Version": "0.7-6",
+      "Version": "0.7-8",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -310,7 +359,7 @@
         "R",
         "methods"
       ],
-      "Hash": "2b19ca61d09de709c87816cc9b5942a7"
+      "Hash": "b16ccdf1009ea27f8545f443593155d0"
     },
     "RPostgres": {
       "Package": "RPostgres",
@@ -353,7 +402,7 @@
       "Package": "Rcpp",
       "Version": "1.0.14",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "methods",
         "utils"
@@ -413,7 +462,7 @@
     },
     "V8": {
       "Package": "V8",
-      "Version": "4.3.3",
+      "Version": "6.0.3",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -422,7 +471,7 @@
         "jsonlite",
         "utils"
       ],
-      "Hash": "20d81ec18bde233d8cc3265761fe8c93"
+      "Hash": "4999464deb1df7d0ba723c458307ce3d"
     },
     "XML": {
       "Package": "XML",
@@ -1012,7 +1061,7 @@
       "Package": "cpp11",
       "Version": "0.5.2",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
@@ -1076,7 +1125,7 @@
       "Package": "curl",
       "Version": "6.2.3",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
@@ -1086,7 +1135,7 @@
       "Package": "data.table",
       "Version": "1.17.2",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "methods"
@@ -2089,6 +2138,31 @@
       ],
       "Hash": "d6db1667059d027da730decdc214b959"
     },
+    "googledrive": {
+      "Package": "googledrive",
+      "Version": "2.1.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "cli",
+        "gargle",
+        "glue",
+        "httr",
+        "jsonlite",
+        "lifecycle",
+        "magrittr",
+        "pillar",
+        "purrr",
+        "rlang",
+        "tibble",
+        "utils",
+        "uuid",
+        "vctrs",
+        "withr"
+      ],
+      "Hash": "e99641edef03e2a5e87f0a0b1fcc97f4"
+    },
     "gridExtra": {
       "Package": "gridExtra",
       "Version": "2.3",
@@ -2371,15 +2445,15 @@
     },
     "jqr": {
       "Package": "jqr",
-      "Version": "1.2.3",
+      "Version": "1.4.0",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "lazyeval",
         "magrittr"
       ],
-      "Hash": "a0637f1eb368d00f3c561552f52b39f3"
+      "Hash": "25aad95d788314e4b307ead16059288d"
     },
     "jquerylib": {
       "Package": "jquerylib",
@@ -2854,15 +2928,15 @@
     },
     "maps": {
       "Package": "maps",
-      "Version": "3.4.1",
+      "Version": "3.4.2.1",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "graphics",
         "utils"
       ],
-      "Hash": "644a88fb036ab50cee0b715394eefa1a"
+      "Hash": "354a8094c634031421eeb5103f2e1f80"
     },
     "maptiles": {
       "Package": "maptiles",
@@ -3547,14 +3621,14 @@
     },
     "protolite": {
       "Package": "protolite",
-      "Version": "2.3.0",
+      "Version": "2.3.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "Rcpp",
         "jsonlite"
       ],
-      "Hash": "2bb247d5ab4f9c74c4f28c653c851555"
+      "Hash": "ea2364e73971f7e570bffc59868e3912"
     },
     "proxy": {
       "Package": "proxy",
@@ -3894,7 +3968,7 @@
     },
     "remotes": {
       "Package": "remotes",
-      "Version": "2.4.2.1",
+      "Version": "2.5.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -3904,7 +3978,7 @@
         "tools",
         "utils"
       ],
-      "Hash": "63d15047eb239f95160112bcadc4fcb9"
+      "Hash": "3ee025083e66f18db6cf27b56e23e141"
     },
     "renv": {
       "Package": "renv",
@@ -4015,7 +4089,7 @@
       "Package": "rlang",
       "Version": "1.1.6",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "utils"
@@ -4426,34 +4500,28 @@
     },
     "shinyjs": {
       "Package": "shinyjs",
-      "Version": "2.1.0.9005",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "shinyjs",
-      "RemoteUsername": "daattali",
-      "RemoteRef": "HEAD",
-      "RemoteSha": "64f5a0892c8de7d6d12127983dce077fe8405fc4",
+      "Version": "2.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
+        "digest",
         "jsonlite",
-        "rlang",
-        "shiny",
-        "utils"
+        "shiny"
       ],
-      "Hash": "cdfaeb46e324a6442ea8cc91eb558ff0"
+      "Hash": "802e4786b353a4bb27116957558548d5"
     },
     "shinyuieditor": {
       "Package": "shinyuieditor",
       "Version": "0.5.1",
       "Source": "GitHub",
-      "RemoteType": "github",
       "Remotes": "rstudio/gridlayout, rstudio/bslib",
+      "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "shinyuieditor",
       "RemoteUsername": "rstudio",
       "RemoteRef": "HEAD",
-      "RemoteSha": "16bc1c1762570f5e868b87d88667d4a27f58c961",
+      "RemoteSha": "9832f41d6ef483e819b47ce55187fa2b8d0d0563",
       "Requirements": [
         "DT",
         "bsicons",
@@ -4469,7 +4537,7 @@
         "shiny",
         "utils"
       ],
-      "Hash": "3212377b86bfec23e1d53770b5ca895e"
+      "Hash": "c8afafe5df71bd2785b74a7740a8545b"
     },
     "slippymath": {
       "Package": "slippymath",
@@ -4612,7 +4680,7 @@
       "Package": "stringi",
       "Version": "1.8.7",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "stats",
@@ -5208,7 +5276,7 @@
       "Package": "wk",
       "Version": "0.9.4",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R"
       ],

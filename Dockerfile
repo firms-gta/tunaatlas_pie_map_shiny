@@ -193,13 +193,14 @@ COPY doc/ doc/
 ENV BUILD_BRANCH=${BRANCH}
 
 RUN R -e '\
-  full <- qs::qread("data/default_dataset.qs"); \
   if (Sys.getenv("BUILD_BRANCH") == "dev") { \
-    message("🍃 dev build: head by groups"); \
     library(dplyr); \
+    library(here); \
+    full <- qs::qread(here::here("data/default_dataset.qs")); \
+    message("dev build: head by groups"); \
     full <- full %>% dplyr::group_by(source_authority, species) %>% dplyr::slice_head(n=100) %>% dplyr::ungroup(); \
+    qs::qsave(full, here::here("data/default_dataset.qs")); \
   } \
-  qs::qsave(full, "data/default_dataset.qs", preset = "fast"); \
 '
 
 # Expose port 3838 for the Shiny app

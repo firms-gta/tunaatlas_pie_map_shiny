@@ -7,9 +7,9 @@ pieMapTimeSeriesUI <- function(id) {
       choices  = c(
         "No map"      = "none",
         "Static"    = "static",
-        "Interactive (slower, recommended on spatially filtered data and for spatial filtering)" = "interactive"
+        "Interactive" = "interactive"
       ),
-      selected = "none",
+      selected = "static",
       inline   = TRUE
     ),
     # <- on n'affiche ce bloc que si on est en mode 'interactive'
@@ -136,7 +136,8 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       # Tracé de la carte et des camemberts
       ggplot2::ggplot() +
         # Fond de carte
-        ggplot2::geom_sf(data = df, fill = NA, color = "grey50") +
+        geom_sf(data = world, fill = NA, color = "grey70", size = 0.2) +
+        # ggplot2::geom_sf(data = df, fill = NA, color = "grey50") +
         # Camemberts avec écart réduit
         scatterpie::geom_scatterpie(
           aes(

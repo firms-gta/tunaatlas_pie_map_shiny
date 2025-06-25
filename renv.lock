@@ -4105,6 +4105,21 @@
       ],
       "Hash": "df99277f63d01c34e95e3d2f06a79736"
     },
+    "rnaturalearth": {
+      "Package": "rnaturalearth",
+      "Version": "1.0.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "httr",
+        "jsonlite",
+        "sf",
+        "terra",
+        "utils"
+      ],
+      "Hash": "741166cab0fe76d8a5670d3ee459a2a4"
+    },
     "roxygen2": {
       "Package": "roxygen2",
       "Version": "7.3.2",

@@ -113,6 +113,8 @@ more_about = function(){
 outputmoreabout <- more_about()
 source(here::here("R/data_loading.R"))
 data <- load_initial_data(default_dataset)
+library(rnaturalearth)
+world <- ne_countries(scale = "small", returnclass = "sf")
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

@@ -179,7 +179,6 @@ RUN Rscript ./create_or_load_default_dataset.R
 # Copy the rest of the application code
 COPY global.R server.R ui.R app_debug.R install.R ./
 COPY download_GTA_data.R ./
-COPY R/ R/
 COPY modules/ modules/
 COPY tab_panels/ tab_panels/
 COPY www/ www/
@@ -189,6 +188,20 @@ COPY README.md README.Rmd LICENSE ./
 COPY rmd/ rmd/
 COPY global/ global/
 COPY doc/ doc/
+
+
+ENV BUILD_BRANCH=${BRANCH}
+
+RUN R -e '\
+  full <- qs::qread("data/default_dataset.qs"); \
+  if (Sys.getenv("BUILD_BRANCH") == "dev") { \
+    message("🍃 dev build: head by groups"); \
+    library(dplyr); \
+    full <- full %>% dplyr::group_by(source_authority, species) %>% dplyr::slice_head(n=100) %>% dplyr::ungroup(); \
+  } \
+  qs::qsave(full, "data/default_dataset.qs", preset = "fast"); \
+'
+
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 

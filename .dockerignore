@@ -5,7 +5,6 @@ secrets.env
 # 2) Réinclure le dossier parent data/
 !data/
 !data/cl_areal_grid.qs
-!data/default_dataset.qs
 *.csv
 *.txt
 *.zip

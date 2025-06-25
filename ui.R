@@ -39,15 +39,19 @@ ui <- tagList(
           id = "main",
           title = "Tuna Atlas: Interactive Indicator",
           selected = "generaloverview",
-          collapsible = TRUE,
+          collapsible = FALSE,
           theme = bslib::bs_theme(),
+          fillable = TRUE,
+          gap      = "0.5rem",
+          padding     = c(0,0), 
           # sidebar = uiOutput("sidebar_ui_with_variable_to_display"),
           sidebar = nav_panel("sidebarfilter", uiOutput("sidebar_ui_with_variable_to_display")),
           # sidebar = sidebar_ui(), # to make work the toggle little fleche
           geographic_catches_ui(),
           nav_panel(
             title = "Other dimensions",
-            uiOutput("dynamic_panels")  # Dynamic nav panels within a nav_menu
+            uiOutput("dynamic_panels") ,
+            padding     = c(0,0), fillable = TRUE, collapsible = FALSE, gap      = "0.5rem",footer = NULL, fluid = FALSE
           ),
           tabPanel("CSV-based Filtering",
                    sidebarLayout(
@@ -66,11 +70,18 @@ ui <- tagList(
           # dataset_choice_ui("dataset_choice"),
           dataset_and_db_ui("dataset_and_db_module"),
           outputmoreabout,
-          main_panel_ui(),
-          mainPanel(
-            h3("Report generation module"),
-            reportModuleUI("report_module_1") # Appeler le module
-          )
+          main_panel_ui(), 
+          nav_panel(
+            title = "Report generation",
+            # on crée un conteneur grid 2 colonnes, écart 1rem
+            div(
+              style = "display: grid;
+               grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+               grid-gap: 1rem;",
+              reportModuleUI("report_module_1")
+              # + d'autres modules ou widgets si vous voulez
+            )
+          ),
           )
         )
     )

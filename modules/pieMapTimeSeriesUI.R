@@ -1,19 +1,46 @@
 pieMapTimeSeriesUI <- function(id) {
   ns <- NS(id)
   tagList(
-    div(
-      style = "height: 400px;",
-      leafletOutput(ns("pie_map")) %>% withSpinner(),
-      actionButton(
-        ns("submit_draw_pie_map"), 
-        "Update wkt from drawing",
-        class = "btn-primary",
-        style = "position: absolute; top: 100px; right: 20px; 
-                 z-index: 400; font-size: 0.8em; padding: 5px 10px;"
+    radioButtons(
+      inputId  = ns("map_mode"),
+      label    = "Map mode :",
+      choices  = c(
+        "No map"      = "none",
+        "Static"    = "static",
+        "Interactive (slower, recommended on spatially filtered data and for spatial filtering)" = "interactive"
+      ),
+      selected = "none",
+      inline   = TRUE
+    ),
+    # <- on n'affiche ce bloc que si on est en mode 'interactive'
+    conditionalPanel(
+      condition = sprintf("input['%s'] == 'interactive'", ns("map_mode")),
+      div(
+        style = "height: 300px; position: relative;",
+        leafletOutput(ns("pie_map")) %>% withSpinner(),
+        actionButton(
+          inputId = ns("submit_draw_pie_map"),
+          label   = "Update WKT from drawing",
+          class   = "btn-primary",
+          style   = paste(
+            "position: absolute;",
+            "top: 100px;",
+            "right: 20px;",
+            "z-index: 400;",
+            "font-size: 0.8em;",
+            "padding: 5px 10px;"
+          )
+        )
       )
+    ),
+    conditionalPanel(
+      condition = sprintf("input['%s'] != 'interactive'", ns("map_mode")),
+      uiOutput(ns("map_ui"))
     )
   )
 }
+
+
 
 pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigger, newwkttest, geom, global_topn) {
   moduleServer(id, function(input, output, session) {
@@ -79,8 +106,58 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     })
     # pas beosin de la sortir du module, c'est très rapide environ 19ms 
     
+    output$map_ui <- renderUI({
+      req(input$map_mode)
+      switch(
+        input$map_mode,
+        none = NULL,
+        static = tmapOutput(ns("pie_map_plot"), height = "400px"),
+        interactive = leafletOutput(ns("pie_map"), height = "400px")
+      )
+    })
+    
+    output$pie_map_plot <- renderPlot({
+      req(input$map_mode == "static")
+      df <- data_pie_map()
+      
+      # Calcul des centroides fiables pour données géographiques
+      cent <- sf::st_point_on_surface(df)
+      coords <- sf::st_coordinates(cent)
+      
+      # Préparation du data.frame pour scatterpie
+      vals <- df %>%
+        sf::st_drop_geometry() %>%
+        dplyr::select_if(is.numeric)
+      plot_df <- cbind(
+        as.data.frame(coords),
+        vals
+      )
+      la_pal <- la_palette()
+      # Tracé de la carte et des camemberts
+      ggplot2::ggplot() +
+        # Fond de carte
+        ggplot2::geom_sf(data = df, fill = NA, color = "grey50") +
+        # Camemberts avec écart réduit
+        scatterpie::geom_scatterpie(
+          aes(
+            x = X,
+            y = Y,
+            # on réduit la disparité : racine de la proportion plutôt que proportion brute
+            r = sqrt(total / max(total)) *5
+          ),
+          data = plot_df,
+          cols = setdiff(names(plot_df), c("X", "Y", "total")),
+          alpha = 0.8
+        ) +
+        # même palette que pour la carte interactive
+        ggplot2::scale_fill_manual(values = la_pal) +
+        coord_sf() +
+        ggplot2::theme_minimal() 
+      
+    })
     
     
+    # Interactive view avec tmap sans tmap_mode dans le rendu
     output$pie_map <- renderLeaflet({
       flog.info("Rendering pie map")
       req(data_pie_map(), zoom_level(), centroid())

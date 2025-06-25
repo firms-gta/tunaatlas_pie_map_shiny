@@ -523,13 +523,18 @@ server <- function(input, output, session) {
     output[[paste0("slider_ui_", sel)]] <- renderUI({
       sliderInput(
         inputId = paste0("topn_", sel),
-        label = paste("Number of", sel, "to display"),
+        # on emballe le texte du label dans un span dont on contrôle la taille
+        label = tags$span(style = "font-size:14px;", 
+                          paste("Number of", sel, "to display")),
         min = 1,
         max = max(ncat, 1),
         value = min(old_val, ncat), 
         round = TRUE
       )
     })
+    
+    
+    
   })
   
   # observe({
@@ -715,9 +720,11 @@ server <- function(input, output, session) {
         geographic_catches_by_variable_ui(column_name)
       )
     })
-    # do.call(navset_card_tab, panel_list)
-    do.call(navset_card_tab, c(list(id = "variable_tabs"), panel_list))
     
+    do.call(navset_card_tab, c(
+      list(id = "variable_tabs"),
+      panel_list
+    ))
   })
   
   

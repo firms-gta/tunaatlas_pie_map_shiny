@@ -14,6 +14,7 @@ server <- function(input, output, session) {
   serveRmdContents("rmd_docs", nav_bar_menu_html)
   # Initialize reactive values
   submitTrigger <- reactiveVal(FALSE)
+  rv_map_mode <- reactiveVal("static")
   firstSubmit <- reactiveVal(TRUE)
   selected_dataset <- reactiveVal()
   selected_gridtype <- reactiveVal()
@@ -215,7 +216,7 @@ server <- function(input, output, session) {
         dplyr::inner_join(initial_data() %>% dplyr::select(-gridtype), by = c("geographic_identifier"))
       # Step 1: Select unique geographic identifiers and their associated geometries
       unique_id_geom <- final_filtered_data %>%
-        dplyr::select(geographic_identifier, geom_wkt) %>%
+        dplyr::select(geographic_identifier, geom) %>%
         dplyr::distinct()
       
       # Step 2: Convert to sf object
@@ -547,34 +548,6 @@ server <- function(input, output, session) {
   #   if (!is.null(val)) global_topn(val)
   # })
   # 
-  # Map and time series
-  # Loop through variables and set up the modules
-  lapply(variable_to_display, function(variable) {
-    local({
-      variable <- variable
-      pieMapTimeSeriesServer(
-        paste0(variable, "_module"), 
-        category_var = variable, 
-        data = final_filtered_data, 
-        data_witout_geom_ = data_without_geom,
-        submitTrigger = submitTrigger, 
-        geom = initial_data,
-        newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
-        global_topn = global_topn
-      )
-    })
-  })
-  observeEvent(global_topn(), {
-    cat("Parent sees new top N:", global_topn(), "\n")
-  })
-  
-  observeEvent(newwkttest(), {
-    req(newwkttest())  # Ensure newwkt is not NULL
-    flog.info("New WKT received: %s", newwkttest())
-    wkt(newwkttest())
-    # Trigger any further actions, such as filtering based on the new WKT
-    submitTrigger(TRUE)
-  })
   
   # Pie charts
   lapply(variable_to_display, function(variable) {
@@ -590,6 +563,34 @@ server <- function(input, output, session) {
       variable <- variable
       TimeSeriesbyDimensionServer(paste0(variable, "_timeseries"), category_var = variable, data = data_without_geom, global_topn = global_topn)
     })
+  })
+  # Map and time series
+  # Loop through variables and set up the modules
+  lapply(variable_to_display, function(variable) {
+    local({
+      variable <- variable
+      pieMapTimeSeriesServer(
+        paste0(variable, "_module"), 
+        category_var = variable, 
+        data = final_filtered_data, 
+        data_witout_geom_ = data_without_geom,
+        submitTrigger = submitTrigger, 
+        geom = initial_data,
+        newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
+        global_topn = global_topn, rv_map_mode
+      )
+    })
+  })
+  observeEvent(global_topn(), {
+    cat("Parent sees new top N:", global_topn(), "\n")
+  })
+  
+  observeEvent(newwkttest(), {
+    req(newwkttest())  # Ensure newwkt is not NULL
+    flog.info("New WKT received: %s", newwkttest())
+    wkt(newwkttest())
+    # Trigger any further actions, such as filtering based on the new WKT
+    submitTrigger(TRUE)
   })
   
   # Global overview

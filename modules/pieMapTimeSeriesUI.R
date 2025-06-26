@@ -9,7 +9,6 @@ pieMapTimeSeriesUI <- function(id) {
         "Static"    = "static",
         "Interactive" = "interactive"
       ),
-      selected = "static",
       inline   = TRUE
     ),
     # <- on n'affiche ce bloc que si on est en mode 'interactive'
@@ -42,11 +41,22 @@ pieMapTimeSeriesUI <- function(id) {
 
 
 
-pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, submitTrigger, newwkttest, geom, global_topn) {
+pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, submitTrigger, newwkttest, geom, global_topn, map_mode_val) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     zoom_level <- reactiveVal(1)
     target_var <- getTarget(category_var)
+    observe({
+      updateRadioButtons(
+        session, "map_mode",
+        selected = map_mode_val()
+      )
+    })
+    
+    # 4) À chaque fois que l'utilisateur change le bouton, on met à jour map_mode_val
+    observeEvent(input$map_mode, {
+      map_mode_val(input$map_mode)
+    })
     observeEvent(submitTrigger(), {
       # Force a zoom refresh to trigger leaflet redraw
       flog.info("Triggering zoom reset due to topn change")

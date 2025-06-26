@@ -78,6 +78,9 @@ load_data <- function(DOI) {
       if(!exists("default_dataset")){
       message("🔄 loading cached updated: ", cache_path)
       data_tbl <- qs::qread(cache_path)
+      if(i == length(nrow(DOI))){
+      assign("default_dataset", data_tbl, envir = .GlobalEnv)
+      }
       } else {
         message("Using default dataset")
         

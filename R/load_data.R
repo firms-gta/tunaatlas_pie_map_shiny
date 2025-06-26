@@ -40,8 +40,7 @@ load_data <- function(DOI) {
   library(tools); library(here)
   
   # préparer shapefile pour enrichissement
-  shp <- sf::st_read(system.file("extdata","cl_areal_grid.csv",package="CWP.dataset"),
-                     show_col_types=FALSE)
+  shp <- qs::qread(here::here("data/cl_areal_grid.qs"))
   
   data_dir <- here::here("data")
   

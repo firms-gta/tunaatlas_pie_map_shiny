@@ -81,6 +81,7 @@ server <- function(input, output, session) {
       # data <- load_initial_data(default_dataset)
       flog.info("Initial Data loaded")
       initial_data(data$initial_data)
+
       flog.info("Inital data loaded")
       
       data_for_filters(data$data_for_filters)
@@ -292,19 +293,21 @@ server <- function(input, output, session) {
   }, ignoreNULL = FALSE)
   
   # Calculate the centroid of the map
-  centroid <- reactive({
-    final_filtered_data <- final_filtered_data() %>% 
-      dplyr::select(geographic_identifier) %>% dplyr::distinct()%>% dplyr::inner_join(initial_data())
-    flog.info("Calculating centroid")
-    bbox <- st_as_sf(final_filtered_data) %>% 
-      st_bbox()
-    center_lon <- (bbox["xmin"] + bbox["xmax"]) / 2
-    center_lat <- (bbox["ymin"] + bbox["ymax"]) / 2
-    result <- st_point(c(center_lon, center_lat)) %>% 
-      st_sfc(crs = st_crs(final_filtered_data()))
-    flog.info("Centroid: %s", st_as_text(result))
-    result
-  })
+  # centroid <- reactive({
+  #   final_filtered_data <- final_filtered_data() %>% 
+  #     dplyr::select(geographic_identifier) %>% dplyr::distinct()%>% dplyr::inner_join(initial_data())
+  #   flog.info("Calculating centroid")
+  #   bbox <- st_as_sf(final_filtered_data) %>% 
+  #     st_bbox()
+  #   center_lon <- (bbox["xmin"] + bbox["xmax"]) / 2
+  #   center_lat <- (bbox["ymin"] + bbox["ymax"]) / 2
+  #   result <- st_point(c(center_lon, center_lat)) %>% 
+  #     st_sfc(crs = st_crs(final_filtered_data()))
+  #   flog.info("Centroid: %s", st_as_text(result))
+  #   result
+  # })
+  
+  
   
   # Reactive function for data without geometry
   data_without_geom <- reactive({
@@ -553,7 +556,7 @@ server <- function(input, output, session) {
         paste0(variable, "_module"), 
         category_var = variable, 
         data = final_filtered_data, 
-        centroid = centroid, 
+        data_witout_geom_ = data_without_geom,
         submitTrigger = submitTrigger, 
         geom = initial_data,
         newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module

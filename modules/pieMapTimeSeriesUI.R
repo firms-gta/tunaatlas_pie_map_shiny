@@ -42,11 +42,16 @@ pieMapTimeSeriesUI <- function(id) {
 
 
 
-pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigger, newwkttest, geom, global_topn) {
+pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, submitTrigger, newwkttest, geom, global_topn) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     zoom_level <- reactiveVal(1)
     target_var <- getTarget(category_var)
+    observeEvent(submitTrigger(), {
+      # Force a zoom refresh to trigger leaflet redraw
+      flog.info("Triggering zoom reset due to topn change")
+      zoom_level(zoom_level())  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
+    })
     
     observeEvent(global_topn(), {
       # Force a zoom refresh to trigger leaflet redraw
@@ -55,12 +60,12 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     })
     
     data_pie_map <- reactive({
+      req(data_witout_geom_(),global_topn(), req(data()))
       flog.info("Generating pie map data for category: %s", category_var)
-      req(data(),global_topn())
       # observeEvent(input$n_vars, {
       #   global_topn(input$n_vars)
       # }, ignoreInit = TRUE)
-      dt <- as.data.table(data())
+      dt <- as.data.table(data_witout_geom_())
       
       # 1) Sum by category & geoid
       dt <- dt[, .(measurement_value = sum(measurement_value)),
@@ -94,9 +99,10 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       dt_wide[, total := rowSums(.SD),
               .SDcols = setdiff(names(dt_wide), "geographic_identifier")]
       
-      # 7) Join geometry
-      geom_df <- geom() %>% dplyr::select(-gridtype)
-      st_as_sf(dplyr::left_join(dt_wide, geom_df, by = "geographic_identifier"))
+      # # 7) Join geometry no nedd ? 
+      # geom_df <- geom() %>% dplyr::select(-gridtype)
+      # st_as_sf(dplyr::left_join(dt_wide, geom_df, by = "geographic_identifier"))
+      geom_df <- dt_wide %>% dplyr::left_join(centroids, by = c("geographic_identifier")) 
     })
     
     la_palette <- reactive({
@@ -118,59 +124,47 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     
     output$pie_map_plot <- renderPlot({
       req(input$map_mode == "static")
-      df <- data_pie_map()
+      # data.frame centroids + values
+      plot_df <- data_pie_map()%>% dplyr::select(-geographic_identifier)    # cols: X, Y, total, <categories…>
+      la_pal  <- la_palette()
+      plot_df <- plot_df %>%
+        dplyr::mutate(
+          r = scales::rescale(total,
+                              to = c(1, 5),
+                              from = range(total, na.rm = TRUE))
+        )
+      pie_cols <- setdiff(names(plot_df), c("X", "Y", "total", "r", "geographic_identifier"))
       
-      # Calcul des centroides fiables pour données géographiques
-      cent <- sf::st_point_on_surface(df)
-      coords <- sf::st_coordinates(cent)
-      
-      # Préparation du data.frame pour scatterpie
-      vals <- df %>%
-        sf::st_drop_geometry() %>%
-        dplyr::select_if(is.numeric)
-      plot_df <- cbind(
-        as.data.frame(coords),
-        vals
-      )
-      la_pal <- la_palette()
-      # Tracé de la carte et des camemberts
       ggplot2::ggplot() +
-        # Fond de carte
-        geom_sf(data = world, fill = NA, color = "grey70", size = 0.2) +
-        # ggplot2::geom_sf(data = df, fill = NA, color = "grey50") +
-        # Camemberts avec écart réduit
+        ggplot2::geom_sf(data = world,
+                         fill  = "antiquewhite",
+                         color = "grey70",
+                         size  = 0.2) +
+        # pie charts at pre-computed centroids
         scatterpie::geom_scatterpie(
-          aes(
-            x = X,
-            y = Y,
-            # on réduit la disparité : racine de la proportion plutôt que proportion brute
-            r = sqrt(total / max(total)) *5
-          ),
+          aes(x = X, y = Y, r = r),
           data = plot_df,
-          cols = setdiff(names(plot_df), c("X", "Y", "total")),
+          cols  = pie_cols,
+          colour = NA,
           alpha = 0.8
         ) +
-        # même palette que pour la carte interactive
         ggplot2::scale_fill_manual(values = la_pal) +
         coord_sf() +
         ggplot2::theme_minimal() 
-      
     })
     
-    
-    # Interactive view avec tmap sans tmap_mode dans le rendu
     output$pie_map <- renderLeaflet({
       flog.info("Rendering pie map")
-      req(data_pie_map(), zoom_level(), centroid())
+      req(data_pie_map(), zoom_level())
       df       <- data_pie_map()
-      ctr      <- st_as_sf(centroid())
+      # ctr      <- st_as_sf(centroid())
       la_pal   <- la_palette()
       
       # 1) Extraire les colonnes de données pour les mini‐charts
       chartdata_df <- 
         df %>% 
         st_drop_geometry() %>% 
-        dplyr::select(-total) %>% 
+        dplyr::select(-c(total, X, Y)) %>% 
         dplyr::select_if(is.numeric)
       chart_cols <- colnames(chartdata_df)
       
@@ -179,10 +173,18 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
       pal <- pal[chart_cols]    # 
       pal_vec <- unname(pal)    # on enlève les noms
       
+      
+      geom_df <- geom() %>% dplyr::select(-gridtype)
+      df <- st_as_sf(dplyr::left_join(df %>% dplyr::select(-c(X,Y)), geom_df, by = "geographic_identifier"))
+      lngs     <- df$X
+      lats     <- df$Y
+      center_lon <- mean(lngs, na.rm = TRUE)
+      center_lat <- mean(lats, na.rm = TRUE)
       leaflet() %>% 
         addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
-        setView(lng = st_coordinates(ctr)[1,1],
-                lat = st_coordinates(ctr)[1,2],
+        setView(
+          lng = center_lon,
+                lat = center_lat,
                 zoom = zoom_level()) %>%
         onRender(sprintf(
           "function(el,x){var map=this;map.on('zoomend',function(){Shiny.setInputValue('%smap_zoom_level',map.getZoom());});Shiny.setInputValue('%smap_zoom_level',map.getZoom());}",
@@ -213,6 +215,8 @@ pieMapTimeSeriesServer <- function(id, category_var, data, centroid, submitTrigg
     observeEvent(input$map_zoom_level, {
       flog.info("Updating zoom level to: %s", input$map_zoom_level)
       df <- data_pie_map()
+      geom_df <- geom() %>% dplyr::select(-gridtype)
+      df <- st_as_sf(dplyr::left_join(df %>% dplyr::select(-c(X,Y)), geom_df, by = "geographic_identifier"))
       la_palette <- la_palette()
       
       # Calculate new width based on zoom level

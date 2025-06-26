@@ -39,9 +39,6 @@ load_data <- function(DOI) {
   library(lubridate); library(sf); library(futile.logger)
   library(tools); library(here)
   
-  # préparer shapefile pour enrichissement
-  shp <- qs::qread(here::here("data/cl_areal_grid.qs"))
-  
   data_dir <- here::here("data")
   
   for (i in seq_len(nrow(DOI))) {
@@ -76,11 +73,8 @@ load_data <- function(DOI) {
     cache_path <- file.path(data_dir, paste0(base, "_", record_id, "_updated.qs"))
     if (file.exists(cache_path)) {
       if(!exists("default_dataset")){
-      message("🔄 loading cached updated: ", cache_path)
-      data_tbl <- qs::qread(cache_path)
-      if(i == length(nrow(DOI))){
-      assign("default_dataset", data_tbl, envir = .GlobalEnv)
-      }
+        message("🔄 loading cached updated: ", cache_path)
+        data_tbl <- qs::qread(cache_path)
       } else {
         message("Using default dataset")
         
@@ -93,7 +87,7 @@ load_data <- function(DOI) {
         data_tbl$gear_type <- as.character(data_tbl$gear_type)
       data_tbl$geographic_identifier <- as.character(data_tbl$geographic_identifier)
       # enrichir
-      data_tbl <- CWP.dataset::enrich_dataset_if_needed(data_tbl, shp_raw = shp)$without_geom
+      data_tbl <- CWP.dataset::enrich_dataset_if_needed(data_tbl)$without_geom
       simplify_labels <- function(df) {
         # Trouver toutes les colonnes avec un suffixe "_label"
         label_cols <- grep("_label$", names(df), value = TRUE)
@@ -116,8 +110,8 @@ load_data <- function(DOI) {
       data_tbl <- simplify_labels(data_tbl)
       # ajouter year/month
       data_tbl <- dplyr::mutate(data_tbl,
-                         year  = year(time_start),
-                         month = month(time_start))
+                                year  = year(time_start),
+                                month = month(time_start))
       # sauvegarder cache
       qs::qsave(data_tbl, cache_path)
       message("💾 saved updated cache: ", cache_path)

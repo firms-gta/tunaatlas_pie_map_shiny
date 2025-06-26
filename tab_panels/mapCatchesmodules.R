@@ -48,7 +48,7 @@ mapCatchesServer <- function(id, data, geom_sf) {
       
       flog.info("🗺 Rendering total catch map")
       a <- sum_all()
-      a <- st_simplify(a, dTolerance = 0.01)  
+      # a <- st_simplify(a, dTolerance = 0.01)  
       
       qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n = 10)
       map <- leaflet() %>%

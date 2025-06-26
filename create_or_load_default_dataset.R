@@ -30,5 +30,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   # geom <- qs::qread("data/geom.qs")
   # default_dataset_shape <- default_dataset %>% dplyr::inner_join(shapefile.fix, by = c("geographic_identifier" = "cwp_code"))
   
-}
+ }
+
+qs::qsave(default_dataset, "data/default_dataset.qs")
 

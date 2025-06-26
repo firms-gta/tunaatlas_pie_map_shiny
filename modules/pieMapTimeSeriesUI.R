@@ -117,8 +117,8 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
       switch(
         input$map_mode,
         none = NULL,
-        static = tmapOutput(ns("pie_map_plot"), height = "400px"),
-        interactive = leafletOutput(ns("pie_map"), height = "400px")
+        static = withSpinner(tmapOutput(ns("pie_map_plot"), height = "400px")),
+        interactive = withSpinner(leafletOutput(ns("pie_map"), height = "400px"))
       )
     })
     

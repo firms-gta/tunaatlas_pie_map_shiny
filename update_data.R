@@ -79,7 +79,9 @@ if(!file.exists(cl_areal_grid_path)| !file.exists("data/centroids.qs")){
 }
 require(here)
 source(here::here("R/load_data.R"))
-load_data(DOI)
+if(!file.exists("data/default_dataset.qs")){
+load_data(DOI) 
+  } 
 
 
 

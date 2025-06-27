@@ -17,7 +17,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
     ns <- session$ns
     
     # Réactive pour stocker le statut du rapport
-    report_status <- reactiveVal("Waiting...")
+    report_status <- reactiveVal("Please wait")
     
     # Réactive pour stocker le chemin du fichier généré
     report_file <- reactiveVal()
@@ -25,6 +25,20 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
     # Observer pour générer le rapport
     observeEvent(input$generate_report, {
       report_status("Generating report...")
+      if(!exists("shp_raw")){
+      cwp_grid_file <- system.file("extdata", "cl_areal_grid.csv", package = "CWP.dataset")
+      shp_raw <- st_as_sf(sf::st_read(cwp_grid_file, show_col_types = FALSE) %>% dplyr::rename(geom = geom_wkt), wkt = "geom")
+      }
+      if(!exists("continent")){
+        
+      WFS <- ows4R::WFSClient$new(
+        url = "https://www.fao.org/fishery/geoserver/fifao/wfs",
+        serviceVersion = "1.0.0",
+        logger = "INFO"
+      )
+      continent <- WFS$getFeatures("fifao:UN_CONTINENT2")
+      sf::st_crs(continent) <- 4326
+      }
       tryCatch({
         # Récupération des données réactives
         setwd(here::here("Markdown")) # changer le repo au début et pas juste avant de lancer le bookdown sinon shiny est pas assez reactif
@@ -36,16 +50,17 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
           parameter_init = default_dataset,
           parameter_final = NULL,
           parameter_time_dimension = "Time",
+          plotting_type = "view",
           fig.path = NULL,
           parameter_fact = "catch",
-          parameter_geographical_dimension_groupping = "GRIDTYPE",
-          parameter_colnames_to_keep = setdiff(c(variable_to_display, "measurement_value"), c("GRIDTYPE", "gear_type_label", "species_label")),
+          parameter_geographical_dimension_groupping = "gridtype",
+          parameter_colnames_to_keep = setdiff(c(variable_to_display, "measurement_value"), c("gridtype", "gear_type", "species", "fishing_fleet")),
           coverage = TRUE,
-          shapefile_fix = shapefile.fix %>% dplyr::rename(code = geographic_identifier),
-          continent = NULL,
+          shapefile_fix = shp_raw,
+          continent = continent,
           parameter_resolution_filter = NULL,
           parameter_titre_dataset_1 = "Mydataset",
-          unique_analyse = TRUE
+          unique_analyse = TRUE, print_map = FALSE
         )
         
         # Configuration des paramètres du rapport
@@ -72,7 +87,8 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
         if (file.exists(output_file)) {
           unlink(output_file)
         }
-        
+        require(bookdown)
+        base::options(knitr.duplicate.label = "allow")
         # Génération du rapport avec Bookdown
         rmarkdown::render(system.file("rmd/comparison.Rmd", package = "CWP.dataset"),
                           envir = render_env,

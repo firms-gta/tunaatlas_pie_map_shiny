@@ -44,6 +44,8 @@ pieMapTimeSeriesUI <- function(id) {
 pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, submitTrigger, newwkttest, geom, global_topn, map_mode_val) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+    require(promises)
+    require(future)
     zoom_level <- reactiveVal(1)
     target_var <- getTarget(category_var)
     observe({
@@ -135,6 +137,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     output$pie_map_plot <- renderPlot({
       req(input$map_mode == "static")
       # data.frame centroids + values
+      future({
       plot_df <- data_pie_map()%>% dplyr::select(-geographic_identifier)    # cols: X, Y, total, <categories…>
       la_pal  <- la_palette()
       plot_df <- plot_df %>%
@@ -160,12 +163,14 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
         ) +
         ggplot2::scale_fill_manual(values = la_pal) +
         coord_sf() +
-        ggplot2::theme_minimal() 
+        ggplot2::theme_minimal()  }) %...>% identity()
     })
     
     output$pie_map <- renderLeaflet({
+      req(input$map_mode == "interactive")
       flog.info("Rendering pie map")
       req(data_pie_map(), zoom_level())
+      future({
       df       <- data_pie_map()
       # ctr      <- st_as_sf(centroid())
       la_pal   <- la_palette()
@@ -218,7 +223,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
           layerId      = "minicharts"
         ) %>%
         addLayersControl(baseGroups = c("minicharts","grid"),
-                         overlayGroups = c("background"))
+                         overlayGroups = c("background"))}) %...>% identity()
     })
     
     

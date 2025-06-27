@@ -29,7 +29,7 @@ jobs:
 
     - name: Pull base image
       run: |
-        docker pull $IMAGE_BASE
+        docker pull $IMAGE
 
     - name: Build & push “light” image on-demand
       uses: docker/build-push-action@v4
@@ -48,4 +48,4 @@ jobs:
       if: always()
       run: |
         echo "Slim image size:"
-        docker images $IMAGE_SLIM --format "{{.Repository}}:{{.Tag}}\t{{.Size}}"
+        docker images $IMAGE --format "{{.Repository}}:{{.Tag}}\t{{.Size}}"

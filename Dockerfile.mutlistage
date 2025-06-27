@@ -48,7 +48,7 @@ COPY --from=builder /tmp/flattened_lib/ /usr/local/lib/R/site-library/
 RUN rm -rf /usr/local/lib/R/site-library/*/{tests,inst/doc,vignettes}
 
 # 3. Copier vos données optimisées et votre code (QS + Shiny scripts)
-COPY --from=builder /root/tunaatlas_pie_map_shiny/data/*_updated.qs data/
+COPY --from=builder /root/tunaatlas_pie_map_shiny/data/*.qs data/
 COPY --from=builder /root/tunaatlas_pie_map_shiny/R ./R
 COPY --from=builder /root/tunaatlas_pie_map_shiny/doc ./doc
 COPY --from=builder /root/tunaatlas_pie_map_shiny/rmd ./rmd

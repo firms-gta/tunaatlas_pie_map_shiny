@@ -188,7 +188,7 @@ COPY README.md README.Rmd LICENSE ./
 COPY rmd/ rmd/
 COPY global/ global/
 COPY doc/ doc/
-COPY Dockerfile.multistage ./
+COPY ./Dockerfile.multistage ./
 
 ENV BUILD_BRANCH=${BRANCH}
 

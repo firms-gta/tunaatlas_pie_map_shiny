@@ -1,0 +1,63 @@
+# === Étape 1 : builder (votre image actuelle) ===
+FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest AS builder
+
+WORKDIR /root/tunaatlas_pie_map_shiny
+
+# 1. Créer un dossier temporaire et y copier la library en suivant les liens
+RUN mkdir -p /tmp/flattened_lib && \
+    cp -LR renv/library/R-4.2/x86_64-pc-linux-gnu/* /tmp/flattened_lib/
+
+# === Étape 2 : final (léger) ===
+FROM rocker/r-ver:4.2.3
+
+RUN apt-get update && apt-get install -y \
+    sudo \
+    pandoc \
+    pandoc-citeproc \
+    libssl-dev \
+    libcurl4-gnutls-dev \
+    libxml2-dev \
+    libudunits2-dev \
+    libproj-dev \
+    libgeos-dev \
+    libgdal-dev \
+    libv8-dev \
+    libsodium-dev \
+    libsecret-1-dev \
+    git \
+    libnetcdf-dev \
+    curl \
+    libjq-dev \
+    cmake \
+    protobuf-compiler \
+    libprotobuf-dev \
+    wget \
+    librdf0 \
+    librdf0-dev \
+    libtbb-dev \
+    libzmq3-dev \
+    libpoppler-cpp-dev \
+    redland-utils && \
+    apt-get clean
+  
+WORKDIR /root/tunaatlas_pie_map_shiny
+
+# 2. Copier la library aplatie dans le site-library de R
+COPY --from=builder /tmp/flattened_lib/ /usr/local/lib/R/site-library/
+
+RUN rm -rf /usr/local/lib/R/site-library/*/{tests,inst/doc,vignettes}
+
+# 3. Copier vos données optimisées et votre code (QS + Shiny scripts)
+COPY --from=builder /root/tunaatlas_pie_map_shiny/data/*_updated.qs data/
+COPY --from=builder /root/tunaatlas_pie_map_shiny/R ./R
+COPY --from=builder /root/tunaatlas_pie_map_shiny/doc ./doc
+COPY --from=builder /root/tunaatlas_pie_map_shiny/rmd ./rmd
+COPY --from=builder /root/tunaatlas_pie_map_shiny/global ./global
+COPY --from=builder /root/tunaatlas_pie_map_shiny/*.R ./
+COPY --from=builder /root/tunaatlas_pie_map_shiny/*.csv ./
+COPY --from=builder /root/tunaatlas_pie_map_shiny/www/ www/
+COPY --from=builder /root/tunaatlas_pie_map_shiny/modules/ modules/
+COPY --from=builder /root/tunaatlas_pie_map_shiny/tab_panels/ tab_panels/
+
+EXPOSE 3838
+CMD ["R", "-e", "library(shiny); shiny::runApp('.', port=3838, host='0.0.0.0')"]

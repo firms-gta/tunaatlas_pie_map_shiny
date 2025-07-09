@@ -45,6 +45,24 @@ WORKDIR /root/tunaatlas_pie_map_shiny
 # 2. Copier la library aplatie dans le site-library de R
 COPY --from=builder /tmp/flattened_lib/ /usr/local/lib/R/site-library/
 
+# Purge tous les paquets '-dev' et git, cmake… qu'on n'utilise plus en runtime
+RUN apt-get purge -y --auto-remove \
+      'cmake' \
+      'git' \
+      'pandoc-citeproc' \
+      'libssl-dev' \
+      'libcurl4-gnutls-dev' \
+      'libxml2-dev' \
+      'libudunits2-dev' \
+      'libproj-dev' \
+      'libgeos-dev' \
+      'libgdal-dev' \
+      'libsodium-dev' \
+      'libpoppler-cpp-dev' \
+      'redland-utils' \
+    && rm -rf /var/lib/apt/lists/* /tmp/flattened_lib
+
+      
 RUN rm -rf /usr/local/lib/R/site-library/*/{tests,inst/doc,vignettes}
 
 # 3. Copier vos données optimisées et votre code (QS + Shiny scripts)

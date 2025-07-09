@@ -14,8 +14,8 @@ pieMapTimeSeriesUI <- function(id) {
     conditionalPanel(
       condition = sprintf("input['%s'] == 'static'", ns("map_mode")),
       fluidRow(
-        column(6, h4("5° grid"), uiOutput(ns("map_ui_5deg"))),
-        column(6, h4("1° grid"), uiOutput(ns("map_ui_1deg")))
+        column(6, h4("5deg grid"), uiOutput(ns("map_ui_5deg"))),
+        column(6, h4("1deg grid"), uiOutput(ns("map_ui_1deg")))
       )
     ),
     
@@ -23,7 +23,7 @@ pieMapTimeSeriesUI <- function(id) {
     conditionalPanel(
       condition = sprintf("input['%s'] == 'interactive'", ns("map_mode")),
       fluidRow(
-        column(12, h4("Interactive map"), uiOutput(ns("map_ui_combined")))
+        column(12, h4("Interactive map (can be slow if multiples gridtype"), uiOutput(ns("map_ui_combined")))
       )
     )
   )

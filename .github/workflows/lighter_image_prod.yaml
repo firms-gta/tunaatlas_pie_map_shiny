@@ -35,7 +35,6 @@ jobs:
         docker pull $IMAGE:latest      || true
         docker pull $IMAGE:latest-cache || true
 
-    # ← Nouvelle étape :
     - name: Original image size
       run: |
         echo "::group::Taille de l'image de base"

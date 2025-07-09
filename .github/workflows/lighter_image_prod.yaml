@@ -32,8 +32,16 @@ jobs:
 
     - name: Pull base & cache
       run: |
-        docker pull $IMAGE:latest || true
+        docker pull $IMAGE:latest      || true
         docker pull $IMAGE:latest-cache || true
+
+    # ← Nouvelle étape :
+    - name: Original image size
+      run: |
+        echo "::group::Taille de l'image de base"
+        docker images $IMAGE:latest \
+          --format "{{.Repository}}:{{.Tag}}\t{{.Size}}"
+        echo "::endgroup::"
 
     - name: Build & push slim image
       uses: docker/build-push-action@v4
@@ -51,5 +59,7 @@ jobs:
     - name: Verify slim image size
       if: always()
       run: |
-        echo "Slim image size:"  
-        docker images $IMAGE:latest --format "{{.Repository}}:{{.Tag}}\t{{.Size}}"
+        echo "::group::Taille de l'image slim"
+        docker images $IMAGE:latest \
+          --format "{{.Repository}}:{{.Tag}}\t{{.Size}}"
+        echo "::endgroup::"

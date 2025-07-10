@@ -24,7 +24,9 @@ pieMapTimeSeriesUI <- function(id) {
       condition = sprintf("input['%s'] == 'interactive'", ns("map_mode")),
       fluidRow(
         column(12, h4("Interactive map (can be slow if multiples gridtypes)"),
-               actionButton(ns("submit_draw_pie_map"), "Update WKT from drawing"),
+               actionButton(ns("submit_draw_pie_map"), "Update wkt from drawing",
+                            class = "btn-primary",
+                            style = "position: absolute; top: 100px; right: 20px; z-index: 400; font-size: 0.8em; padding: 5px 10px;"),
                uiOutput(ns("map_ui_combined"))
         )
       )
@@ -305,7 +307,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     observeEvent(input$submit_draw_pie_map, {
       flog.info("Submitting draw")
       
-      feature <- input$pie_map_draw_new_feature
+      feature <- input$pie_map_combined_draw_new_feature
       if (!is.null(feature$geometry) && length(feature$geometry$coordinates) > 0) {
         showModal(modalDialog(
           title = "Changing spatial coverage",
@@ -328,8 +330,8 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     })
     
     observeEvent(input$yes_button_pie_map, {
-      req(input$pie_map_draw_new_feature$geometry)
-      geojson <- input$pie_map_draw_new_feature$geometry
+      req(input$pie_map_combined_draw_new_feature$geometry)
+      geojson <- input$pie_map_combined_draw_new_feature$geometry
       geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)
       sf_obj <- geojsonsf::geojson_sf(geojson_text)
       wkt_val <- st_as_text(sf_obj$geometry)

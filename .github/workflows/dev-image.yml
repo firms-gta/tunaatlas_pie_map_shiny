@@ -59,13 +59,3 @@ jobs:
             --push \
             .
 
-
-      - name: Load image to Docker
-        run: docker load -i /tmp/dev-image.tar
-
-      - name: Push dev image
-        if: ${{ github.event.inputs.push_image == 'true' }}
-        run: |
-          docker push ${{ env.IMAGE_NAME }}:${{ github.event.inputs.base_branch }}
-          docker tag ${{ env.IMAGE_NAME }}:${{ github.event.inputs.base_branch }} ${{ env.IMAGE_NAME }}:latest
-          docker push ${{ env.IMAGE_NAME }}:latest

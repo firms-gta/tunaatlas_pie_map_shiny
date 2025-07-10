@@ -13,7 +13,7 @@ on:
         default: "false"
 
 env:
-  IMAGE_NAME: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-dev
+  IMAGE_NAME: ghcr.io/bastienird/tunaatlas_pie_map_shiny-dev
   RENV_PATHS_ROOT: /root/.cache/R/renv
   DOCKER_BUILDKIT: 1
 

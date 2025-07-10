@@ -205,11 +205,19 @@ RUN R -e '\
   } \
 '
 
-# Expose port 3838 for the Shiny app
-EXPOSE 3838
-
 # Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
-# Define the entry point to run the Shiny app
-CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"]
+# Define the entry point to run the Shiny appEXPOSE 3838
+EXPOSE 3838
+EXPOSE 8787
+
+# Commande conditionnelle
+CMD if [ "$MODE" = "dev" ]; then \
+    /usr/lib/rstudio-server/bin/rserver --server-daemonize 0; \
+    else \
+    R -e "shiny::runApp('/home/rstudio/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"; \
+    fi
+    
+    
+    

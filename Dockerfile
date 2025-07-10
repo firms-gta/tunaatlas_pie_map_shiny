@@ -25,6 +25,8 @@ RUN apt-get update && apt-get install -y \
     git \
     libnetcdf-dev \
     curl \
+    udunits-bin \
+    gdal-bin \
     libjq-dev \
     cmake \
     protobuf-compiler \

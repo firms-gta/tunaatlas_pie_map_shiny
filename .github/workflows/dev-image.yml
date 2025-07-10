@@ -55,7 +55,7 @@ jobs:
             --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
             --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
             --tag ${{ env.IMAGE_NAME }}:${{ github.event.inputs.base_branch }} \
-            --output type=docker,dest=/tmp/dev-image.tar .
+            --output type=oci,dest=/tmp/dev-image.tar
 
       - name: Load image to Docker
         run: docker load -i /tmp/dev-image.tar

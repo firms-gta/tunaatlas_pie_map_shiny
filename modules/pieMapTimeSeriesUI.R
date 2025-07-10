@@ -11,11 +11,14 @@ pieMapTimeSeriesUI <- function(id) {
     ),
     
     # Static mode: show both maps
+    # Interactive mode: show one combined map
     conditionalPanel(
-      condition = sprintf("input['%s'] == 'static'", ns("map_mode")),
+      condition = sprintf("input['%s'] == 'interactive'", ns("map_mode")),
       fluidRow(
-        column(6, h4("5deg grid"), uiOutput(ns("map_ui_5deg"))),
-        column(6, h4("1deg grid"), uiOutput(ns("map_ui_1deg")))
+        column(12, h4("Interactive map (can be slow if multiples gridtypes)"),
+               actionButton(ns("submit_draw_pie_map"), "Update WKT from drawing"),
+               uiOutput(ns("map_ui_combined"))
+        )
       )
     ),
     

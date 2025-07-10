@@ -5,8 +5,8 @@ pieMapTimeSeriesUI <- function(id) {
       inputId = ns("map_mode"),
       label   = "Map mode:",
       choices = c("No map" = "none",
-                  "Static" = "static",
-                  "Interactive" = "interactive"),
+                  "Static (one map per gridtype)" = "static",
+                  "Interactive (can be slow for not spatially filtered data)" = "interactive"),
       inline  = TRUE
     ),
     
@@ -23,7 +23,7 @@ pieMapTimeSeriesUI <- function(id) {
     conditionalPanel(
       condition = sprintf("input['%s'] == 'interactive'", ns("map_mode")),
       fluidRow(
-        column(12, h4("Interactive map (can be slow if multiples gridtype"), uiOutput(ns("map_ui_combined")))
+        column(12, h4("Interactive map (can be slow if multiples gridtypes)"), uiOutput(ns("map_ui_combined")))
       )
     )
   )
@@ -209,39 +209,39 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
         pal_vec <- unname(pal)    # on enlève les noms
         
         
-        geom_df <- geom() %>% dplyr::select(-gridtype)
-        df <- st_as_sf(dplyr::left_join(df %>% dplyr::select(-c(X,Y)), geom_df, by = "geographic_identifier"))
-        lngs     <- df$X
-        lats     <- df$Y
-        center_lon <- mean(lngs, na.rm = TRUE)
-        center_lat <- mean(lats, na.rm = TRUE)
+        # geom_df <- geom() %>% dplyr::select(-gridtype)
+        # df <- st_as_sf(dplyr::left_join(df %>% dplyr::select(-c(X,Y)), geom_df, by = "geographic_identifier"))
+        # lngs     <- df$X
+        # lats     <- df$Y
+        # center_lon <- mean(lngs, na.rm = TRUE)
+        # center_lat <- mean(lats, na.rm = TRUE)
         leaflet() %>% 
           addProviderTiles("Esri.NatGeoWorldMap", group = "background") %>%
-          setView(
-            lng = center_lon,
-            lat = center_lat,
-            zoom = zoom_level()) %>%
+          # setView(
+          #   lng = center_lon,
+          #   lat = center_lat,
+          #   zoom = zoom_level()) %>%
           onRender(sprintf(
             "function(el,x){var map=this;map.on('zoomend',function(){Shiny.setInputValue('%smap_zoom_level',map.getZoom());});Shiny.setInputValue('%smap_zoom_level',map.getZoom());}",
             session$ns(""), session$ns("")
           )) %>%
-          clearBounds() %>%
-          addDrawToolbar(targetGroup = "draw",
-                         editOptions = editToolbarOptions(selectedPathOptions())) %>%
-          addLayersControl(overlayGroups = c("draw"),
-                           options = layersControlOptions(collapsed = FALSE)) %>%
-          addMinicharts(
-            lng          = st_coordinates(st_centroid(df, crs=4326))[, "X"],
-            lat          = st_coordinates(st_centroid(df, crs=4326))[, "Y"],
-            maxValues    = max(df$total),
-            chartdata    = chartdata_df,
-            type         = "pie",
-            colorPalette = pal_vec,    
-            width        = 8 + ((zoom_level()*20)*(df$total/max(df$total))),
-            legend       = TRUE,
-            legendPosition = "bottomright",
-            layerId      = "minicharts"
-          ) %>%
+          # clearBounds() %>%
+          # addDrawToolbar(targetGroup = "draw",
+          #                editOptions = editToolbarOptions(selectedPathOptions())) %>%
+          # addLayersControl(overlayGroups = c("draw"),
+          #                  options = layersControlOptions(collapsed = FALSE)) %>%
+          # addMinicharts(
+          #   lng          = st_coordinates(st_centroid(df, crs=4326))[, "X"],
+          #   lat          = st_coordinates(st_centroid(df, crs=4326))[, "Y"],
+          #   maxValues    = max(df$total),
+          #   chartdata    = chartdata_df,
+          #   type         = "pie",
+          #   colorPalette = pal_vec,    
+          #   width        = 8 + ((zoom_level()*20)*(df$total/max(df$total))),
+          #   legend       = TRUE,
+          #   legendPosition = "bottomright",
+          #   layerId      = "minicharts"
+          # ) %>%
           addLayersControl(baseGroups = c("minicharts","grid"),
                            overlayGroups = c("background"))}) %...>% identity()
     })
@@ -249,25 +249,41 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     observeEvent(input$map_zoom_level, {
       flog.info("Updating zoom level to: %s", input$map_zoom_level)
-      df <- data_pie_map()
+      df       <- data_pie_map()
+      # ctr      <- st_as_sf(centroid())
+      la_pal   <- la_palette()
+      
+      # 1) Extraire les colonnes de données pour les mini‐charts
+      chartdata_df <- 
+        df %>% 
+        st_drop_geometry() %>% 
+        dplyr::select(-c(total, X, Y)) %>% 
+        dplyr::select_if(is.numeric)
+      chart_cols <- colnames(chartdata_df)
+      
+      # 2) Filtrer et réordonner la palette pour coller à ces colonnes
+      pal <- la_pal[names(la_pal) %in% chart_cols]
+      pal <- pal[chart_cols]    # 
+      pal_vec <- unname(pal)    # on enlève les noms
       geom_df <- geom() %>% dplyr::select(-gridtype)
       df <- st_as_sf(dplyr::left_join(df %>% dplyr::select(-c(X,Y)), geom_df, by = "geographic_identifier"))
-      la_palette <- la_palette()
       
       new_width <- 8 + (input$map_zoom_level * 20) * (df$total / max(df$total))
       
       leafletProxy("pie_map_combined", data = df) %>%  # <-- ici
-        clearGroup("minicharts") %>% 
+        clearGroup("minicharts")%>%
+        # clearBounds() %>%
+        addDrawToolbar(targetGroup = "draw",
+                       editOptions = editToolbarOptions(selectedPathOptions())) %>%
+        addLayersControl(overlayGroups = c("draw"),
+                         options = layersControlOptions(collapsed = FALSE)) %>% 
         addMinicharts(
           lng = st_coordinates(st_centroid(df, crs = 4326))[, "X"],
           lat = st_coordinates(st_centroid(df, crs = 4326))[, "Y"],
           maxValues = max(df$total),
-          chartdata = df %>%
-            st_drop_geometry() %>%
-            dplyr::select(-total) %>%
-            dplyr::select_if(is.numeric),
+          chartdata = chartdata_df,
           type = "pie",
-          colorPalette = unname(la_palette),
+          colorPalette = pal_vec,
           transitionTime = 50,
           width = new_width,  
           legend = TRUE, 

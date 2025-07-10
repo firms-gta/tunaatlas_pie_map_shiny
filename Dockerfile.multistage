@@ -1,71 +1,39 @@
-# === Étape 1 : builder (votre image actuelle) ===
+# === Étape 1 : builder (votre image complète) ===
 FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest AS builder
-
 WORKDIR /root/tunaatlas_pie_map_shiny
+RUN mkdir -p /tmp/flattened_lib \
+ && cp -LR renv/library/R-4.2/x86_64-pc-linux-gnu/* /tmp/flattened_lib/
 
-# 1. Créer un dossier temporaire et y copier la library en suivant les liens
-RUN mkdir -p /tmp/flattened_lib && \
-    cp -LR renv/library/R-4.2/x86_64-pc-linux-gnu/* /tmp/flattened_lib/
-
-# === Étape 2 : final (léger) ===
 FROM rocker/r-ver:4.2.3
 
-RUN apt-get update && apt-get install -y \
-    sudo \
-    pandoc \
-    pandoc-citeproc \
-    libssl-dev \
-    libcurl4-gnutls-dev \
-    libxml2-dev \
-    libudunits2-dev \
-    libproj-dev \
-    libgeos-dev \
-    libgdal-dev \
-    libv8-dev \
-    libsodium-dev \
-    libsecret-1-dev \
-    git \
-    libnetcdf-dev \
-    curl \
-    libjq-dev \
-    cmake \
-    protobuf-compiler \
-    libprotobuf-dev \
-    wget \
-    librdf0 \
-    librdf0-dev \
-    libtbb-dev \
-    libzmq3-dev \
-    libpoppler-cpp-dev \
-    redland-utils && \
-    apt-get clean
-  
+# 1) Installer ce dont R a besoin à l'exécution, puis purger le reste
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      sudo pandoc \
+      libssl-dev libcurl4-gnutls-dev libxml2-dev \
+      libudunits2-dev libproj-dev libgeos-dev libgdal-dev \
+      libv8-dev libsodium-dev libsecret-1-dev git \
+      libnetcdf-dev curl libjq-dev cmake protobuf-compiler \
+      libprotobuf-dev wget librdf0 librdf0-dev \
+      libtbb-dev libzmq3-dev libpoppler-cpp-dev redland-utils \
+ && apt-get purge -y --auto-remove \
+      git cmake protobuf-compiler libprotobuf-dev librdf0-dev \
+      redland-utils pandoc \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /root/tunaatlas_pie_map_shiny
 
-# 2. Copier la library aplatie dans le site-library de R
+# 2) Copier la bibliothèque R aplatie
 COPY --from=builder /tmp/flattened_lib/ /usr/local/lib/R/site-library/
 
-# Purge tous les paquets '-dev' et git, cmake… qu'on n'utilise plus en runtime
-RUN apt-get purge -y --auto-remove \
-      'cmake' \
-      'git' \
-      'pandoc-citeproc' \
-      'libssl-dev' \
-      'libcurl4-gnutls-dev' \
-      'libxml2-dev' \
-      'libudunits2-dev' \
-      'libproj-dev' \
-      'libgeos-dev' \
-      'libgdal-dev' \
-      'libsodium-dev' \
-      'libpoppler-cpp-dev' \
-      'redland-utils' \
-    && rm -rf /var/lib/apt/lists/* /tmp/flattened_lib
+# 3) Strip des .so pour enlever les symboles de debug
+RUN find /usr/local/lib/R/site-library -name '*.so' \
+     -exec strip --strip-unneeded {} + || true
 
-      
+# 4) Nettoyage des docs/tests/vignettes
 RUN rm -rf /usr/local/lib/R/site-library/*/{tests,inst/doc,vignettes}
 
-# 3. Copier vos données optimisées et votre code (QS + Shiny scripts)
+# 5) Copier vos données & code (QS + Shiny)
 COPY --from=builder /root/tunaatlas_pie_map_shiny/data/*.qs data/
 COPY --from=builder /root/tunaatlas_pie_map_shiny/R ./R
 COPY --from=builder /root/tunaatlas_pie_map_shiny/doc ./doc
@@ -76,6 +44,10 @@ COPY --from=builder /root/tunaatlas_pie_map_shiny/*.csv ./
 COPY --from=builder /root/tunaatlas_pie_map_shiny/www/ www/
 COPY --from=builder /root/tunaatlas_pie_map_shiny/modules/ modules/
 COPY --from=builder /root/tunaatlas_pie_map_shiny/tab_panels/ tab_panels/
+
+RUN rm -rf /tmp/flattened_lib \
+ && rm -rf /root/.cache/R/renv \
+ && rm -rf renv
 
 EXPOSE 3838
 CMD ["R", "-e", "library(shiny); shiny::runApp('.', port=3838, host='0.0.0.0')"]

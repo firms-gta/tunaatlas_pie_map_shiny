@@ -52,12 +52,6 @@ RUN apt-get update && apt-get install -y dos2unix
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 
 # adding workingdirectoyr in rstudio for creation of image in rstudioserver
-RUN mkdir -p /root/tunaatlas_pie_map_shiny && \
-    if [ "$MODE" = "dev" ]; then \
-      useradd -ms /bin/bash rstudio && \
-      mkdir -p /home/rstudio/tunaatlas_pie_map_shiny && \
-      chown -R rstudio:rstudio /home/rstudio; \
-    fi
 
 WORKDIR /root/tunaatlas_pie_map_shiny
 
@@ -216,16 +210,23 @@ RUN R -e '\
 # Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
+RUN if [ "$MODE" = "dev" ]; then \
+      mkdir -p /home/rstudio/tunaatlas_pie_map_shiny && \
+      cp -a /root/tunaatlas_pie_map_shiny/. /home/rstudio/tunaatlas_pie_map_shiny/ && \
+      chown -R rstudio:rstudio /home/rstudio/tunaatlas_pie_map_shiny; \
+    fi
 # Define the entry point to run the Shiny appEXPOSE 3838
 EXPOSE 3838
 EXPOSE 8787
 
 # Commande conditionnelle
 CMD if [ "$MODE" = "dev" ]; then \
+      echo "setwd('/home/rstudio/tunaatlas_pie_map_shiny')" >> /home/rstudio/.Rprofile && \
       /usr/lib/rstudio-server/bin/rserver --server-daemonize 0; \
     else \
       R -e "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"; \
     fi
+
 
     
     

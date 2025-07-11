@@ -210,6 +210,11 @@ RUN R -e '\
 # Create directories for configuration
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
+# Crée l'utilisateur rstudio (s'il n'existe pas déjà)
+RUN if [ "$MODE" = "dev" ]; then \
+      useradd -ms /bin/bash rstudio; \
+    fi
+
 RUN if [ "$MODE" = "dev" ]; then \
       mkdir -p /home/rstudio/tunaatlas_pie_map_shiny && \
       cp -a /root/tunaatlas_pie_map_shiny/. /home/rstudio/tunaatlas_pie_map_shiny/ && \
@@ -219,12 +224,19 @@ RUN if [ "$MODE" = "dev" ]; then \
 EXPOSE 3838
 EXPOSE 8787
 
-# Commande conditionnelle
+RUN if [ "$MODE" = "dev" ]; then \
+      echo "setwd('/home/rstudio/tunaatlas_pie_map_shiny')" > /home/rstudio/.Rprofile && \
+      chown rstudio:rstudio /home/rstudio/.Rprofile; \
+    fi
+
 CMD if [ "$MODE" = "dev" ]; then \
-      echo "setwd('/home/rstudio/tunaatlas_pie_map_shiny')" >> /home/rstudio/.Rprofile && \
       /usr/lib/rstudio-server/bin/rserver --server-daemonize 0; \
     else \
       R -e "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"; \
+    fi
+
+RUN if [ "$MODE" = "dev" ]; then \
+      chown -R rstudio:rstudio /home/rstudio; \
     fi
 
 

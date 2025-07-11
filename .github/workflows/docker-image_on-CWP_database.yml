@@ -95,8 +95,10 @@ jobs:
             docker buildx build \
               --no-cache \
               --progress=plain \
+              --build-arg MODE=prod \
               --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
               --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+              --build-arg BASE_IMAGE=rocker/r-ver:4.2.3 \
               --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
               --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \
               --output type=docker,dest=/tmp/docker-image.tar \
@@ -107,7 +109,9 @@ jobs:
               --progress=plain \
               --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
               --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
+              --build-arg MODE=prod \
               --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+              --build-arg BASE_IMAGE=rocker/r-ver:4.2.3 \
               --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
               --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
               --tag ghcr.io/firms-gta/tunaatlas_pie_map_shiny:${BRANCH_NAME} \

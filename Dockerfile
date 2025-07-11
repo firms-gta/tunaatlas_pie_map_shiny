@@ -52,10 +52,14 @@ RUN apt-get update && apt-get install -y dos2unix
 RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 
 # adding workingdirectoyr in rstudio for creation of image in rstudioserver
-WORKDIR /home/rstudio/tunaatlas_pie_map_shiny 
-COPY . /home/rstudio/tunaatlas_pie_map_shiny/
-RUN chown -R rstudio:rstudio /home/rstudio/tunaatlas_pie_map_shiny
+RUN mkdir -p /root/tunaatlas_pie_map_shiny && \
+    if [ "$MODE" = "dev" ]; then \
+      useradd -ms /bin/bash rstudio && \
+      mkdir -p /home/rstudio/tunaatlas_pie_map_shiny && \
+      chown -R rstudio:rstudio /home/rstudio; \
+    fi
 
+WORKDIR /root/tunaatlas_pie_map_shiny
 
 #those packages are essential to download the data in update_data.R, they are ran before renv because the renv.lock would change more than the DOI2.csv
 RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org'); \
@@ -220,7 +224,7 @@ EXPOSE 8787
 CMD if [ "$MODE" = "dev" ]; then \
       /usr/lib/rstudio-server/bin/rserver --server-daemonize 0; \
     else \
-      R -e "shiny::runApp('/home/rstudio/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"; \
+      R -e "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"; \
     fi
 
     

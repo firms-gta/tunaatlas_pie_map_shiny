@@ -10,7 +10,7 @@ on:
       push_image:
         description: "Push image to GHCR (true/false)"
         required: true
-        default: "false"
+        default: "true"
 
 env:
   IMAGE_NAME: ghcr.io/bastienird/tunaatlas_pie_map_shiny-dev
@@ -39,6 +39,9 @@ jobs:
         run: |
           echo "doi_csv_hash=$(sha256sum DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
       
+      - name: Set BRANCH_NAME
+        run: echo "BRANCH_NAME=${{ github.event.inputs.base_branch }}" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:

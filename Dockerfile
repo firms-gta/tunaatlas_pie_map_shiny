@@ -1,4 +1,5 @@
-FROM rocker/r-ver:4.2.3
+ARG BASE_IMAGE=rocker/r-ver:4.2.3
+FROM ${BASE_IMAGE}
 
 # Maintainer information
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"

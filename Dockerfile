@@ -99,7 +99,11 @@ COPY renv.lock ./
 COPY renv/activate.R renv/
 COPY renv/settings.json renv/
 
-RUN R -e "lockfile <- jsonlite::fromJSON('renv.lock'); renv_version <- lockfile$Packages[['renv']]$Version; install.packages('renv', repos='https://cran.r-project.org/', type='source', version=renv_version)"
+RUN Rscript -e "\
+  install.packages('remotes', repos='https://cloud.r-project.org'); \
+  renv_version <- jsonlite::fromJSON('renv.lock')$Packages[['renv']]$Version; \
+  remotes::install_version('renv', version = renv_version, repos = 'https://cran.r-project.org')"
+
 RUN R -e "renv::activate(); renv::restore(); renv::repair()"
 
 COPY update_data.R ./update_data.R 

@@ -84,8 +84,18 @@ RUN bash -c "tail -n +2 DOI.csv | tr -d '\r' | \
         fi; \
     done"
 
-ARG RENV_PATHS_ROOT=/root/.cache/R/renv
-ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
+ENV RENV_PATHS_ROOT=/root/.cache/R/renv
+
+# Si en mode dev, changer pour le user rstudio
+RUN if [ "$MODE" = "dev" ]; then \
+      export NEW_PATH="/home/rstudio/.cache/R/renv" && \
+      mkdir -p "$NEW_PATH" && \
+      chown -R rstudio:rstudio "$(dirname $NEW_PATH)" && \
+      echo "RENV_PATHS_ROOT=$NEW_PATH" >> /etc/environment && \
+      echo "RENV_PATHS_CACHE=$NEW_PATH" >> /etc/environment; \
+    fi
+
+# Ces variables sont utilisées par R/renv à runtime
 ENV RENV_PATHS_CACHE=${RENV_PATHS_ROOT}
 
 ARG RENV_LOCK_HASH
@@ -139,12 +149,17 @@ ENV BUILD_BRANCH=${BRANCH}
 RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% group_by(source_authority, species) %>% slice_head(n=100) %>% ungroup(); qs::qsave(full, here::here('data/default_dataset.qs')) }"
 
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
-
+RUN R -e "renv::isolate()"
 EXPOSE 3838
 EXPOSE 8787
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+RUN echo "RENV_PATHS_ROOT=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
+    echo "RENV_PATHS_CACHE=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
+    chown rstudio:rstudio /home/rstudio/.Renviron
+
 
 ENTRYPOINT ["/entrypoint.sh"]
 

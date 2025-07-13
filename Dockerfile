@@ -116,11 +116,11 @@ COPY update_data.R ./update_data.R
 COPY R/load_data.R ./R/load_data.R 
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
-RUN Rscript update_data.R 
+RUN Rscript update_data.R
 
 COPY R ./R
 COPY create_or_load_default_dataset.R ./
-RUN Rscript ./create_or_load_default_dataset.R 
+RUN Rscript ./create_or_load_default_dataset.R
 
 COPY global.R server.R ui.R app_debug.R install.R ./
 COPY download_GTA_data.R ./
@@ -140,19 +140,11 @@ RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(her
 
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
-RUN if [ "$MODE" = "dev" ]; then \
-      useradd -ms /bin/bash rstudio && \
-      mkdir -p /home/rstudio/tunaatlas_pie_map_shiny && \
-      cp -a /root/tunaatlas_pie_map_shiny/. /home/rstudio/tunaatlas_pie_map_shiny/ && \
-      echo "setwd('/home/rstudio/tunaatlas_pie_map_shiny')" > /home/rstudio/.Rprofile && \
-      chown -R rstudio:rstudio /home/rstudio; \
-    fi
-
 EXPOSE 3838
 EXPOSE 8787
 
-CMD if [ "$MODE" = "dev" ]; then \
-      /init; \
-    else \
-      R -e "shiny::runApp('/root/tunaatlas_pie_map_shiny', port=3838, host='0.0.0.0')"; \
-    fi
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+

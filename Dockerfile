@@ -149,17 +149,20 @@ ENV BUILD_BRANCH=${BRANCH}
 RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% group_by(source_authority, species) %>% slice_head(n=100) %>% ungroup(); qs::qsave(full, here::here('data/default_dataset.qs')) }"
 
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
-RUN R -e "renv::isolate()"
+
+RUN if [ "$MODE" = "dev" ]; then R -e "renv::isolate()"; fi
+
 EXPOSE 3838
 EXPOSE 8787
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-RUN echo "RENV_PATHS_ROOT=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
-    echo "RENV_PATHS_CACHE=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
-    chown rstudio:rstudio /home/rstudio/.Renviron
-
+RUN if [ "$MODE" = "dev" ] && [ -d "/home/rstudio" ]; then \
+      echo "RENV_PATHS_ROOT=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
+      echo "RENV_PATHS_CACHE=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
+      chown rstudio:rstudio /home/rstudio/.Renviron; \
+    fi
 
 ENTRYPOINT ["/entrypoint.sh"]
 

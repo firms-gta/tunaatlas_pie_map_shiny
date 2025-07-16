@@ -17,9 +17,11 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   filename <- DOI$Filename[i]
   dataset <- tools::file_path_sans_ext(filename)
   renamed <- file.path("data", paste0(dataset, "_", record_id, "_updated.qs"))
-  default_dataset <- qs::qread(renamed)
+  if(file.exists(here::here(renamed))){
+  default_dataset <- qs::qread(here::here(renamed))
   flog.info("Saving default dataset to qs file")
   qs::qsave(default_dataset, here::here("data/default_dataset.qs"))
+  }
   # updated <- file.path("data", paste0(dataset, "_updated.qs"))
   
  } else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){

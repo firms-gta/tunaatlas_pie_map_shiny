@@ -54,11 +54,15 @@ jobs:
           type=registry,ref=${{ env.IMAGE }}:latest-cache
         cache-to: |
           type=registry,ref=${{ env.IMAGE }}:latest-cache,mode=max
+    
+    - name: Docker disk usage
+      run: docker system df
 
-    - name: Verify slim image size
-      if: always()
+    - name: Verify slim image size (remote)
       run: |
-        echo "::group::Taille de l'image slim"
-        docker images $IMAGE:latest \
-          --format "{{.Repository}}:{{.Tag}}\t{{.Size}}"
+        echo "::group::Taille de l'image slim sur GHCR"
+        docker manifest inspect $IMAGE:latest | \
+          grep size | \
+          awk '{total += $2} END {print total/1024/1024 " MB"}'
         echo "::endgroup::"
+

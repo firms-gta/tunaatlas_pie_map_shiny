@@ -107,7 +107,7 @@ docker buildx build --cache-from=type=registry,ref=ghcr.io/firms-gta/tunaatlas_p
 ```
 
 - Replace `firms-gta` with your GitHub repository.
-- Replace `tunaatlas_pie_map_shiny` with your desired cache name.
+- Replace `tunaatlas_pie_map_shiny` with your application name.
 
 ### Explanation
 - `--cache-from`: Pulls cached layers from the remote registry.

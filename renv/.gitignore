@@ -5,5 +5,5 @@ lock/
 python/
 sandbox/
 staging/
-!renv/library/
-!renv/library/.gitkeep
+!library/
+!library/.gitkeep

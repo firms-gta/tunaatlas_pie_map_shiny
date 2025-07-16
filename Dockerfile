@@ -150,8 +150,12 @@ COPY global/ global/
 COPY doc/ doc/
 COPY ./Dockerfile.multistage ./
 
+ARG BRANCH
 ENV BUILD_BRANCH=${BRANCH}
-RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% group_by(source_authority, species) %>% slice_head(n=100) %>% ungroup(); qs::qsave(full, here::here('data/default_dataset.qs')) }"
+
+RUN echo "✅ MODE is: $MODE" && echo "✅ BRANCH is: $BRANCH" && echo "✅ BUILD_BRANCH is: $BUILD_BRANCH"
+RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
+RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% dplyr::group_by(source_authority, species) %>% dplyr::slice_head(n=100) %>% dplyr::ungroup(); qs::qsave(full, here::here('data/default_dataset.qs')) }"
 
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 

@@ -114,11 +114,16 @@ COPY renv/settings.json renv/
 RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org')"
 RUN Rscript -e "remotes::install_version('renv', version = jsonlite::fromJSON('renv.lock')\$Packages[['renv']]\$Version, repos = 'https://cran.r-project.org')"
 
+COPY renv/library/ renv/library/
+
 # Restore renv packages
 RUN R -e "renv::activate()" 
 # Used to setup the environment (with the path cache) carreful keep in multiple lines
 RUN R -e "renv::restore()" 
 RUN R -e "renv::repair()" 
+
+COPY testing_loading_of_all_packages.R ./testing_loading_of_all_packages.R
+RUN R -e "source('testing_loading_of_all_packages.R')"
 
 RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 

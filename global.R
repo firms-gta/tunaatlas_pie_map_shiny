@@ -9,16 +9,15 @@ require(here)
 require(sf)
 sf::sf_use_s2(FALSE)
 # tempory add
-unique_packages <- c("xts","raster", "ggplot2",
+unique_packages <- c("xts", "ggplot2",
   "RPostgreSQL", "here", "tools", "sf", "dplyr", "qs", 
   "futile.logger", "shinyjs", "tidyr", "bslib", 
   "shiny", "readr", "glue", "stringr", "knitr", 
   "DT", "viridis", "leaflet", "geojsonsf", "scales", 
   "dotenv", "zoo", "RColorBrewer", "shinycssloaders", "data.table", "htmlwidgets",
   "xml2", "gridlayout", "dygraphs", "plotly","leaflet.extras","leaflet.minicharts", 
-  "pool", "jsonlite", "tmap", "flextable", "cowplot", "rnaturalearth"
+  "pool", "jsonlite", "flextable", "cowplot"
 )
-require(CWP.dataset)
 require(futile.logger)
 
 lapply(unique_packages, function(pkg) {
@@ -113,8 +112,7 @@ more_about = function(){
 outputmoreabout <- more_about()
 source(here::here("R/data_loading.R"))
 data <- load_initial_data(default_dataset)
-library(rnaturalearth)
-world <- ne_countries(scale = "small", returnclass = "sf")
+world <- rnaturalearth::ne_countries(scale = "small", returnclass = "sf")
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

@@ -25,6 +25,7 @@ reportModuleServer <- function(id, dataset_reactive, rmd_path) {
     # Observer pour générer le rapport
     observeEvent(input$generate_report, {
       report_status("Generating report...")
+      require(CWP.dataset)
       if(!exists("shp_raw")){
       cwp_grid_file <- system.file("extdata", "cl_areal_grid.csv", package = "CWP.dataset")
       shp_raw <- st_as_sf(sf::st_read(cwp_grid_file, show_col_types = FALSE) %>% dplyr::rename(geom = geom_wkt), wkt = "geom")

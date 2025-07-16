@@ -74,7 +74,10 @@ load_data <- function(DOI) {
     if (file.exists(cache_path)) {
       if(!exists("default_dataset")){
         message("🔄 loading cached updated: ", cache_path)
+        flog.info("time:")
         data_tbl <- qs::qread(cache_path)
+        flog.info("time:")
+        
       } else {
         message("Using default dataset")
         
@@ -87,6 +90,8 @@ load_data <- function(DOI) {
         data_tbl$gear_type <- as.character(data_tbl$gear_type)
       data_tbl$geographic_identifier <- as.character(data_tbl$geographic_identifier)
       # enrichir
+      require(CWP.dataset)
+      require(tmap)
       data_tbl <- CWP.dataset::enrich_dataset_if_needed(data_tbl)$without_geom
       simplify_labels <- function(df) {
         # Trouver toutes les colonnes avec un suffixe "_label"

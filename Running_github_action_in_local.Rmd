@@ -139,6 +139,45 @@ sudo apt install act  # Ubuntu
 act workflow_dispatch -s GITHUB_USERNAME=<your_github_username> -s GITHUB_TOKEN=<your_personal_access_token>
 ```
 
+example 
+```bash
+act workflow_dispatch \
+  -s GITHUB_USERNAME=bastienird \
+  -s GITHUB_TOKEN=ghp_xxxxxxx
+```
+
+if not working 
+```bash
+act workflow_dispatch \
+  --container-architecture linux/amd64 \
+  -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest \
+  -s GITHUB_USERNAME=bastienird \
+  -s GITHUB_TOKEN=ghp_xxxxxxxxxxxxxx
+
+```
+
+
+To see every workflow 
+
+```bash
+act -l
+```
+
+
+To launch a specific file 
+```bash
+act -W .github/workflows/name_of_the_workflow.yml 
+```
+
+To launch a specific job
+
+```bash
+act workflow_dispatch -j <name_of_the_job>
+```
+
+
+
+
 Replace the placeholders with your actual credentials.
 
 ## Additional Notes

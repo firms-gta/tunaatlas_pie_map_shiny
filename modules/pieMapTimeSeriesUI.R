@@ -148,7 +148,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     output$map_ui_5deg <- renderUI({
       req(input$map_mode)
       switch(input$map_mode,
-             static      = withSpinner(tmapOutput(ns("pie_map_plot_5deg"), height = "400px")),
+             static      = withSpinner(tmap::tmapOutput(ns("pie_map_plot_5deg"), height = "400px")),
              interactive = withSpinner(leafletOutput(ns("pie_map_5deg"), height = "400px"))
       )
     })
@@ -156,7 +156,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     output$map_ui_1deg <- renderUI({
       req(input$map_mode)
       switch(input$map_mode,
-             static      = withSpinner(tmapOutput(ns("pie_map_plot_1deg"), height = "400px")),
+             static      = withSpinner(tmap::tmapOutput(ns("pie_map_plot_1deg"), height = "400px")),
              interactive = withSpinner(leafletOutput(ns("pie_map_1deg"), height = "400px"))
       )
     })

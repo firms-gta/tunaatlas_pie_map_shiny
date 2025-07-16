@@ -1,5 +1,5 @@
 # Load required packages
-lapply(c("here", "futile.logger", "readr", "tools", "sf", "tmap", "dplyr", "data.table", "qs", "CWP.dataset"), require, character.only = TRUE)
+lapply(c("here", "futile.logger", "readr", "tools", "sf", "dplyr", "data.table", "qs"), require, character.only = TRUE)
 flog.info("Sourced create or load default dataset")
 
 # Paths for processed files

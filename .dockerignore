@@ -15,3 +15,4 @@ Markdown/*
 !DOI.csv
 # 3) Réinclure uniquement les fichiers .qs voulus
 !data/global_catch_tunaatlasird_level2_1950_2023_15496164.qs
+!renv/library

@@ -72,16 +72,16 @@ load_data <- function(DOI) {
     # Phase 2: enrichissement + cache_updated
     cache_path <- file.path(data_dir, paste0(base, "_", record_id, "_updated.qs"))
     if (file.exists(cache_path)) {
-      if(!exists("default_dataset")){
-        message("🔄 loading cached updated: ", cache_path)
-        flog.info("time:")
-        data_tbl <- qs::qread(cache_path)
-        flog.info("time:")
-        
-      } else {
-        message("Using default dataset")
-        
-      }
+      # if(!exists("default_dataset")){
+      #   message("🔄 loading cached updated: ", cache_path)
+      #   flog.info("time:")
+      #   data_tbl <- qs::qread(cache_path)
+      #   flog.info("time:")
+      #   
+      # } else {
+      #   message("Using default dataset")
+      #   
+      # }
     } else {
       message("✨ enriching data from: ", qs_path)
       data_tbl <- qs::qread(qs_path)

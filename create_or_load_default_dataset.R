@@ -2,11 +2,33 @@
 lapply(c("here", "futile.logger", "readr", "tools", "sf", "dplyr", "data.table", "qs"), require, character.only = TRUE)
 flog.info("Sourced create or load default dataset")
 
+variable <- c("source_authority",
+              "species",
+              # "species_label",
+              # "fishing_fleet_label",
+              "fishing_fleet",
+              # "gear_type_label",
+              "gear_type",
+              # "species_name",
+              "fishing_mode",
+              # "fishing_mode_label", 
+              "measurement_unit",
+              # "measurement_unit_label",
+              "gridtype",
+              # "measurement",
+              "measurement_type",
+              # "measurement_type_label",
+              "species_group", 
+              # "species", 
+              "issue", 
+              "species_group"
+)
+
 # Paths for processed files
 default_dataset_path <- here::here("data/default_dataset.qs")
 
 DOI <- read_csv("DOI.csv")
-
+if(!file.exists("data/data.qs")){
 if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_dataset")){
   
   flog.info("Loading data ")
@@ -35,3 +57,20 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   # default_dataset_shape <- default_dataset %>% dplyr::inner_join(shapefile.fix, by = c("geographic_identifier" = "cwp_code"))
   
  }
+  source(here::here("R/data_loading.R"))
+  source(here::here("global/generate_dimensions_palettes.R"))
+  data <- load_initial_data(default_dataset)
+  res <- generate_dimensions_palettes(
+    df = data$data_for_filters,
+    variable = variable,           # ton vecteur global des variables possibles
+    seed = 2643598
+  )
+  data$palettes  <- res$palettes
+  data$targettes <- res$targettes
+  data$variable_to_display <- res$variables
+  qs::qsave(data,"data/data.qs")
+} else {
+  flog.info("reading data.qs")
+  data <- qs::qread("data/data.qs")
+  flog.info("data.qs read")
+}

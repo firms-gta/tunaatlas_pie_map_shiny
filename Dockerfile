@@ -135,6 +135,7 @@ RUN Rscript update_data.R
 
 COPY R ./R
 COPY create_or_load_default_dataset.R ./
+COPY global/ global/
 RUN Rscript ./create_or_load_default_dataset.R
 
 COPY global.R server.R ui.R app_debug.R install.R ./
@@ -146,16 +147,18 @@ COPY .here .Rprofile tunaatlas_pie_map_shiny.Rproj ./
 COPY .zenodo.json ./
 COPY README.md README.Rmd LICENSE ./
 COPY rmd/ rmd/
-COPY global/ global/
 COPY doc/ doc/
 COPY ./Dockerfile.multistage ./
+
+RUN Rscript global.R
 
 ARG BRANCH
 ENV BUILD_BRANCH=${BRANCH}
 
 RUN echo "✅ MODE is: $MODE" && echo "✅ BRANCH is: $BRANCH" && echo "✅ BUILD_BRANCH is: $BUILD_BRANCH"
 RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
-RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% dplyr::group_by(source_authority, species) %>% dplyr::slice_head(n=100) %>% dplyr::ungroup(); qs::qsave(full, here::here('data/default_dataset.qs')) }"
+RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% dplyr::group_by(source_authority, species) %>% dplyr::slice_head(n=100) %>% dplyr::ungroup(); qs::qsave(full, here::here('data/default_dataset.qs')); file.remove(here::here('data/data.qs')); source(here::here('create_or_load_default_dataset.R')) }"
+RUN echo "✅ MODE is: $MODE" && echo "✅ BRANCH is: $BRANCH" && echo "✅ BUILD_BRANCH is: $BUILD_BRANCH"
 
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 

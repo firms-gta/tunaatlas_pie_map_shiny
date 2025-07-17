@@ -46,28 +46,6 @@ source(here::here("modules/db_connect.R"))
 load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
-variable <- c("source_authority",
-              "species",
-              # "species_label",
-              # "fishing_fleet_label",
-              "fishing_fleet",
-              # "gear_type_label",
-              "gear_type",
-              # "species_name",
-              "fishing_mode",
-              # "fishing_mode_label", 
-              "measurement_unit",
-              # "measurement_unit_label",
-              "gridtype",
-              # "measurement",
-              "measurement_type",
-              # "measurement_type_label",
-              "species_group", 
-              # "species", 
-              "issue", 
-              "species_group"
-)
-
 flog.info(sprintf("Variables: %s", paste0(variable)))
 
 # Load functions from external sources
@@ -101,7 +79,7 @@ source(here::here("tab_panels/sidebar_ui.R"))
 # }
 # source(here::here("Markdown/reportmarkdown.R"))
 source(here::here("modules/initialize_reactive_values.R"))
-source(here::here("R/palette_settings.R"))
+source(here::here("R/initialiserPalettes.R"))
 source(here::here("global/generate_dimensions_palettes.R"))
 source(here::here("R/get_html_title.R"))
 source(here::here("R/getPalette.R")) # do not knwo why we should run it as it is supposed to be ran after global.R but yet it is not
@@ -111,7 +89,6 @@ more_about = function(){
 }
 outputmoreabout <- more_about()
 source(here::here("R/data_loading.R"))
-data <- load_initial_data(default_dataset)
 world <- rnaturalearth::ne_countries(scale = "small", returnclass = "sf")
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)

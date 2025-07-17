@@ -20,9 +20,8 @@
 initialiserPalettes <- function(targetVariables, seed = 2643598) {
   # Fixer la graine pour la reproductibilité
   set.seed(seed)
-  
   # Informations sur les palettes qualitatives disponibles
-  paletteInfo <- brewer.pal.info[brewer.pal.info$category == "qual", ]
+  paletteInfo <- RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == "qual", ]
   
   # Créer une liste vide pour stocker les palettes finales
   palettes <- list()
@@ -37,7 +36,7 @@ initialiserPalettes <- function(targetVariables, seed = 2643598) {
     nUnique <- nrow(dataframe)
     
     # Générer toutes les couleurs possibles pour les palettes qualitatives
-    paletteAll <- unlist(mapply(brewer.pal, paletteInfo$maxcolors, rownames(paletteInfo)))
+    paletteAll <- unlist(mapply(RColorBrewer::brewer.pal, paletteInfo$maxcolors, rownames(paletteInfo)))
     
     flog.info("Generating palette for %s with %d unique values", variableName, nUnique)
     flog.info("Total available colors: %d", length(paletteAll))

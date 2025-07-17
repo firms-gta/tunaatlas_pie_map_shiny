@@ -135,6 +135,7 @@ RUN Rscript update_data.R
 
 COPY R ./R
 COPY create_or_load_default_dataset.R ./
+COPY global/ global/
 RUN Rscript ./create_or_load_default_dataset.R
 
 COPY global.R server.R ui.R app_debug.R install.R ./
@@ -146,9 +147,10 @@ COPY .here .Rprofile tunaatlas_pie_map_shiny.Rproj ./
 COPY .zenodo.json ./
 COPY README.md README.Rmd LICENSE ./
 COPY rmd/ rmd/
-COPY global/ global/
 COPY doc/ doc/
 COPY ./Dockerfile.multistage ./
+
+RUN Rscript global.R
 
 ARG BRANCH
 ENV BUILD_BRANCH=${BRANCH}

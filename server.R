@@ -1,8 +1,10 @@
 server <- function(input, output, session) {
-  
-  flog.info("Default dataset preloaded: %s", !is.null(default_dataset))
+  variable_to_display <<- data$variable_to_display
+  targettes <<- data$targettes
+  palettes <<- data$palettes
+  flog.info("Default dataset preloaded: %s", !is.null(data$data_for_filters))
   flog.info("Variables to display: %s", paste(variable_to_display, collapse = ", "))
-  flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset$initial_data)))
+  flog.info(sprintf("Columns for new dataset loaded %s", colnames(data$data_for_filters$initial_data)))
   if(is.logical(debug) && debug){
     debug = TRUE
   } else {
@@ -87,7 +89,8 @@ server <- function(input, output, session) {
       
       data_for_filters(data$data_for_filters)
       flog.info("Filters loaded")
-      
+      palettes <- data$palettes
+      targettes <<- data$targettes
       data_for_filters_trigger(data_for_filters_trigger() + 1)
       # show(TRUE)
       # flog.info("delay finished")
@@ -331,7 +334,6 @@ server <- function(input, output, session) {
     
     variable_choicesintersect <- c(priority_vars[priority_vars %in% variable_choicesintersect],
                                    variable_choicesintersect[!variable_choicesintersect %in% priority_vars])
-    
     flog.info("variable_choicesintersect %s", variable_choicesintersect)
     
     variable_choicesintersect

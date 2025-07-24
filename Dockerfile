@@ -157,7 +157,7 @@ ENV BUILD_BRANCH=${BRANCH}
 
 RUN echo "✅ MODE is: $MODE" && echo "✅ BRANCH is: $BRANCH" && echo "✅ BUILD_BRANCH is: $BUILD_BRANCH"
 RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
-RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% dplyr::filter(fishing_fleet == 'EUFRA'); qs::qsave(full, here::here('data/default_dataset.qs')); file.remove(here::here('data/data.qs')); source(here::here('create_or_load_default_dataset.R')) }"
+RUN R -e "if (Sys.getenv('BUILD_BRANCH') == 'dev') { library(dplyr); library(here); full <- qs::qread(here::here('data/default_dataset.qs')); full <- full %>% dplyr::filter(fishing_fleet == 'EUFRA - France (EU)'); qs::qsave(full, here::here('data/default_dataset.qs')); file.remove(here::here('data/data.qs')); source(here::here('create_or_load_default_dataset.R')) }"
 RUN echo "✅ MODE is: $MODE" && echo "✅ BRANCH is: $BRANCH" && echo "✅ BUILD_BRANCH is: $BUILD_BRANCH"
 
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/

@@ -866,4 +866,6 @@ server <- function(input, output, session) {
     try(poolClose(pool), silent = TRUE)
   })
   
+  world <- rnaturalearth::ne_countries(scale = "small", returnclass = "sf")
+  
 }

@@ -163,6 +163,12 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     ### Static plots
     render_pie_plot <- function(df, pal) {
+      if(!exists("world")){
+        flog.info("Reloading world")
+        world <<- rnaturalearth::ne_countries(scale = "small", returnclass = "sf")
+        flog.info("World reloaded")
+        
+      }
       plot_df <- df %>% dplyr::select(-geographic_identifier) %>%
         mutate(r = scales::rescale(total, to = c(1,5), from = range(total, na.rm=TRUE)))
       pie_cols <- setdiff(names(plot_df), c("X","Y","total","r"))

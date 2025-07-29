@@ -238,8 +238,11 @@ server <- function(input, output, session) {
       final_filtered_data$geom_wkt <- NULL
     }
     if(firstSubmit()){
+      if("t/HOOKS" %in% unique(final_filtered_data$measurement_unit)){
+        final_filtered_data <- final_filtered_data %>% dplyr::filter(measurement_unit %in% c("t/HOOKS"))
+      } else if("ALB - Albacore"%in% unique(final_filtered_data$measurement_unit))
       final_filtered_data <- final_filtered_data %>%
-        dplyr::filter(species == "ALB - Albacore") %>% dplyr::filter(measurement_unit == "t")
+        dplyr::filter(species == "ALB - Albacore") %>% dplyr::filter(measurement_unit %in% c("t"))
     }
     for (variable in variable_to_display) {
       

@@ -54,7 +54,12 @@ load_data <- function(DOI) {
     
     if (dir.exists(alt_data_dir) && file.exists(alt_path)) {
       message("📦 Found existing file in alternate path: ", alt_path)
-      response <- readline(prompt = paste0("⏳ Do you want to use this file instead of downloading from Zenodo? [y/N]: "))
+      if (interactive()) {
+        response <- readline(prompt = paste0("⏳ Do you want to use this enriched file instead of recomputing it? [y/N]: "))
+      } else {
+        message("🤖 Non-interactive session detected, skipping prompt (default: No)")
+        response <- "n"
+      }
       if (tolower(response) == "y") {
         message("📁 Copying ", alt_path, " to ", local_target)
         file.copy(alt_path, local_target, overwrite = TRUE)
@@ -90,7 +95,7 @@ load_data <- function(DOI) {
     cache_path <- file.path(data_dir, cache_filename)
     alt_cache_path <- file.path(alt_data_dir, cache_filename)
     
-    if (dir.exists(alt_data_dir) && file.exists(alt_cache_path)) {
+    if (!file.exists(cache_path) && dir.exists(alt_data_dir) && file.exists(alt_cache_path)) {
       message("📦 Found existing enriched file in alternate path: ", alt_cache_path)
       response <- readline(prompt = paste0("⏳ Do you want to use this enriched file instead of recomputing it? [y/N]: "))
       if (tolower(response) == "y") {

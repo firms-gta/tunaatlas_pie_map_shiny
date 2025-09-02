@@ -69,7 +69,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   data$targettes <- res$targettes
   data$variable_to_display <- res$variables
   qs::qsave(data,"data/data.qs")
-} else {
+} else if (is.function(data)){
   flog.info("reading data.qs")
   data <- qs::qread("data/data.qs")
   flog.info("data.qs read")

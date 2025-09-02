@@ -3,8 +3,9 @@ geographic_catches_by_variable_ui <- function(variable) {
             grid_container(
               layout = c(
                 "slider slider slider",
-                "map map map",
-                "plot    plot   pie_map"
+                "plot    plot   plot",
+                "map map map"
+               
               ),
               row_sizes = c("0.1fr","1.1", "0.7fr"),
               col_sizes = c("1fr", "1fr", "1fr"),
@@ -16,12 +17,16 @@ geographic_catches_by_variable_ui <- function(variable) {
                 area = "map",
                 card_body(pieMapTimeSeriesUI(paste0(variable,"_module")))
               ),
+              # grid_card(
+              #   area = "plot",
+              #   card_body(TimeSeriesbyDimensionUI(paste0(variable,"_timeseries")))
+              # )
+              # , 
               grid_card(
-                area = "plot",
-                card_body(TimeSeriesbyDimensionUI(paste0(variable,"_timeseries")))
-              ), 
-              grid_card(
-                area = "pie_map", card_body(categoryGlobalPieChartUI(paste0(variable,"_chart"))))
+                area = "plot", card_body(categoryGlobalChartUI(paste0(variable,"_chart"))))
+              # , 
+              # grid_card(
+              #   area = "pie_map", card_body(categoryGlobalPieChartUI(paste0(variable,"_chart"))))
     )
   )
 }

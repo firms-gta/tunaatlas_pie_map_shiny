@@ -9,11 +9,13 @@ mapCatchesUI <- function(id) {
 }
 
 # Module Server
-mapCatchesServer <- function(id, data, geom_sf) {
+mapCatchesServer <- function(id, data, geom_sf, enabled = reactive(TRUE)) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     newwkt <- reactiveVal()
     sum_all <- reactive({
+      req(enabled)
+      flog.info("Calcul sum_all ")
       req(data())
       # flog.info("Calcul du total des captures")
       # 
@@ -24,10 +26,18 @@ mapCatchesServer <- function(id, data, geom_sf) {
       # 
       # df <- data()
       # geom_sf <- geom()
-      df <- st_as_sf(as.data.frame(data() %>%
-                                     dplyr::group_by(geographic_identifier) %>%
-                                     dplyr::summarise(measurement_value = sum(measurement_value))) %>% 
-                       dplyr::left_join(st_as_sf(geom_sf)))
+      agg <- data() |>
+        dplyr::group_by(geographic_identifier) |>
+        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
+      
+      # Ne garde que les cellules presentes dans les donnees
+      df <- geom_sf |>
+        dplyr::inner_join(agg, by = "geographic_identifier")
+      
+      # df <- st_as_sf(as.data.frame(data() %>%
+      #                                dplyr::group_by(geographic_identifier) %>%
+      #                                dplyr::summarise(measurement_value = sum(measurement_value))) %>% 
+      #                  dplyr::left_join(st_as_sf(geom_sf)))
       
       flog.info("✅ Calcul sum_all terminé")
       df
@@ -35,6 +45,7 @@ mapCatchesServer <- function(id, data, geom_sf) {
     })
     
     output$map_total_catch <- renderLeaflet({
+      req(enabled())
       flog.info("🔍 Chargement de la carte")
       
       # # ✅ Utilise firstSubmit() pour savoir si on charge la carte pré-enregistrée
@@ -100,6 +111,7 @@ mapCatchesServer <- function(id, data, geom_sf) {
     outputOptions(output, "map_total_catch", suspendWhenHidden = FALSE) # hyper important empêche le rechargement
     
     observeEvent(input$submit_draw_total, {
+      req(enabled())
       req(input$submit_draw_total)
       flog.info("Submitting draw")
       if (!is.null(input$map_total_catch_draw_new_feature) && 
@@ -132,6 +144,7 @@ mapCatchesServer <- function(id, data, geom_sf) {
     })
     
     observeEvent(input$yes_button_total_map, {
+      req(enabled())
         req(input$yes_button_total_map)
         isolate({
           req(input$map_total_catch_draw_new_feature$geometry)

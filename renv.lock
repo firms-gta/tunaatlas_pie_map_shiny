@@ -1929,6 +1929,22 @@
       ],
       "Hash": "a535d76cf92645364997a8751396d63b"
     },
+    "ggfittext": {
+      "Package": "ggfittext",
+      "Version": "0.10.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "cli",
+        "ggplot2",
+        "grid",
+        "gridtext",
+        "shades",
+        "stringi"
+      ],
+      "Hash": "d8f6698dff551267fc335b9768cda008"
+    },
     "ggforce": {
       "Package": "ggforce",
       "Version": "0.5.0",
@@ -2261,6 +2277,26 @@
       ],
       "Hash": "0e212e863398d4587db1721dbe15b05c"
     },
+    "gridtext": {
+      "Package": "gridtext",
+      "Version": "0.1.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "Rcpp",
+        "curl",
+        "grDevices",
+        "grid",
+        "jpeg",
+        "markdown",
+        "png",
+        "rlang",
+        "stringr",
+        "xml2"
+      ],
+      "Hash": "05e4f5fffb1eecfeaac9ea0b7f255fef"
+    },
     "gsheet": {
       "Package": "gsheet",
       "Version": "0.4.5",
@@ -2456,29 +2492,6 @@
       ],
       "Hash": "99df65cfef20e525ed38c3d2577f7190"
     },
-    "igraph": {
-      "Package": "igraph",
-      "Version": "2.1.4",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "Matrix",
-        "R",
-        "cli",
-        "cpp11",
-        "grDevices",
-        "graphics",
-        "lifecycle",
-        "magrittr",
-        "methods",
-        "pkgconfig",
-        "rlang",
-        "stats",
-        "utils",
-        "vctrs"
-      ],
-      "Hash": "db7352c3d239d0a319d2e3d0d040ed16"
-    },
     "ini": {
       "Package": "ini",
       "Version": "0.3.1",
@@ -2529,6 +2542,16 @@
         "tidyselect"
       ],
       "Hash": "64f308bf1fbf5f856cdf4b4c7c0ce51b"
+    },
+    "jpeg": {
+      "Package": "jpeg",
+      "Version": "0.1-11",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "c23ab23c370d1ce3a7a80d8c0bdfa105"
     },
     "jqr": {
       "Package": "jqr",
@@ -4542,6 +4565,13 @@
       ],
       "Hash": "d63e904c63deda45f3f9149c7dcf8703"
     },
+    "shades": {
+      "Package": "shades",
+      "Version": "1.4.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "3a2cf5eecb2cbca814d01d56bfb51494"
+    },
     "shiny": {
       "Package": "shiny",
       "Version": "1.8.0",
@@ -5173,24 +5203,19 @@
       ],
       "Hash": "dd597445fa5aa8adbcae4d1d222a6f78"
     },
-    "treemap": {
-      "Package": "treemap",
-      "Version": "2.4-4",
+    "treemapify": {
+      "Package": "treemapify",
+      "Version": "2.5.6",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
-        "RColorBrewer",
-        "colorspace",
-        "data.table",
+        "cli",
+        "ggfittext",
         "ggplot2",
-        "grid",
-        "gridBase",
-        "igraph",
-        "methods",
-        "shiny"
+        "grid"
       ],
-      "Hash": "4f81151a925c017e2cdd712cbfaf3d09"
+      "Hash": "bbba5d34efaec259a45f18539b449b9a"
     },
     "triebeard": {
       "Package": "triebeard",

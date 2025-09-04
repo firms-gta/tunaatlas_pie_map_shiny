@@ -128,18 +128,17 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
       df <- data_topN() %>%
         group_by(cat2) %>%
         summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
-        mutate(pct = measurement_value / sum(measurement_value) * 100) %>%
-        mutate(label = paste0(cat2, " (", round(pct, 1), "%)"))
+        mutate(pct = measurement_value / sum(measurement_value) * 100)
       
-      treemap::treemap(
-        df,
-        index = "label",  # utilise la colonne créée
-        vSize = "measurement_value",
-        title = sprintf("Treemap of %s", category),
-        # palette = colors,
-        type = "categorical"
-      )
-      
+      ggplot(df, aes(
+        area = measurement_value,
+        fill = cat2,
+        label = paste0(cat2, " (", round(pct, 1), "%)")
+      )) +
+        treemapify::geom_treemap() +
+        treemapify::geom_treemap_text(reflow = TRUE, place = "centre") +
+        labs(title = sprintf("Treemap of %s", category)) +   # assure-toi que `category` est défini
+        theme_minimal()
     })
     
     observe({

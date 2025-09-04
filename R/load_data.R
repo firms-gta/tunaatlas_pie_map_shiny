@@ -110,7 +110,6 @@ load_data <- function(DOI) {
     if (!file.exists(cache_path)) {
       message("✨ Enriching data from: ", qs_path)
       data_tbl <- qs::qread(qs_path)
-      browser()
       # fix types
       if ("gear_type" %in% names(data_tbl))
         data_tbl$gear_type <- as.character(data_tbl$gear_type)
@@ -139,7 +138,7 @@ load_data <- function(DOI) {
       data_tbl <- dplyr::mutate(data_tbl,
                                 year  = year(time_start),
                                 month = month(time_start)) %>%
-        mutate(time_start = format(as.Date(time_start), "%Y-%m"))
+        dplyr::mutate(time_start = format(as.Date(time_start), "%Y-%m"))
       
       # save updated cache
       qs::qsave(data_tbl, cache_path)

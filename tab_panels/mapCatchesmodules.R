@@ -1,53 +1,157 @@
 mapCatchesUI <- function(id) {
   ns <- NS(id)
   tagList(
-    leafletOutput(ns("map_total_catch"), width = "100%", height = "400px")%>% withSpinner(),
-    actionButton(ns("submit_draw_total"), "Update wkt from drawing",
-                 class = "btn-primary",
-                 style = "position: absolute; top: 100px; right: 20px; z-index: 400; font-size: 0.8em; padding: 5px 10px;"))
-  # submitWktUI(id = ns("submit_wkt")))
+    radioButtons(
+      inputId = ns("mode"),
+      label   = "Map mode:",
+      choices = c("Global footprint (light plot)" = "light",
+                  "Full choropleth (leaflet, for reduced datasets)"    = "full"),
+      selected = "light",
+      inline   = TRUE
+    ),
+    # Light = plot statique; Full = leaflet
+    conditionalPanel(
+      condition = sprintf("input['%s'] == 'light'", ns("mode")),
+      withSpinner(plotOutput(ns("map_light_plot"), height = "380px"))
+    ),
+    conditionalPanel(
+      condition = sprintf("input['%s'] == 'full'", ns("mode")),
+      div(
+        withSpinner(leafletOutput(ns("map_total_catch"), height = "380px")),
+        actionButton(
+          ns("submit_draw_total"), "Update wkt from drawing",
+          class = "btn-primary",
+          style = "position: absolute; top: 100px; right: 20px; z-index: 400;
+               font-size: 0.8em; padding: 5px 10px;"
+        )
+      )
+    )
+    
+  )
 }
+
 
 # Module Server
 mapCatchesServer <- function(id, data, geom_sf, enabled = reactive(TRUE)) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     newwkt <- reactiveVal()
-    sum_all <- reactive({
-      req(enabled)
-      flog.info("Calcul sum_all ")
+    world_sf <- reactiveVal(NULL)
+    observeEvent(TRUE, {
+      if (is.null(world_sf())) {
+        suppressMessages({
+          world_sf(rnaturalearth::ne_countries(scale = "small", returnclass = "sf"))
+        })
+      }
+    }, once = TRUE, ignoreInit = FALSE)
+    
+    # --- Prépare la grille en WGS84 pour affichage/leaflet
+    geom_ll  <- sf::st_transform(geom_sf, 4326)
+    
+    # --- Empreinte: cellules présentes (WGS84)
+    present_cells <- reactive({
+      req(isTRUE(enabled()), data())
+      ids <- unique(data()$geographic_identifier)
+      fp  <- dplyr::semi_join(geom_ll, tibble::tibble(geographic_identifier = ids),
+                              by = "geographic_identifier")
+      if (nrow(fp) == 0) return(NULL)
+      fp
+    })
+    
+    # --- Empreinte dissoute (calcul robuste en mètres, sortie en WGS84)
+    footprint_dissolved <- reactive({
+      fp_ll <- present_cells(); if (is.null(fp_ll)) return(NULL)
+      # reprojeter en projection métrique pour union/simplify
+      fp_m <- sf::st_transform(fp_ll, 3857)
+      if (any(!sf::st_is_valid(fp_m))) fp_m <- sf::st_make_valid(fp_m)
+      # union + simplification (tolérance ~ 20 km, ajustable)
+      u <- sf::st_union(fp_m)
+      if (length(u) == 0 || all(sf::st_is_empty(u))) return(NULL)
+      u <- sf::st_simplify(u, dTolerance = 20000)  # 20 km
+      sf::st_transform(sf::st_as_sf(tibble::tibble(geometry = u)), 4326)
+    })
+    
+    # -------------------------
+    # LIGHT: PLOT STATIQUE
+    # -------------------------
+    output$map_light_plot <- renderPlot({
+      req(isTRUE(enabled()), input$mode == "light")
+      fp <- footprint_dissolved(); req(!is.null(fp))
+      w  <- world_sf();           req(!is.null(w))
+      
+      ggplot2::ggplot() +
+        ggplot2::geom_sf(data = w, fill = "grey95", color = "grey80", linewidth = 0.2) +
+        ggplot2::geom_sf(data = fp, fill = "steelblue", color = NA, alpha = 0.6) +
+        ggplot2::coord_sf(expand = FALSE) +
+        ggplot2::theme_minimal(base_size = 10) +
+        ggplot2::theme(
+          axis.text  = ggplot2::element_blank(),
+          axis.title = ggplot2::element_blank(),
+          panel.grid = ggplot2::element_blank(),
+          plot.margin = grid::unit(c(2,2,2,2), "mm")
+        )
+    })
+    
+    # -------------------------
+    # FULL: LEAFLET CHOROPLETH
+    # -------------------------
+    # --- couche FULL (ne s'évalue que si mode == "full")
+    full_layer <- reactive({
+      req(isTRUE(enabled()))
+      req(identical(input$mode, "full"))   # <-- rien ne se calcule si "light"
       req(data())
-      # flog.info("Calcul du total des captures")
-      # 
-      # # if (firstSubmit) {
-      # #   flog.info("firstSubmit est TRUE, pas de calcul de sum_all")
-      # #   return(NULL)
-      # # }
-      # 
-      # df <- data()
-      # geom_sf <- geom()
-      agg <- data() |>
+      
+      # agrégation
+      df <- data() |>
         dplyr::group_by(geographic_identifier) |>
         dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
       
-      # Ne garde que les cellules presentes dans les donnees
-      df <- geom_sf |>
-        dplyr::inner_join(agg, by = "geographic_identifier")
+      # géométrie en WGS84 pour leaflet
+      geom_ll <- sf::st_transform(geom_sf, 4326)
       
-      # df <- st_as_sf(as.data.frame(data() %>%
-      #                                dplyr::group_by(geographic_identifier) %>%
-      #                                dplyr::summarise(measurement_value = sum(measurement_value))) %>% 
-      #                  dplyr::left_join(st_as_sf(geom_sf)))
+      # jointure
+      a <- dplyr::inner_join(geom_ll, df, by = "geographic_identifier")
+      shiny::validate(need(nrow(a) > 0, "No data to display for 'full' mode."))
       
-      flog.info("✅ Calcul sum_all terminé")
-      df
-
+      a  # <-- on RETOURNE l'objet sf
     })
     
+    # --- rendu Leaflet (uniquement si mode == "full")
+    # output$map_total_catch <- leaflet::renderLeaflet({
+    #   req(isTRUE(enabled()))
+    #   req(identical(input$mode, "full"))   # <-- ne rend rien si "light"
+    #   
+    #   a <- full_layer()                    # a est un sf non-vide
+    #   qpal <- leaflet::colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n = 10)
+    #   bb <- sf::st_bbox(a)
+    #   
+    #   leaflet::leaflet(options = leaflet::leafletOptions(zoomControl = TRUE, minZoom = 1)) |>
+    #     leaflet::addProviderTiles("CartoDB.PositronNoLabels") |>
+    #     addDrawToolbar(
+    #       targetGroup = "draw",
+    #       editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions())
+    #     ) |>
+    #     leaflet::addPolygons(
+    #       data = a,
+    #       label = ~format(round(measurement_value), big.mark = " "),
+    #       fillColor = ~qpal(measurement_value),
+    #       fillOpacity = 0.8, weight = 1, color = "#444444"
+    #     ) |>
+    #     leaflet::addLegend(
+    #       position = "bottomright", pal = qpal, values = a$measurement_value,
+    #       title = "Total catches (quantiles)", opacity = 1
+    #     ) |>
+    #     leaflet::fitBounds(bb["xmin"], bb["ymin"], bb["xmax"], bb["ymax"])
+    # }) 
+    
     output$map_total_catch <- renderLeaflet({
-      req(enabled())
       flog.info("🔍 Chargement de la carte")
+      req(isTRUE(enabled()))
+      req(identical(input$mode, "full"))   # <-- ne rend rien si "light"
+      req(full_layer())  # Attendre que sum_all soit calculé
       
+      a <- full_layer()                    # a est un sf non-vide
+      qpal <- leaflet::colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n = 10)
       # # ✅ Utilise firstSubmit() pour savoir si on charge la carte pré-enregistrée
       # if (firstSubmit) {
       #   flog.info("firstSubmit est TRUE, chargement de la carte pré-enregistrée")
@@ -55,10 +159,10 @@ mapCatchesServer <- function(id, data, geom_sf, enabled = reactive(TRUE)) {
       #   return(qs::qread("data/map_init.qs"))
       # }
       
-      req(sum_all())  # Attendre que sum_all soit calculé
+      
       
       flog.info("🗺 Rendering total catch map")
-      a <- sum_all()
+      # a <- sum_all()
       # a <- st_simplify(a, dTolerance = 0.01)  
       
       qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n = 10)
@@ -108,7 +212,40 @@ mapCatchesServer <- function(id, data, geom_sf, enabled = reactive(TRUE)) {
       flog.info("✅ Carte terminée")
       map
     })
-    outputOptions(output, "map_total_catch", suspendWhenHidden = FALSE) # hyper important empêche le rechargement
+    
+    # (optionnel) garder ceci si tu as aussi un output 'map_light_plot'
+    outputOptions(output, "map_light_plot",  suspendWhenHidden = FALSE)
+    outputOptions(output, "map_total_catch", suspendWhenHidden = FALSE)
+    
+    
+    
+    # observe({
+    #   req(enabled())
+    #   m <- leafletProxy("map_total_catch", session) |>
+    #     clearShapes() |>
+    #     clearControls()
+    #   
+    #   if (identical(input$mode, "full")) {
+    #     a <- full_layer()
+    #     qpal <- colorQuantile(rev(viridis::viridis(10)), a$measurement_value, n = 10)
+    #     m |>
+    #       addPolygons(
+    #         data = a,
+    #         label = ~format(round(measurement_value), big.mark = " "),
+    #         fillColor = ~qpal(measurement_value),
+    #         fillOpacity = 0.8, weight = 1, color = "#444444"
+    #       ) |>
+    #       addLegend(position = "bottomright", pal = qpal, values = a$measurement_value,
+    #                 title = "Total catches (quantiles)", opacity = 1)
+    #   } else {
+    #     # map_light_plot
+    #   }
+    # })
+    
+    # outputOptions(output, "map_light_plot", suspendWhenHidden = FALSE)
+    # outputOptions(output, "map_total_catch",       suspendWhenHidden = FALSE)
+  
+    # outputOptions(output, "map_total_catch", suspendWhenHidden = FALSE) # hyper important empêche le rechargement
     
     observeEvent(input$submit_draw_total, {
       req(enabled())

@@ -12,12 +12,6 @@ geographic_catches_ui <- function() {
       gap_size  = "10px",
       
       grid_card(area = "mapcatches",
-                shinyWidgets::materialSwitch(
-                  inputId = "map_enabled",
-                  label   = "Printing map (slower for global data)",
-                  value   = Sys.getenv("APP_ENABLE_MAP", "0") == "1",
-                  status  = "primary"
-                ),
                 card_body(
                   uiOutput("map_area") 
                 )

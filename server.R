@@ -1,9 +1,9 @@
 server <- function(input, output, session) {
-  map_enabled <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","0")=="1")
+  map_enabled <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","1")=="1")
   observeEvent(input$map_enabled, map_enabled(input$map_enabled), ignoreInit = TRUE)
   
-  map_enabled_pie <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","0")=="1")
-  observeEvent(input$map_enabled_pie, map_enabled_pie(input$map_enabled_pie), ignoreInit = TRUE)
+  # map_enabled_pie <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","0")=="1")
+  # observeEvent(input$map_enabled_pie, map_enabled_pie(input$map_enabled_pie), ignoreInit = TRUE)
   
   rv_masks <- reactiveValues(
     vals  = list(),  # dernières sélections observées par variable
@@ -259,9 +259,10 @@ server <- function(input, output, session) {
   final_filtered_data <- eventReactive(input$submit, {
     req(wkt())
     req(data_for_filters())
+    # browser()
     if(!secondSubmit()){
       flog.info("Submit button clicked")
-      
+      # browser()
       # req(initial_data())
       current_wkt <- wkt()
       if (!firstSubmit()) {
@@ -462,9 +463,10 @@ server <- function(input, output, session) {
       
       final_filtered_data
     } else {
-      secondSubmit(FALSE)
-      final_filtered_data <- data_for_filters() 
-      final_filtered_data
+    secondSubmit(FALSE)
+    flog.info("Second submit to false")
+    final_filtered_data <- data_for_filters()
+    final_filtered_data
     }
   }, ignoreNULL = FALSE)
   
@@ -792,7 +794,7 @@ server <- function(input, output, session) {
         geom = initial_data,
         newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
         global_topn = global_topn, rv_map_mode,
-        enabled = map_enabled_pie
+        enabled = map_enabled
       )
     })
   })
@@ -850,6 +852,12 @@ server <- function(input, output, session) {
     nav_panel(
       title = "Filter your data",
       useShinyjs(),
+      shinyWidgets::materialSwitch(
+        inputId = "map_enabled",
+        label   = "Printing map (remove for faster calculations)",
+        value   = map_enabled(),
+        status  = "primary"
+      ),
       tags$head(
         tags$style(HTML("
     .bootstrap-select .dropdown-menu {
@@ -1018,8 +1026,9 @@ server <- function(input, output, session) {
     if (isTRUE(map_enabled())) {
       mapCatchesUI("total_catch")
     } else {
-      NULL  # rien du tout si désactivée
-    }
+      NULL
+      # mapCatchesmoduleslightUI("total_catch_light")  
+      }
   })
   
   

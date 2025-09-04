@@ -1,17 +1,11 @@
 pieMapTimeSeriesUI <- function(id) {
   ns <- NS(id)
   tagList(
-    shinyWidgets::materialSwitch(
-      inputId = "map_enabled_pie",
-      label   = "Printing map (slower for global data)",
-      value   = Sys.getenv("APP_ENABLE_MAP", "0") == "1",
-      status  = "primary"
-    ),
     radioButtons(
       inputId = ns("map_mode"),
       label   = "Map mode:",
       choices = c("Static (one map per gridtype)" = "static",
-                  "Interactive (slower fro global data)" = "interactive"),
+                  "Interactive (slower for global data)" = "interactive"),
       inline  = TRUE
     ),
     

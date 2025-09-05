@@ -145,8 +145,8 @@ mapCatchesServer <- function(id, data, geom_sf, enabled = reactive(TRUE)) {
     # }) 
     
     output$map_total_catch <- renderLeaflet({
-      flog.info("🔍 Chargement de la carte")
       req(isTRUE(enabled()))
+      flog.info("🔍 Chargement de la carte")
       req(identical(input$mode, "full"))   # <-- ne rend rien si "light"
       req(full_layer())  # Attendre que sum_all soit calculé
       

@@ -799,6 +799,15 @@ server <- function(input, output, session) {
     })
   })
   
+  output$map_area_pie_map <- renderUI({
+    if (isTRUE(map_enabled())) {
+      # IMPORTANT: ID DOIT MATCHER le server ci-dessus ("pie_map")
+      pieMapTimeSeriesUI(ns("pie_map"))
+    } else {
+      NULL
+    }
+  })
+  
   observeEvent(global_topn(), {
     cat("Parent sees new top N:", global_topn(), "\n")
   })
@@ -852,10 +861,11 @@ server <- function(input, output, session) {
     nav_panel(
       title = "Filter your data",
       useShinyjs(),
+      # Dans renderUI (ne dépend plus de map_enabled())
       shinyWidgets::materialSwitch(
         inputId = "map_enabled",
         label   = "Printing map (remove for faster calculations)",
-        value   = map_enabled(),
+        value   = isolate(map_enabled()),     # ou isolate(map_enabled()) une seule fois
         status  = "primary"
       ),
       tags$head(
@@ -941,6 +951,12 @@ server <- function(input, output, session) {
       )
     )
   })
+  
+  # Synchronise l’input avec reactiveVal SANS rerendre l’UI
+  observeEvent(map_enabled(), {
+    shinyWidgets::updateMaterialSwitch(session, "map_enabled", value = map_enabled())
+  }, ignoreInit = TRUE)
+  
   
   output$dynamic_panels <- renderUI({
     req(variable_choicesintersect())
@@ -1030,7 +1046,6 @@ server <- function(input, output, session) {
       # mapCatchesmoduleslightUI("total_catch_light")  
       }
   })
-  
   
   
   observeEvent(newwkt$newwkt(), { #if newwkt from mapCatchesserver is updated 

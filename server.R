@@ -236,7 +236,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(firstSubmit(), {
-    if (!firstSubmit()) {
+    if (!(firstSubmit())) {
       # flog.info("delay")
       # shinyjs::delay(50, {
       data_for_filters_trigger(data_for_filters_trigger() + 1)
@@ -261,6 +261,7 @@ server <- function(input, output, session) {
     req(data_for_filters())
     # browser()
     if(!secondSubmit()){
+      if(!firstSubmit()){
       flog.info("Submit button clicked")
       # browser()
       # req(initial_data())
@@ -424,7 +425,7 @@ server <- function(input, output, session) {
         # Your spatial filtering code
         sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
         final_filtered_data <- final_filtered_data %>% 
-          dplyr::inner_join(initial_data() %>% dplyr::select(-gridtype), by = c("geographic_identifier"))
+          dplyr::inner_join(initial_data() %>% dplyr::select(-c(gridtype, X,Y)), by = c("geographic_identifier"))
         # Step 1: Select unique geographic identifiers and their associated geometries
         unique_id_geom <- final_filtered_data %>%
           dplyr::select(geographic_identifier, geom) %>%
@@ -444,6 +445,7 @@ server <- function(input, output, session) {
         final_filtered_data <- final_filtered_data %>%
           dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
         final_filtered_data$geom_wkt <- NULL
+        final_filtered_data$geom <- NULL
       }
       
       if (!firstSubmit()) {
@@ -454,6 +456,9 @@ server <- function(input, output, session) {
       rv_prev$sel <- curr_sel
       
       flog.info("Filtering finished")
+      } else {
+        final_filtered_data <- as.data.frame(req(data_for_filters()))
+      }
       submitTrigger(FALSE)
       
       if(firstSubmit()){secondSubmit(TRUE)}
@@ -463,10 +468,10 @@ server <- function(input, output, session) {
       
       final_filtered_data
     } else {
-    secondSubmit(FALSE)
-    flog.info("Second submit to false")
-    final_filtered_data <- data_for_filters()
-    final_filtered_data
+      secondSubmit(FALSE)
+      flog.info("Second submit to false")
+      final_filtered_data <- data_for_filters()
+      final_filtered_data
     }
   }, ignoreNULL = FALSE)
   
@@ -516,7 +521,9 @@ server <- function(input, output, session) {
   original_data <- reactiveVal()
   
   observe({
+    flog.info("originaldataupdate")
     original_data(data_for_filters())  # Store original data at start()
+    flog.info("originaldataupdate")
   })
   
   # Reactive variable to store CSV data
@@ -602,36 +609,43 @@ server <- function(input, output, session) {
   })
   
   observeEvent(data_for_filters_trigger(), {
+    flog.info("dataforfilterstriggered")
     req(data_for_filters())
     req(variable_choicesintersect())
     data_for_filters <- data_for_filters()
     
     # Création initiale de chaque filtre (une seule fois)
     observeEvent(list(data_for_filters_trigger(), variable_choicesintersect()), {
-      df_all <- as.data.frame(req(data_for_filters()))
-      vars   <- req(variable_choicesintersect())
-      
-      lapply(vars, function(variable) {
-        local({
-          choices_init <- sort(unique(df_all[[variable]]))
-          output[[paste0("select_", variable)]] <- renderUI({
-            shinyWidgets::pickerInput(
-              inputId  = paste0("select_", variable),
-              label    = paste("Select", gsub("_", " ", variable)),
-              choices  = choices_init,
-              multiple = TRUE,
-              selected = choices_init, 
-              options  = list(
-                `actions-box`          = TRUE,
-                `live-search`          = TRUE,
-                `size`                 = 100,
-                `selected-text-format` = "count > 5"
-              ),
-              width = "100%"
-            )
+      if(firstSubmit()){
+        flog.info("Creation initial de chaque filtre")
+        
+        df_all <- as.data.frame(req(data_for_filters()))
+        vars   <- req(variable_choicesintersect())
+        
+        lapply(vars, function(variable) {
+          local({
+            choices_init <- sort(unique(df_all[[variable]]))
+            flog.info(sprintf("Creation initial de %s", variable))
+            
+            output[[paste0("select_", variable)]] <- renderUI({
+              shinyWidgets::pickerInput(
+                inputId  = paste0("select_", variable),
+                label    = paste("Select", gsub("_", " ", variable)),
+                choices  = choices_init,
+                multiple = TRUE,
+                selected = choices_init, 
+                options  = list(
+                  `actions-box`          = TRUE,
+                  `live-search`          = TRUE,
+                  `size`                 = 100,
+                  `selected-text-format` = "count > 5"
+                ),
+                width = "100%"
+              )
+            })
           })
         })
-      })
+      }
     }, ignoreInit = FALSE)
     
     
@@ -760,6 +774,7 @@ server <- function(input, output, session) {
   lapply(variable_to_display, function(variable) {
     local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
       variable <- variable
+      flog.info(sprintf("categoryglobalchartsever for %s", variable))
       categoryGlobalChartServer(paste0(variable, "_chart"), category  = variable, reactive_data = data_without_geom, 
                                 global_topn = global_topn, 
                                 variable_to_display = variable_to_display)
@@ -785,6 +800,7 @@ server <- function(input, output, session) {
   lapply(variable_to_display, function(variable) {
     local({
       variable <- variable
+      flog.info(sprintf("pieMapTimeSeriesServer for %s", variable))
       pieMapTimeSeriesServer(
         paste0(variable, "_module"), 
         category_var = variable, 
@@ -837,6 +853,7 @@ server <- function(input, output, session) {
     wkt(global_wkt)
     removeModal()
     submitTrigger(TRUE)
+    flog.info("submitTrigger to tru")
   })
   
   observeEvent(submitTrigger(), {
@@ -1044,7 +1061,7 @@ server <- function(input, output, session) {
     } else {
       NULL
       # mapCatchesmoduleslightUI("total_catch_light")  
-      }
+    }
   })
   
   

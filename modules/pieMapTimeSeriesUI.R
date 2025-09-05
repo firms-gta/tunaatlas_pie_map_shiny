@@ -56,7 +56,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
       req(enabled())
       # Force a zoom refresh to trigger leaflet redraw
       flog.info("Triggering zoom reset due to topn change")
-      zoom_level(zoom_level())  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
+      zoom_level(zoom_level()+1)  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
     })
     
     
@@ -64,7 +64,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
       req(enabled())
       # Force a zoom refresh to trigger leaflet redraw
       flog.info("Triggering zoom reset due to topn change")
-      zoom_level(zoom_level())  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
+      zoom_level(zoom_level()+1)  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
     })
     
     # keep existing reactive and palette

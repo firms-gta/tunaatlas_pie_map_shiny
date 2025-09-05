@@ -313,7 +313,7 @@ mapCatchesServer <- function(id, data, geom_sf, enabled = reactive(TRUE)) {
       # flog.info("submittrigger")
       flog.info("WKT mis à jour: %s", wkt_val)
       newwkt(wkt_val)
-      # shinyjs::click("submit")
+      shinyjs::click("submit")
       
     })
     

@@ -454,6 +454,8 @@ server <- function(input, output, session) {
       
       rv_prev$df  <- final_filtered_data
       rv_prev$sel <- curr_sel
+      rv_prev$time_range <- curr_time_range
+      rv_prev$wkt        <- current_wkt
       
       flog.info("Filtering finished")
       } else {

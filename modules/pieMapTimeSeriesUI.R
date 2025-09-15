@@ -4,9 +4,8 @@ pieMapTimeSeriesUI <- function(id) {
     radioButtons(
       inputId = ns("map_mode"),
       label   = "Map mode:",
-      choices = c("No map" = "none",
-                  "Static (one map per gridtype)" = "static",
-                  "Interactive (can be slow for not spatially filtered data)" = "interactive"),
+      choices = c("Static (one map per gridtype)" = "static",
+                  "Interactive (slower for global data)" = "interactive"),
       inline  = TRUE
     ),
     
@@ -36,12 +35,13 @@ pieMapTimeSeriesUI <- function(id) {
 
 
 ## Server: split data by first digit of geographic_identifier
-pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, submitTrigger, newwkttest, geom, global_topn, map_mode_val) {
+pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, submitTrigger, newwkttest, geom, global_topn, map_mode_val, enabled = reactive(TRUE)) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     zoom_level <- reactiveVal(1)
     target_var <- getTarget(category_var)
     require(promises); require(future)
+    
     observe({
       updateRadioButtons(
         session, "map_mode",
@@ -53,20 +53,23 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
       map_mode_val(input$map_mode)
     })
     observeEvent(submitTrigger(), {
+      req(enabled())
       # Force a zoom refresh to trigger leaflet redraw
       flog.info("Triggering zoom reset due to topn change")
-      zoom_level(zoom_level())  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
+      zoom_level(zoom_level()+1)  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
     })
     
     
     observeEvent(global_topn(), {
+      req(enabled())
       # Force a zoom refresh to trigger leaflet redraw
       flog.info("Triggering zoom reset due to topn change")
-      zoom_level(zoom_level())  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
+      zoom_level(zoom_level()+1)  # force la reactive à être invalide et donc rezoomer pour afficher les minicharts
     })
     
     # keep existing reactive and palette
     data_pie_map <- reactive({
+      req(enabled())
       req(data_witout_geom_(),global_topn(), req(data()))
       flog.info("Generating pie map data for category: %s", category_var)
       # observeEvent(input$n_vars, {
@@ -118,6 +121,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     # Split into two datasets
     data_pie_map_5deg <- reactive({
+      req(enabled())
       df <- data_pie_map()
       
       df <- df[ substr(df$geographic_identifier, 1, 1) == "6", ]
@@ -129,6 +133,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     
     data_pie_map_1deg <- reactive({
+      req(enabled())
       df <- data_pie_map()
       df <- df[substr(df$geographic_identifier,1,1) == "5", ]
       
@@ -139,6 +144,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     # Palettes for each
     la_palette <- reactive({
+      req(enabled())
       la_palette
       pal <- getPalette(category_var)
       pal[names(pal) %in% colnames(data_pie_map())]
@@ -146,6 +152,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     ### UI renderers for each map
     output$map_ui_5deg <- renderUI({
+      req(enabled())
       req(input$map_mode)
       switch(input$map_mode,
              static      = withSpinner(tmap::tmapOutput(ns("pie_map_plot_5deg"), height = "400px")),
@@ -154,6 +161,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     })
     
     output$map_ui_1deg <- renderUI({
+      req(enabled())
       req(input$map_mode)
       switch(input$map_mode,
              static      = withSpinner(tmap::tmapOutput(ns("pie_map_plot_1deg"), height = "400px")),
@@ -163,6 +171,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     ### Static plots
     render_pie_plot <- function(df, pal) {
+      req(enabled())
       if(!exists("world")){
         flog.info("Reloading world")
         world <<- rnaturalearth::ne_countries(scale = "small", returnclass = "sf")
@@ -180,16 +189,19 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     }
     
     output$pie_map_plot_5deg <- renderPlot({
+      req(enabled())
       req(input$map_mode == "static")
       render_pie_plot(data_pie_map_5deg(), la_palette())
     })
     
     output$pie_map_plot_1deg <- renderPlot({
+      req(enabled())
       req(input$map_mode == "static")
       render_pie_plot(data_pie_map_1deg(), la_palette())
     })
     
     data_pie_map_combined <- reactive({
+      req(enabled())
       req(input$map_mode == "interactive")
       rbind(
         data_pie_map_1deg(),
@@ -198,6 +210,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     })
     
     output$pie_map_combined <- renderLeaflet({
+      req(enabled())
       req(input$map_mode == "interactive")
       flog.info("Rendering pie map")
       req(data_pie_map(), zoom_level())
@@ -259,6 +272,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     
     observeEvent(input$map_zoom_level, {
+      req(enabled())
       flog.info("Updating zoom level to: %s", input$map_zoom_level)
       df       <- data_pie_map()
       # ctr      <- st_as_sf(centroid())
@@ -305,12 +319,14 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     
     output$map_ui_combined <- renderUI({
+      req(enabled())
       req(input$map_mode == "interactive")
       withSpinner(leafletOutput(ns("pie_map_combined"), height = "400px"))
     })
     
     
     observeEvent(input$submit_draw_pie_map, {
+      req(enabled())
       flog.info("Submitting draw")
       
       feature <- input$pie_map_combined_draw_new_feature
@@ -336,6 +352,7 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     })
     
     observeEvent(input$yes_button_pie_map, {
+      req(enabled())
       req(input$pie_map_combined_draw_new_feature$geometry)
       geojson <- input$pie_map_combined_draw_new_feature$geometry
       geojson_text <- toJSON(geojson, auto_unbox = TRUE, pretty = TRUE)

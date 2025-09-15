@@ -1,6 +1,13 @@
-sidebar_ui <- function(){
+sidebar_ui <- function(){ #### deprecated ? 
   sidebar(
     title = "Filter your data",
+    shinyWidgets::materialSwitch(
+      inputId = "map_enabled",
+      label   = "Afficher la carte",
+      value   = Sys.getenv("APP_ENABLE_MAP", "0") == "1",
+      status  = "primary"
+    ),
+    tags$hr(),
     useShinyjs(),
     uiOutput("year_input"),
     checkboxInput("toggle_year", "Discrete selection of year", value = FALSE),

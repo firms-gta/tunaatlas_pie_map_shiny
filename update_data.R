@@ -68,9 +68,8 @@ if(!file.exists(cl_areal_grid_path)| !file.exists("data/centroids.qs")){
     dplyr::select(geom, geographic_identifier = code, gridtype = GRIDTYPE) %>% dplyr::distinct()
   pts   <- sf::st_point_on_surface(shapefile.fix)
   cr    <- sf::st_coordinates(pts)
-  shapefile.fix <- cbind(as.data.frame(cr), shapefile.fix)
-  centroids <- shapefile.fix %>% sf::st_drop_geometry() %>% dplyr::select(-c(gridtype, geom))
-  
+  shapefile.fix <- bind_cols(shapefile.fix, as.data.frame(cr))
+  centroids <- shapefile.fix %>% sf::st_drop_geometry() %>% dplyr::select(-gridtype)
   
   qs::qsave(shapefile.fix, cl_areal_grid_path)
   qs::qsave(centroids, "data/centroids.qs")

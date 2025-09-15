@@ -55,7 +55,7 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
     output$variable_ui <- renderUI({
       selectInput(
         ns("variable"), 
-        "Variable to Display", 
+        "Variable to display", 
         choices = setNames(variable_choices(), gsub("_", " ", variable_choices()))
       )
     })
@@ -120,7 +120,7 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
       
      p <- ggplot(df_clean, aes_string(x = "month", y = "measurement_value", group = input$variable, fill = input$variable)) +
         geom_bar(stat = "identity", position = "dodge") +
-        labs(title = "Monthly Data", x = "Month", y = "Measurement Value")+
+        labs(title = "Monthly data", x = "Month", y = "Measurement value")+
        scale_x_continuous(breaks = scales::pretty_breaks(n = 12), limits = c(1,12))
       
       

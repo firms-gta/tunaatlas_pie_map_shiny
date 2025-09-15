@@ -10,9 +10,12 @@ server <- function(input, output, session) {
     masks = list()   # dernier masque logique calculé par variable
   )
   rv_prev <- reactiveValues(
-    df  = NULL,       # dernier final_filtered_data
-    sel = list()      # dernière sélection par variable
+    df         = NULL,      # dernier final_filtered_data
+    sel        = list(),    # dernière sélection par variable
+    time_range = NULL,      # c(min_year, max_year)
+    wkt        = NULL       # dernier WKT utilisé (as.character)
   )
+  
   
   # prev/curr "vides" => TOUTES les valeurs de l'univers
   normalize_sel <- function(x, universe) {
@@ -29,6 +32,16 @@ server <- function(input, output, session) {
     if (setequal(prev, curr)) return("same")
     if (all(curr %in% prev))  return("narrow")
     if (all(prev %in% curr))  return("widen")
+    "other"
+  }
+  
+  classify_range <- function(prev_range, curr_range) {
+    if (is.null(prev_range) || is.null(curr_range)) return("other")
+    if (identical(prev_range, curr_range)) return("same")
+    prev_set <- seq(prev_range[1], prev_range[2])
+    curr_set <- seq(curr_range[1], curr_range[2])
+    if (all(curr_set %in% prev_set)) return("narrow")
+    if (all(prev_set %in% curr_set)) return("widen")
     "other"
   }
   
@@ -287,17 +300,35 @@ server <- function(input, output, session) {
         change[[v]] <- classify_change(prev_sel, curr_sel[[v]], U[[v]])
       }
       
+      # --- plage temporelle courante (2 bornes)
+      if (!is.null(input$toggle_year) && !is.null(input$years)) {
+        if (isTRUE(input$toggle_year)) {
+          yrs <- sort(unique(as.integer(input$years)))   # sélection discrète
+          curr_time_range <- c(min(yrs), max(yrs))
+        } else {
+          curr_time_range <- c(as.integer(input$years[1]), as.integer(input$years[2])) # slider range
+        }
+      } else {
+        all_years <- sort(unique(as.integer(df_base$year)))
+        curr_time_range <- c(min(all_years), max(all_years))
+      }
+      
+      prev_time_range <- rv_prev$time_range
+      change_year <- classify_range(prev_time_range, curr_time_range)
+      
       flog.info("Change map: %s", paste(sprintf("%s=%s", names(change), change), collapse=", "))
       
       # 3) choisir le point de départ
-      only_narrow_or_same <- all(change %in% c("same", "narrow"))
+      only_narrow_or_same <- all(change %in% c("same","narrow")) && change_year %in% c("same","narrow") && !wkt_changed
+      
       if (!is.null(rv_prev$df) && only_narrow_or_same) {
         df <- rv_prev$df
-        flog.info("Start from PREV df (narrow/same). n=%s", nrow(df))
+        flog.info("Start from PREV df (cats+year narrow/same, wkt unchanged). n=%s", nrow(df))
       } else {
         df <- df_base
-        flog.info("Start from BASE df (widen/other or cold start). n=%s", nrow(df))
+        flog.info("Start from BASE df (widen/other or WKT change/cold start). n=%s", nrow(df))
       }
+      
       
       vars_to_apply <- if (identical(df, rv_prev$df)) {
         names(change)[change == "narrow"]
@@ -305,121 +336,58 @@ server <- function(input, output, session) {
         names(change)[change != "same"]
       }
       
-      if("widen"%in%change){
+      apply_year_now <- !identical(df, rv_prev$df) || change_year != "same"
+      
+      # Si l’un des filtres catégoriels est "widen", on force réappliquer tout + année
+      if ("widen" %in% change) {
         vars_to_apply <- variable_to_display
+        apply_year_now <- TRUE
       }
       
+      # catés
       if (length(vars_to_apply)) {
         for (v in vars_to_apply) {
-          sel <- curr_sel[[v]]
+          sel <- normalize_sel(curr_sel[[v]], U[[v]])
           if (length(sel)) {
-            col <- df[[v]]
-            if (is.factor(col)) col <- as.character(col)
+            col <- df[[v]]; if (is.factor(col)) col <- as.character(col)
             df <- df[col %in% sel, , drop = FALSE]
           }
           if (!nrow(df)) break
         }
       }
       
+      # temps
+      if (apply_year_now && nrow(df)) {
+        yrs_set <- seq(curr_time_range[1], curr_time_range[2])
+        df <- df[df$year %in% yrs_set, , drop = FALSE]
+      }
+      
+      
       final_filtered_data <- df
       flog.info("Rows after categorical filters: %d", nrow(df))
       
       
       
-      # browser()
       # if(firstSubmit()){
       #   if("t/HOOKS" %in% unique(final_filtered_data$measurement_unit)){
       #     final_filtered_data <- final_filtered_data %>% dplyr::filter(measurement_unit %in% c("t/HOOKS"))
       #   } else if("ALB - Albacore"%in% unique(final_filtered_data$species))
       #     final_filtered_data <- final_filtered_data %>%
       #       dplyr::filter(species == "ALB - Albacore") %>% dplyr::filter(measurement_unit %in% c("t"))
-      # } else {
-      #   
-      #   df <- final_filtered_data   
-      #   nr <- nrow(df)
-      #   keep <- rep(TRUE, nr)
-      #   for (variable in variable_to_display) {
-      #     sel <- input[[paste0("select_", variable)]]
-      #     
-      #     # Normalisation: vecteur selection NULL/vides => pas de filtre (masque TRUE)
-      #     if (is.null(sel) || !length(sel) || all(is.na(sel)) || all(sel == "NA")) sel <- character(0)
-      #     
-      #     # Recalcule le masque SEULEMENT si la sélection a changé
-      #     if (!identical(sel, rv_masks$vals[[variable]]) || is.null(rv_masks$masks[[variable]]) || length(rv_masks$masks[[variable]]) != nr) {
-      #       col <- df[[variable]]
-      #       if (is.factor(col)) col <- as.character(col)
-      #       m <- if (length(sel) == 0) rep(TRUE, nr) else (col %in% sel)  # %chin% si data.table
-      #       rv_masks$vals[[variable]]  <- sel
-      #       rv_masks$masks[[variable]] <- m
-      #       flog.info(sprintf("Recomputed mask for %s", variable))
-      #     } else {
-      #       flog.info(sprintf("Reused cached mask for %s", variable))
-      #     }
-      #     
-      #     # Combine le masque très peu coûteux
-      #     keep <- keep & rv_masks$masks[[variable]]
-      #     if (!any(keep)) break  # court-circuit si tout est FALSE
-      #   }
-      #   
-      #   # Applique UNE SEULE FOIS le sous-ensemble
-      #   final_filtered_data <- df[keep, , drop = FALSE]
-      #   
-      #   if(as.character(current_wkt) != global_wkt){
-      #     # Your spatial filtering code
-      #     sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
-      #     final_filtered_data <- final_filtered_data %>% 
-      #       dplyr::inner_join(initial_data() %>% dplyr::select(-gridtype), by = c("geographic_identifier"))
-      #     # Step 1: Select unique geographic identifiers and their associated geometries
-      #     unique_id_geom <- final_filtered_data %>%
-      #       dplyr::select(geographic_identifier, geom) %>%
-      #       dplyr::distinct()
-      #     
-      #     # Step 2: Convert to sf object
-      #     unique_id_geom <- st_as_sf(unique_id_geom)
-      #     st_crs(unique_id_geom) <- st_crs(sf_wkt)
-      #     
-      #     # Step 3: Perform spatial intersection
-      #     within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
-      #     
-      #     # Step 4: Filter based on spatial intersection
-      #     unique_id_geom_filtered <- unique_id_geom[rowSums(within_unique) > 0, ]
-      #     
-      #     # Step 5: Filter the original data
-      #     final_filtered_data <- final_filtered_data %>%
-      #       dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
-      #     final_filtered_data$geom_wkt <- NULL
-      #   }
-      #   
-      # } 
       
       flog.info("Rows after all categorical filters: %d", nrow(final_filtered_data))
       
-      # valid_filters <- purrr::map(variable_to_display, function(variable) {
-      #   browser()
-      #   select_input <- paste0("select_", variable)
-      #   selected_values <- input[[select_input]]
-      #   
-      #   if (!is.null(selected_values) && length(selected_values) > 0 && !all(is.na(selected_values))) {
-      #     flog.info("Applying filter for %s", variable)
-      #     return(quo(.data[[variable]] %in% !!selected_values))  # Stocke l'expression filtrante
-      #   } else {
-      #     return(NULL)
-      #   }
-      # }) %>% purrr::compact()  # Supprime les éléments NULL (pas de filtre)
-      # 
-      # # Appliquer tous les filtres en une seule passe
-      # filtered_data <- if (length(valid_filters) > 0) {
-      #   purrr::reduce(valid_filters, ~ filter(.x, !!.y), .init = final_filtered_data)
-      # } else {
-      #   final_filtered_data  # Si aucun filtre, renvoie les données originales
-      # }
       
       # flog.info("Nombre de lignes après filtrage: %d", nrow(filtered_data))
       
-      if (!is.null(input$toggle_year) && !is.null(input$years)) {
-        final_filtered_data <- final_filtered_data %>%
-          dplyr::filter(year %in% (if (input$toggle_year) input$years else seq(input$years[1], input$years[2])))
-      }
+      # WKT (optionnel mais recommandé)
+      current_wkt <- as.character(wkt())
+      wkt_changed <- !identical(current_wkt, rv_prev$wkt)
+      
+      flog.info("Change map: %s | year=%s | wkt_changed=%s",
+                paste(sprintf("%s=%s", names(change), change), collapse=", "),
+                change_year, wkt_changed)
+      
       
       if(as.character(current_wkt) != global_wkt){
         # Your spatial filtering code

@@ -180,89 +180,51 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     
     
     output$stacked_bar_split <- renderPlot({
-      df   <- data_cumulative_split()
+      df <- data_cumulative_split()
       req(df)
       
-      # Totaux par cat2 pour la ligne cumulative
-      total_by_cat <- df %>%
-        group_by(cat2) %>%
-        summarise(total = sum(measurement_value), .groups="drop") %>%
-        arrange(desc(total)) %>%
-        mutate(cum_perc = cumsum(total) / sum(total))
+      # Totaux par catégorie (axe x) + cumul
+      totals <- df %>%
+        dplyr::group_by(cat2) %>%
+        dplyr::summarise(total = sum(measurement_value), .groups = "drop") %>%
+        dplyr::arrange(dplyr::desc(total)) %>%
+        dplyr::mutate(cum_perc = cumsum(total) / sum(total))
       
-      # Palette pour dim2_agg
-      full_pal2 <- getPalette(category)
-      pres2     <- unique(df$dim2_agg)
-      pal2      <- full_pal2[names(full_pal2) %in% pres2]
-      if ("Other" %in% pres2 && !"Other" %in% names(pal2)) {
-        pal2 <- c(pal2, Other = "#CCCCCC")
+      # Niveaux d'ordre communs pour toutes les couches
+      x_levels <- totals$cat2
+      df <- df %>% dplyr::mutate(x = factor(cat2, levels = x_levels))
+      totals <- totals %>%
+        dplyr::mutate(x = factor(cat2, levels = x_levels),
+                      cum_y = cum_perc * max(total))
+      
+      pres2 <- df %>% dplyr::distinct(dim2_agg) %>% dplyr::pull(dim2_agg) %>% as.character()
+      df <- df %>% dplyr::mutate(dim2_agg = factor(dim2_agg, levels = pres2))
+      
+      full_pal2 <- getPalette(input$cumul_dim)             
+      pal2 <- full_pal2[pres2]                              
+      if (any(is.na(pal2))) {                               # repli si palettes manquantes
+        pal2 <- setNames(scales::hue_pal()(length(pres2)), pres2)
       }
-      
-      # Facteur pour ordonner les barres
-      total_by_cat$cat2 <- factor(total_by_cat$cat2, levels = total_by_cat$cat2)
+      if ("Other" %in% pres2) pal2["Other"] <- "#CCCCCC"    # couleur dédiée à "Other"
       
       ggplot() +
-        # 1) Bar stackée
-        geom_bar(
-          data = df,
-          aes(
-            x = factor(cat2, levels = levels(total_by_cat$cat2)),
-            y = measurement_value,
-            fill = dim2_agg
-          ),
-          stat = "identity"
-        ) +
-        # 2) Courbe cumulative (à l’échelle du total max)
-        geom_line(
-          data = total_by_cat,
-          aes(
-            x = cat2,
-            y = cum_perc * max(total_by_cat$total),
-            group = 1
-          ),
-          color = "red",
-          size = 1
-        ) +
-        geom_point(
-          data = total_by_cat,
-          aes(
-            x = cat2,
-            y = cum_perc * max(total_by_cat$total)
-          ),
-          color = "red",
-          size = 2
-        ) +
-        # 3) Étiquettes % cumulé
-        geom_text(
-          data = total_by_cat,
-          aes(
-            x = cat2,
-            y = cum_perc * max(total_by_cat$total),
-            label = paste0(round(cum_perc * 100), "%")
-          ),
-          vjust = -0.5,
-          size = 3,
-          color = "red"
-        ) +
-        scale_fill_manual(
-          name = input$cumul_dim,
-          values = pal2
-        ) +
+        geom_col(data = df, aes(x = x, y = measurement_value, fill = dim2_agg)) +
+        geom_line(data = totals, aes(x = x, y = cum_y, group = 1), color = "red", linewidth = 1) +
+        geom_point(data = totals, aes(x = x, y = cum_y), color = "red", size = 2) +
+        geom_text(data = totals,
+                  aes(x = x, y = cum_y, label = paste0(round(cum_perc*100), "%")),
+                  vjust = -0.5, size = 3, color = "red") +
+        scale_fill_manual(name = input$cumul_dim, values = pal2, breaks = pres2, drop = FALSE) +
         labs(
-          x = category,
-          y = "Measurement",
-          title = sprintf(
-            "Top %s %s stacked by %s + cumulative",
-            input$top_n_cat2,
-            category,
-            input$cumul_dim
-          )
+          x = category, y = "Measurement",
+          title = sprintf("Top %s %s stacked by %s + cumulative", input$top_n_cat2, category, input$cumul_dim)
         ) +
+        scale_y_continuous(expand = expansion(mult = c(0, .05))) +
         theme_minimal() +
-        theme(
-          axis.text.x = element_text(angle = 45, hjust = 1)
-        )
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
     })
+    
+    
     
     
   })

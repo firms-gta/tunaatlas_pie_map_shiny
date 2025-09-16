@@ -783,14 +783,14 @@ server <- function(input, output, session) {
     })
   })
   
-  output$map_area_pie_map <- renderUI({
-    if (isTRUE(map_enabled())) {
-      # IMPORTANT: ID DOIT MATCHER le server ci-dessus ("pie_map")
-      pieMapTimeSeriesUI(ns("pie_map"))
-    } else {
-      NULL
-    }
-  })
+  # output$map_area_pie_map <- renderUI({ # deprecated
+  #   if (isTRUE(map_enabled())) {
+  #     # IMPORTANT: ID DOIT MATCHER le server ci-dessus ("pie_map")
+  #     pieMapTimeSeriesUI(ns("pie_map"))
+  #   } else {
+  #     NULL
+  #   }
+  # })
   
   observeEvent(global_topn(), {
     cat("Parent sees new top N:", global_topn(), "\n")

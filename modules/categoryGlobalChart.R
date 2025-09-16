@@ -1,10 +1,6 @@
 categoryGlobalChartUI <- function(id) {
   ns <- NS(id)
   tabsetPanel(
-    tabPanel("Pie",        plotlyOutput(ns("pie_chart")) %>% withSpinner()),
-    tabPanel("Stacked",    plotOutput(ns("stacked_bar_absolute")) %>% withSpinner()),
-    tabPanel("Relative",   plotOutput(ns("stacked_bar_relative")) %>% withSpinner()),
-    tabPanel("Treemap",    plotOutput(ns("treemap_chart")) %>% withSpinner()), 
     tabPanel("Cumulative %",
              fluidPage(
                fluidRow(
@@ -13,7 +9,11 @@ categoryGlobalChartUI <- function(id) {
                ),
                plotOutput(ns("stacked_bar_split")) %>% withSpinner()
              )
-    )
+    ),
+    tabPanel("Stacked",    plotOutput(ns("stacked_bar_absolute")) %>% withSpinner()),
+    tabPanel("Relative",   plotOutput(ns("stacked_bar_relative")) %>% withSpinner()),
+    tabPanel("Pie",        plotlyOutput(ns("pie_chart")) %>% withSpinner()),
+    tabPanel("Treemap",    plotOutput(ns("treemap_chart")) %>% withSpinner())
   )
 }
 

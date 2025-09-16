@@ -315,6 +315,8 @@ server <- function(input, output, session) {
       
       prev_time_range <- rv_prev$time_range
       change_year <- classify_range(prev_time_range, curr_time_range)
+      current_wkt <- as.character(wkt())
+      wkt_changed <- !identical(current_wkt, rv_prev$wkt)
       
       flog.info("Change map: %s", paste(sprintf("%s=%s", names(change), change), collapse=", "))
       
@@ -380,10 +382,6 @@ server <- function(input, output, session) {
       
       # flog.info("Nombre de lignes après filtrage: %d", nrow(filtered_data))
       
-      # WKT (optionnel mais recommandé)
-      current_wkt <- as.character(wkt())
-      wkt_changed <- !identical(current_wkt, rv_prev$wkt)
-      
       flog.info("Change map: %s | year=%s | wkt_changed=%s",
                 paste(sprintf("%s=%s", names(change), change), collapse=", "),
                 change_year, wkt_changed)
@@ -422,6 +420,8 @@ server <- function(input, output, session) {
       
       rv_prev$df  <- final_filtered_data
       rv_prev$sel <- curr_sel
+      rv_prev$time_range <- curr_time_range
+      rv_prev$wkt        <- current_wkt
       
       flog.info("Filtering finished")
       } else {

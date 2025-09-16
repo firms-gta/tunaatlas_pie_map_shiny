@@ -777,7 +777,8 @@ server <- function(input, output, session) {
         submitTrigger = submitTrigger, 
         geom = initial_data,
         newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
-        global_topn = global_topn, rv_map_mode,
+        global_topn = global_topn, 
+        map_mode_val     = rv_map_mode,
         enabled = map_enabled
       )
     })

@@ -1,0 +1,57 @@
+# ---------- Stage 1: DOI data only ----------
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE:-rocker/r-ver:4.2.3} AS doi-data
+
+LABEL org.opencontainers.image.title="tunaatlas data artifacts"
+LABEL org.opencontainers.image.description="Pre-built data from DOI.csv, normalized and converted to .qs"
+
+# Outils nécessaires (wget + dos2unix) et R pkgs pour conversion
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      wget ca-certificates dos2unix && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN R -q -e "install.packages(c('qs','readr','jsonlite'), repos='https://cloud.r-project.org')"
+
+WORKDIR /artifacts
+
+# Cache-bust contrôlé par le hash pour forcer rebuild quand DOI.csv change
+ARG DOI_CSV_HASH
+RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH:-none}" > /tmp/doi_csv_hash.txt
+
+# On copie la liste et ce qui est déjà là localement dans data/ si oàn construit en local on s'affranchit du download
+COPY DOI.csv ./DOI.csv
+COPY data/ ./data/
+RUN dos2unix DOI.csv && sed -i -e '$a\' DOI.csv
+
+# Boucle: pour chaque ligne DOI,FILE -> on telecharge si besoin, renomme, convertit en .qs si nécessaire
+# Résultat final: /artifacts/data/*_{recordid}.qs
+RUN bash -c "set -euo pipefail; \
+  : > DOI_failed.csv; \
+  tail -n +2 DOI.csv | tr -d '\r' | \
+  while IFS=',' read -r DOI FILE; do \
+    [ -z \"${DOI}\" ] && continue; \
+    RECORD_ID=\$(echo \"${DOI}\" | awk -F/ '{print \$NF}' | sed 's/zenodo\\.//'); \
+    EXT=\${FILE##*.}; BASE=\${FILE%.*}; \
+    ORIGINAL=\"./data/\${FILE}\"; \
+    if [ \"\${EXT}\" = \"qs\" ]; then \
+      TARGET=\"./data/\${BASE}_\${RECORD_ID}.qs\"; \
+    else \
+      TARGET_CSV=\"./data/\${BASE}_\${RECORD_ID}.\${EXT}\"; \
+      TARGET=\"\${TARGET_CSV%.*}.qs\"; \
+    fi; \
+    URL=\"https://zenodo.org/record/\${RECORD_ID}/files/\${FILE}?download=1\"; \
+    if [ -f \"\${TARGET}\" ]; then echo \"skip \${TARGET}\"; continue; fi; \
+    if [ -f \"\${ORIGINAL}\" ]; then \
+      if [ \"\${EXT}\" = \"qs\" ]; then cp \"\${ORIGINAL}\" \"\${TARGET}\"; \
+      else cp \"\${ORIGINAL}\" \"\${TARGET_CSV}\"; fi; \
+    else \
+      if [ \"\${EXT}\" = \"qs\" ]; then \
+        wget -nv -O \"\${TARGET}\" \"\${URL}\" || { echo \"\${FILE}\" >> DOI_failed.csv; continue; } \
+      else \
+        wget -nv -O \"\${TARGET_CSV}\" \"\${URL}\" || { echo \"\${FILE}\" >> DOI_failed.csv; continue; } \
+      fi; \
+    fi; \
+    if [ \"\${EXT}\" != \"qs\" ]; then \
+      R -q -e \"qs::qsave(readr::read_csv('\${TARGET_CSV}'), '\${TARGET}')\" && rm -f \"\${TARGET_CSV}\"; \
+    fi; \
+  done && echo 'Data build OK' && ls -lh ./data"

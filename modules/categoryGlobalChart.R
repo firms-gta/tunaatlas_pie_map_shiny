@@ -1,10 +1,6 @@
 categoryGlobalChartUI <- function(id) {
   ns <- NS(id)
   tabsetPanel(
-    tabPanel("Pie",        plotlyOutput(ns("pie_chart")) %>% withSpinner()),
-    tabPanel("Stacked",    plotOutput(ns("stacked_bar_absolute")) %>% withSpinner()),
-    tabPanel("Relative",   plotOutput(ns("stacked_bar_relative")) %>% withSpinner()),
-    tabPanel("Treemap",    plotOutput(ns("treemap_chart")) %>% withSpinner()), 
     tabPanel("Cumulative %",
              fluidPage(
                fluidRow(
@@ -13,7 +9,11 @@ categoryGlobalChartUI <- function(id) {
                ),
                plotOutput(ns("stacked_bar_split")) %>% withSpinner()
              )
-    )
+    ),
+    tabPanel("Stacked",    plotOutput(ns("stacked_bar_absolute")) %>% withSpinner()),
+    tabPanel("Relative",   plotOutput(ns("stacked_bar_relative")) %>% withSpinner()),
+    tabPanel("Pie",        plotlyOutput(ns("pie_chart")) %>% withSpinner()),
+    tabPanel("Treemap",    plotOutput(ns("treemap_chart")) %>% withSpinner())
   )
 }
 
@@ -23,19 +23,39 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     ns <- session$ns
     
     pal <- getPalette(category)
+    
+    # last_good_topn <- shiny::reactiveVal(10)
+    safe_topn <- global_topn
+    # safe_topn <- shiny::reactive({
+    #   val <- tryCatch({
+    #     if (shiny::is.reactive(global_topn)) global_topn() else global_topn
+    #   }, error = function(e) NA_real_)   # shiny.silent.error => NA
+    #   
+    #   # validation : numeric, fini, >=1
+    #   if (is.null(val) || length(val) == 0 || !is.numeric(val) || !is.finite(val) || val < 1) {
+    #     flog.warn("[%s] global_topn invalid -> fallback last_good_topn=%s",
+    #               session$ns("dbg"), last_good_topn())
+    #     return(last_good_topn())
+    #   } else {
+    #     last_good_topn(val)
+    #     return(val)
+    #   }
+    # })
+    
+    
     # pal <- pal[reactive_data$cat2]
     # pal <- pal[names(pal) %in% reactive_data[[category]]]
     colors <- unname(pal)
     
     getTopCategories <- reactive({
       df <- data_raw()
-      N <- global_topn()
+      N <- safe_topn()
       df %>%
-        group_by(cat = .data[[category]]) %>%
-        summarise(total = sum(measurement_value), .groups = "drop") %>%
-        arrange(desc(total)) %>%
-        slice_head(n = N) %>%
-        pull(cat)
+        dplyr::group_by(cat = .data[[category]]) %>%
+        dplyr::summarise(total = sum(measurement_value), .groups = "drop") %>%
+        dplyr::arrange(desc(total)) %>%
+        dplyr::slice_head(n = N) %>%
+        dplyr::pull(cat)
     })
     
     
@@ -54,27 +74,27 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     })
     
     data_topN <- reactive({
-      req(data_raw(), global_topn())
+      req(data_raw())
       df <- data_raw()
-      N <- global_topn()
+      N <- safe_topn()
       
       top_cats <- df %>%
-        group_by(cat = .data[[category]]) %>%
-        summarise(total = sum(measurement_value), .groups = "drop") %>%
-        arrange(desc(total)) %>%
-        slice_head(n = N) %>%
-        pull(cat)
+        dplyr::group_by(cat = .data[[category]]) %>%
+        dplyr::summarise(total = sum(measurement_value), .groups = "drop") %>%
+        dplyr::arrange(desc(total)) %>%
+        dplyr::slice_head(n = N) %>%
+        dplyr::pull(cat)
       
       df %>%
-        mutate(cat2 = ifelse(.data[[category]] %in% top_cats, .data[[category]], "Other"))
+        dplyr::mutate(cat2 = ifelse(.data[[category]] %in% top_cats, .data[[category]], "Other"))
     })
     
     # -- Pie Chart --
     output$pie_chart <- renderPlotly({
       df <- data_topN() %>%
-        group_by(cat2) %>%
-        summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
-        rename(!!category := cat2)
+        dplyr::group_by(cat2) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
+        dplyr::rename(!!category := cat2)
       
       plot_ly(
         df,
@@ -93,12 +113,13 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     # -- Stacked bar chart (absolute) --
     output$stacked_bar_absolute <- renderPlot({
       df <- data_topN() %>%
-        group_by(time_start, cat2) %>%
-        summarise(measurement_value = sum(measurement_value), .groups = "drop")
+        dplyr::group_by(time_start, cat2) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
       
       df <- df %>%
-        mutate(time_month = format(as.Date(time_start), "%Y-%m")) %>%
-        mutate(time_month = factor(time_month, levels = sort(unique(time_month))))
+        dplyr::mutate( time_start = as.Date(substr(as.character(time_start), 1, 10))) %>% 
+        dplyr::mutate(time_month = format(as.Date(time_start), "%Y-%m")) %>%
+        dplyr::mutate(time_month = factor(time_month, levels = sort(unique(time_month))))
       
       ggplot(df, aes(x =time_month, y = measurement_value, fill = cat2))  +
         scale_fill_manual(values = pal) +
@@ -110,11 +131,14 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     # -- Stacked bar chart (relative) --
     output$stacked_bar_relative <- renderPlot({
       df <- data_topN() %>%
-        group_by(time_start, cat2) %>%
-        summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
-        group_by(time_start) %>%
-        mutate(perc = measurement_value / sum(measurement_value)) %>%
-        ungroup()
+        dplyr::group_by(time_start, cat2) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
+        dplyr::group_by(time_start) %>%
+        dplyr::mutate(perc = measurement_value / sum(measurement_value)) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(
+          time_start = as.Date(substr(as.character(time_start), 1, 10))
+        )
       
       ggplot(df, aes(x = as.Date(time_start), y = perc, fill = cat2)) +
         scale_fill_manual(values = pal) +
@@ -126,9 +150,9 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     # -- Treemap --
     output$treemap_chart <- renderPlot({
       df <- data_topN() %>%
-        group_by(cat2) %>%
-        summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
-        mutate(pct = measurement_value / sum(measurement_value) * 100)
+        dplyr::group_by(cat2) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
+        dplyr::mutate(pct = measurement_value / sum(measurement_value) * 100)
       
       ggplot(df, aes(
         area = measurement_value,
@@ -165,17 +189,17 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
       
       # 3) Calcul des top N modalités de dim2 sur l'ensemble
       top2 <- df %>%
-        group_by(dim2_tmp = .data[[dim2]]) %>%
-        summarise(total2 = sum(measurement_value), .groups="drop") %>%
-        arrange(desc(total2)) %>%
-        slice_head(n = top_n2) %>%
-        pull(dim2_tmp)
+        dplyr::group_by(dim2_tmp = .data[[dim2]]) %>%
+        dplyr::summarise(total2 = sum(measurement_value), .groups="drop") %>%
+        dplyr::arrange(desc(total2)) %>%
+        dplyr::slice_head(n = top_n2) %>%
+        dplyr::pull(dim2_tmp)
       
       # 4) Recodage de dim2 et agrégation
       df %>%
-        mutate(dim2_agg = ifelse(.data[[dim2]] %in% top2, .data[[dim2]], "Other")) %>%
-        group_by(cat2, dim2_agg) %>%
-        summarise(measurement_value = sum(measurement_value), .groups="drop")
+        dplyr::mutate(dim2_agg = ifelse(.data[[dim2]] %in% top2, .data[[dim2]], "Other")) %>%
+        dplyr::group_by(cat2, dim2_agg) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value), .groups="drop")
     })
     
     

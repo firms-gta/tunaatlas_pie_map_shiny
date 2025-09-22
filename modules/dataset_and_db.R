@@ -71,6 +71,17 @@ dataset_and_db_server <- function(id, filters_combinations, default_dataset, def
         data.frame(Filename = character())
       }
     )
+    for (i in (1:length(doi_data)+1)){
+    record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", DOI$DOI[i])
+    filename <- DOI$Filename[i]
+    dataset <- tools::file_path_sans_ext(filename)
+    ext <- tools::file_ext(filename)
+    
+    renamed <- file.path(paste0(dataset, "_", record_id,".", ext))
+    # renamed <- file.path("data", paste0(dataset, "_", record_id, "_updated.qs"))
+    doi_data$Filename[i] <- renamed
+    
+    }
     
     if (nrow(doi_data) == 0 || !"Filename" %in% colnames(doi_data)) {
       stop("Le fichier DOI.csv est invalide ou vide.")

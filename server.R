@@ -230,22 +230,22 @@ server <- function(input, output, session) {
       data_for_filters(dataset_not_init$data_for_filters)
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
       # session$reload() # ne relance pas global.R
-      flog.info(sprintf("Launching global.R again"))
+      # flog.info(sprintf("Launching global.R again"))
       
       # shinyjs::refresh() #relance global.R
       
-      shinyjs::hide("loading_page")
+      # shinyjs::hide("loading_page")
       firstSubmit(TRUE)
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
-      shinyjs::show("main_content")
+      # shinyjs::show("main_content")
       wkt(global_wkt)
       # browser()
-      # shinyjs::delay(100,{
+      shinyjs::delay(100,{
       
       data_for_filters_trigger(data_for_filters_trigger() + 1)
       updateNavbarPage(session, "main", selected = "generaloverview")
       shinyjs::click("submit")
-      # })
+      })
       
     }
     
@@ -713,6 +713,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$variable_tabs, {
+    req(data_without_geom())
     req(input$variable_tabs)
     sel <- input$variable_tabs
     df <- data_without_geom()
@@ -733,17 +734,15 @@ server <- function(input, output, session) {
       )
     })
     
-    
-    
   })
   
-  # observe({
-  #   sel <- input$variable_tabs
-  #   req(sel)
-  #   val <- input[[paste0("topn_", sel)]]
-  #   if (!is.null(val)) global_topn(val)
-  # })
-  # 
+  observe({
+    sel <- input$variable_tabs
+    req(sel)
+    val <- input[[paste0("topn_", sel)]]
+    if (!is.null(val)) global_topn(val)
+  }) # utile pour nouveau dataset met à jour les sliders
+
   
   # Pie charts
   lapply(variable_to_display, function(variable) {
@@ -784,20 +783,21 @@ server <- function(input, output, session) {
         submitTrigger = submitTrigger, 
         geom = initial_data,
         newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
-        global_topn = global_topn, rv_map_mode,
+        global_topn = global_topn, 
+        map_mode_val     = rv_map_mode,
         enabled = map_enabled
       )
     })
   })
   
-  output$map_area_pie_map <- renderUI({
-    if (isTRUE(map_enabled())) {
-      # IMPORTANT: ID DOIT MATCHER le server ci-dessus ("pie_map")
-      pieMapTimeSeriesUI(ns("pie_map"))
-    } else {
-      NULL
-    }
-  })
+  # output$map_area_pie_map <- renderUI({ # deprecated
+  #   if (isTRUE(map_enabled())) {
+  #     # IMPORTANT: ID DOIT MATCHER le server ci-dessus ("pie_map")
+  #     pieMapTimeSeriesUI(ns("pie_map"))
+  #   } else {
+  #     NULL
+  #   }
+  # })
   
   observeEvent(global_topn(), {
     cat("Parent sees new top N:", global_topn(), "\n")

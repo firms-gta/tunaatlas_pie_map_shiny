@@ -27,7 +27,7 @@ variable <- c("source_authority",
 # Paths for processed files
 default_dataset_path <- here::here("data/default_dataset.qs")
 
-DOI <- read_csv("DOI.csv")
+DOI <- readr::read_csv("DOI.csv")
 if(!file.exists("data/data.qs")){
 if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_dataset")){
   

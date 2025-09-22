@@ -17,6 +17,7 @@ server <- function(input, output, session) {
   )
   
   
+  
   # prev/curr "vides" => TOUTES les valeurs de l'univers
   normalize_sel <- function(x, universe) {
     x <- if (is.null(x) || !length(x) || all(is.na(x)) || identical(x, "NA")) universe else as.character(x)
@@ -119,7 +120,6 @@ server <- function(input, output, session) {
   # )
   
   observeEvent(dataset_choices$submit(), {
-    # browser()
     flog.info("Submit dataset clicked")
     
     selected_dataset <- dataset_choices$selected_dataset()
@@ -165,7 +165,7 @@ server <- function(input, output, session) {
     } else {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$") | stringr::str_detect(dataset_choices$selected_dataset(), "\\.qs$")) {
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
-        qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
+        qs_file_path <- file.path('data', paste0(base_filename, '_updated.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
           dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
                                                      measurement_unit == "no" ~ "Number of fish",
@@ -178,8 +178,8 @@ server <- function(input, output, session) {
         req(pool())
         flog.info("Connection to DB accessible, querying the data")
         
-        # shinyjs::hide("main_content")
-        # shinyjs::show("loading_page")
+        shinyjs::hide("main_content")
+        shinyjs::show("loading_page")
         issueddata <- FALSE
         if(issueddata){
           selected_viewissued = "public.issueddata"
@@ -189,38 +189,44 @@ server <- function(input, output, session) {
         dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
         flog.info("Default dataset loaded")
       }
+      
       default_dataset <- dataset_not_init$data_for_filters
+      
+      res <- generate_dimensions_palettes(
+        df = default_dataset,
+        variable = variable,           # ton vecteur global des variables possibles
+        seed = 2643598
+      )
+      
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
       # qs::qsave(default_dataset, file = "default_dataset.qs")
       variable_to_display_ancient <- variable_to_display
       variable_to_display <- intersect(variable,colnames(default_dataset))
       # qs::qsave(variable_to_display, file = "variable_to_display")
       
+      palettes <- res$palettes
+      targettes <- res$targettes
+      variable_to_display <- res$variables
+      
       flog.info(sprintf("Variable to display %s:", variable_to_display))
-      for (col in variable_to_display) {
-        assign(paste0("target_", col), unique(default_dataset[[col]]), envir = .GlobalEnv)
-        flog.info(sprintf("Target assigned %s:", col))
-        
-      }
-      analysis_options <- lapply(variable_to_display, generate_analysis_option)
-      dimensions <- lapply(variable_to_display, generate_dimension)
-      targetVariables <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
+      # for (col in variable_to_display) {
+      #   assign(paste0("target_", col), unique(default_dataset[[col]]), envir = .GlobalEnv)
+      #   flog.info(sprintf("Target assigned %s:", col))
+      #   
+      # }
       
-      targetVariables2 <- lapply(targetVariables, as.data.frame)
-      
-      targettes <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
+      initial_data(dataset_not_init$initial_data)
       # # Initialize color palettes with a fixed seed for reproducibility
-      palettes <- initialiserPalettes(targetVariables2, seed = 2643598)
-      default_dataset <<- default_dataset
-      dimensions <<- dimensions
-      variable_to_display <<- variable_to_display
+      # default_dataset <<- default_dataset
+      # dimensions <<- dimensions
+      # variable_to_display <<- variable_to_display
       palettes <<- palettes
       flog.info("Palettes initialised session")
       flog.info("Reloading session")
       # source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
       # source(here::here("ui.R"))
       
-      initial_data(dataset_not_init$initial_data)
+      # initial_data(dataset_not_init$initial_data)
       data_for_filters(dataset_not_init$data_for_filters)
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
       # session$reload() # ne relance pas global.R
@@ -228,17 +234,17 @@ server <- function(input, output, session) {
       
       # shinyjs::refresh() #relance global.R
       
-      # shinyjs::hide("loading_page")
-      
+      shinyjs::hide("loading_page")
+      firstSubmit(TRUE)
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
       shinyjs::show("main_content")
       wkt(global_wkt)
-      
+      # browser()
       # shinyjs::delay(100,{
-      # shinyjs::click("submit")
+      
       data_for_filters_trigger(data_for_filters_trigger() + 1)
       updateNavbarPage(session, "main", selected = "generaloverview")
-      
+      shinyjs::click("submit")
       # })
       
     }
@@ -274,6 +280,7 @@ server <- function(input, output, session) {
     req(data_for_filters())
     # browser()
     if(!secondSubmit()){
+      # browser()
       if(!firstSubmit()){
       flog.info("Submit button clicked")
       # browser()
@@ -475,7 +482,7 @@ server <- function(input, output, session) {
   variable_choicesintersect <- reactive({
     req(data_for_filters())
     
-    priority_vars <- c("source_authority", "species", "gear_type", "fishing_fleet")
+    priority_vars <- c("source_authority","species", "gear_type", "fishing_fleet")
     
     variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
     

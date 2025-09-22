@@ -123,7 +123,7 @@ dataset_and_db_server <- function(id, filters_combinations, default_dataset, def
             if (pool::dbIsValid(pool)) {
               flog.info("Connexion valide.")
               pool_reactive(pool)
-              
+              flog.info("Connexion reactive")
               # Récupérer les filtres de la base de données
               filters_query <- glue_sql("
                 SELECT DISTINCT dataset, measurement_unit, gridtype 

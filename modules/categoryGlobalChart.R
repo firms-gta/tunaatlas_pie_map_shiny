@@ -24,24 +24,20 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     
     pal <- getPalette(category)
     
-    # last_good_topn <- shiny::reactiveVal(10)
-    safe_topn <- global_topn
+    # last_good_topn <- shiny::reactiveVal(5L)
     # safe_topn <- shiny::reactive({
-    #   val <- tryCatch({
-    #     if (shiny::is.reactive(global_topn)) global_topn() else global_topn
-    #   }, error = function(e) NA_real_)   # shiny.silent.error => NA
-    #   
-    #   # validation : numeric, fini, >=1
-    #   if (is.null(val) || length(val) == 0 || !is.numeric(val) || !is.finite(val) || val < 1) {
-    #     flog.warn("[%s] global_topn invalid -> fallback last_good_topn=%s",
-    #               session$ns("dbg"), last_good_topn())
-    #     return(last_good_topn())
+    #   val <- tryCatch(
+    #     if (shiny::is.reactive(global_topn)) global_topn() else global_topn,
+    #     error = function(e) NA_real_
+    #   )
+    #   if (is.null(val) || !is.numeric(val) || !is.finite(val) || val < 1) {
+    #     last_good_topn()
     #   } else {
+    #     val <- as.integer(val)
     #     last_good_topn(val)
-    #     return(val)
+    #     val
     #   }
     # })
-    
     
     # pal <- pal[reactive_data$cat2]
     # pal <- pal[names(pal) %in% reactive_data[[category]]]
@@ -49,7 +45,7 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     
     getTopCategories <- reactive({
       df <- data_raw()
-      N <- safe_topn()
+      N <- global_topn()
       df %>%
         dplyr::group_by(cat = .data[[category]]) %>%
         dplyr::summarise(total = sum(measurement_value), .groups = "drop") %>%
@@ -76,7 +72,7 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     data_topN <- reactive({
       req(data_raw())
       df <- data_raw()
-      N <- safe_topn()
+      N <- global_topn()
       
       top_cats <- df %>%
         dplyr::group_by(cat = .data[[category]]) %>%

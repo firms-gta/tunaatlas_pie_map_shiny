@@ -234,8 +234,8 @@ server <- function(input, output, session) {
       data_for_filters(dataset_not_init$data_for_filters)
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
       # session$sendCustomMessage("soft-reload", list())
-      # session$reload() # ne relance pas global.R
-      session$sendCustomMessage("soft-reload", list(newtab = TRUE))
+      session$reload() # ne relance pas global.R
+      # session$sendCustomMessage("soft-reload", list(newtab = TRUE))
       # flog.info(sprintf("Launching global.R again"))
       
       # shinyjs::refresh() #relance global.R

@@ -28,7 +28,7 @@ download_and_rename <- function(doi, filename, data_dir = "data") {
   # 1) Si déjà renommé, on ne fait rien
   if (file.exists(renamed) | file.exists(updated)) {
     message("📦 found renamed file: ", renamed)
-    return(updated)
+    return(renamed)
   }
   
   # 2) Si le brut existe, on le renomme

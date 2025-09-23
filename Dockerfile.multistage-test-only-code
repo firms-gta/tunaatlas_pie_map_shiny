@@ -88,16 +88,11 @@ FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:doi-data-latest AS doi-data
 
 FROM app AS final
 WORKDIR /root/tunaatlas_pie_map_shiny
-<<<<<<< HEAD
-COPY --from=doi-data /artifacts/data/global_catch_tunaatlasird_level2_1950_2023_15496164_updated.qs /root/tunaatlas_pie_map_shiny/data/global_catch_tunaatlasird_level2_1950_2023_15496164_updated.qs
-COPY --from=doi-data /artifacts/DOI.csv /root/tunaatlas_pie_map_shiny/DOI.csv
-=======
 COPY --from=doi-data /artifacts/data/*_updated.qs /root/tunaatlas_pie_map_shiny/data/
 COPY --from=doi-data /artifacts/DOI.csv /root/tunaatlas_pie_map_shiny/DOI.csv
 COPY --from=doi-data /artifacts/*cl_areal_grid.csv /root/tunaatlas_pie_map_shiny/data/
 
 RUN R -q -e "print(list.files('data'));"
->>>>>>> eeccfb2 (feature: adding multiples files in docker image with reduced size)
 
 COPY testing_loading_of_all_packages.R ./testing_loading_of_all_packages.R
 RUN R -e "source('testing_loading_of_all_packages.R')"

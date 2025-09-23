@@ -155,11 +155,18 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
       dplyr::group_by(time_start) %>%
       dplyr::mutate(perc = measurement_value / sum(measurement_value)) %>%
       dplyr::ungroup() %>%
-      dplyr::mutate(time_start = as.Date(substr(as.character(time_start), 1, 10)))
-    
-    ggplot2::ggplot(df, ggplot2::aes(x = time_start, y = perc, fill = cat2)) +
+      dplyr::mutate(
+        time_start = as.Date(substr(as.character(time_start), 1, 10)),
+        time_month = factor(format(time_start, "%Y-%m"),
+                            levels = sort(unique(format(time_start, "%Y-%m"))))
+      )
+    all_x <- levels(df$time_month)
+    step  <- max(1L, floor(length(all_x) / 12L))
+    x_breaks <- all_x[seq(1, length(all_x), by = step)]
+    ggplot2::ggplot(df, ggplot2::aes(x = time_month, y = perc, fill = cat2)) +
       ggplot2::geom_bar(stat = "identity") +
       ggplot2::scale_fill_manual(values = pal, na.translate = FALSE) +
+      ggplot2::scale_x_discrete(breaks = x_breaks, guide = ggplot2::guide_axis(angle = 45)) +
       ggplot2::labs(x = "Time", y = "Proportion", fill = value_of(category)) +
       ggplot2::theme_minimal()
   })

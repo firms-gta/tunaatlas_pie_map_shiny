@@ -19,6 +19,10 @@ docker build \
 
 # en local test 
 docker tag gta-data:local ghcr.io/firms-gta/tunaatlas_pie_map_shiny:doi-data-latest
+<<<<<<< HEAD
 
+=======
+docker buildx build -f Dockerfile.multistage-test-only-code -t multistage:test . --progress=plain
+>>>>>>> 1a6ed3b (chore: documentation for building multiplestage)
 ```
 

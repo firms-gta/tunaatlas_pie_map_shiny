@@ -2,6 +2,7 @@ server <- function(input, output, session) {
   map_enabled <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","1")=="1")
   observeEvent(input$map_enabled, map_enabled(input$map_enabled), ignoreInit = TRUE)
   
+  
   # map_enabled_pie <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","0")=="1")
   # observeEvent(input$map_enabled_pie, map_enabled_pie(input$map_enabled_pie), ignoreInit = TRUE)
   
@@ -234,7 +235,7 @@ server <- function(input, output, session) {
       data_for_filters(dataset_not_init$data_for_filters)
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
       # session$sendCustomMessage("soft-reload", list())
-      session$reload() # ne relance pas global.R
+      # session$reload() # ne relance pas global.R
       # session$sendCustomMessage("soft-reload", list(newtab = TRUE))
       # flog.info(sprintf("Launching global.R again"))
       
@@ -712,39 +713,39 @@ server <- function(input, output, session) {
   
   newwkttest <- reactiveVal(NULL)
   
-  global_topn <- reactive({
-    sel_id <- req(input$variable_tabs)         # renvoie l’ID sûr (pas le label)
-    val <- input[[paste0("topn_", sel_id)]]
-    if (is.null(val) || !is.numeric(val) || val < 1) 5L else as.integer(val)
-  })
+  # global_topn <- reactive({
+  #   sel_id <- req(input$variable_tabs)         # renvoie l’ID sûr (pas le label)
+  #   val <- input[[paste0("topn_", sel_id)]]
+  #   if (is.null(val) || !is.numeric(val) || val < 1) 5L else as.integer(val)
+  # })
   
-  observeEvent(list(input$variable_tabs, data_without_geom()), {
-    df     <- req(data_without_geom())
-    vars   <- req(variable_choicesintersect())
-    ids    <- id_safe(vars)
-    
-    sel_id  <- req(input$variable_tabs)             # ID sûr de l’onglet actif
-    sel_var <- vars[match(sel_id, ids)]             # vrai nom de colonne (label)
-    
-    # nb catégories dans la colonne réelle (robuste)
-    ncat <- if (sel_var %in% names(df)) length(unique(stats::na.omit(df[[sel_var]]))) else 1L
-    
-    slider_id <- paste0("topn_", sel_id)
-    old_val <- isolate(input[[slider_id]])
-    if (is.null(old_val) || !is.numeric(old_val) || old_val < 1) old_val <- 5L
-    
-    output[[paste0("slider_ui_", sel_id)]] <- renderUI({
-      sliderInput(
-        inputId = slider_id,
-        label   = tags$span(style = "font-size:14px;", paste("Number of", sel_var, "to display")),
-        min     = 1L,
-        max     = max(ncat, 1L),
-        value   = min(as.integer(old_val), as.integer(ncat)),
-        step    = 1L,
-        round   = TRUE
-      )
-    })
-  }, ignoreInit = FALSE)
+  # observeEvent(list(input$variable_tabs, data_without_geom()), {
+  #   df     <- req(data_without_geom())
+  #   vars   <- req(variable_choicesintersect())
+  #   ids    <- id_safe(vars)
+  #   
+  #   sel_id  <- req(input$variable_tabs)             # ID sûr de l’onglet actif
+  #   sel_var <- vars[match(sel_id, ids)]             # vrai nom de colonne (label)
+  #   
+  #   # nb catégories dans la colonne réelle (robuste)
+  #   ncat <- if (sel_var %in% names(df)) length(unique(stats::na.omit(df[[sel_var]]))) else 1L
+  #   
+  #   slider_id <- paste0("topn_", sel_id)
+  #   old_val <- isolate(input[[slider_id]])
+  #   if (is.null(old_val) || !is.numeric(old_val) || old_val < 1) old_val <- 5L
+  #   
+  #   output[[paste0("slider_ui_", sel_id)]] <- renderUI({
+  #     sliderInput(
+  #       inputId = slider_id,
+  #       label   = tags$span(style = "font-size:14px;", paste("Number of", sel_var, "to display")),
+  #       min     = 1L,
+  #       max     = max(ncat, 1L),
+  #       value   = min(as.integer(old_val), as.integer(ncat)),
+  #       step    = 1L,
+  #       round   = TRUE
+  #     )
+  #   })
+  # }, ignoreInit = FALSE)
   
   
   # observe({
@@ -754,17 +755,60 @@ server <- function(input, output, session) {
   #   if (!is.null(val)) global_topn(val)
   # }) # utile pour nouveau dataset met à jour les sliders
   
-  
-  # Pie charts
-  lapply(variable_to_display, function(variable) {
-    local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
-      variable <- variable
-      flog.info(sprintf("categoryglobalchartsever for %s", variable))
-      categoryGlobalChartServer(paste0(variable, "_chart"), category  = variable, reactive_data = data_without_geom, 
-                                global_topn = global_topn, 
-                                variable_to_display = variable_to_display)
-    })
+  output$dim_selector <- renderUI({
+    vars <- req(variable_choicesintersect())
+    selectInput("active_dim", "Dimension", choices = vars, selected = vars[[1]])
   })
+  
+  active_dim <- reactive({ req(input$active_dim) })
+  
+  output$slider_ui <- renderUI({
+    df <- req(data_without_geom())
+    var <- req(active_dim())
+    ncat <- if (var %in% names(df)) length(unique(stats::na.omit(df[[var]]))) else 1L
+    sliderInput("topn", paste("Number of", var, "to display"),
+                min = 1, max = max(1L, ncat), value = min(5L, ncat), step = 1)
+  })
+  global_topn <- reactive({ input$topn %||% 5L })
+  
+  # active_dim <- reactive({ req(input$active_dim) })
+  categoryGlobalChartServer(
+    id                  = "chart",
+    category            = active_dim,              # réactif
+    reactive_data       = data_without_geom,
+    global_topn         = global_topn,
+    variable_to_display = variable_choicesintersect # réactif OK (module gère les 2 cas)
+  ) # mieux que un lapply des tabs. 
+  
+  pieMapTimeSeriesServer(
+    id                = "map",
+    category_var      = active_dim,        
+    data              = final_filtered_data,
+    data_witout_geom_ = data_without_geom,
+    submitTrigger     = submitTrigger,
+    geom              = initial_data,
+    newwkttest        = newwkttest,
+    global_topn       = global_topn,
+    map_mode_val      = rv_map_mode,
+    enabled           = map_enabled
+  )  # mieux que un lapply des tabs. 
+  
+  # for (o in c("stacked_bar_split","stacked_bar_relative","stacked_bar_absolute","pie_chart","treemap_chart")) {
+  #   try(outputOptions(output, paste0("chart-", o), suspendWhenHidden = FALSE), silent = TRUE)
+  # }
+  # for (o in c("map_plot","map_legend","map_stats","timeseries_plot")) {
+  #   try(outputOptions(output, paste0("map-", o), suspendWhenHidden = FALSE), silent = TRUE)
+  # }
+  # # Pie charts
+  # lapply(variable_to_display, function(variable) {
+  #   local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
+  #     variable <- variable
+  #     flog.info(sprintf("categoryglobalchartsever for %s", variable))
+  #     categoryGlobalChartServer(paste0(variable, "_chart"), category  = variable, reactive_data = data_without_geom, 
+  #                               global_topn = global_topn, 
+  #                               variable_to_display = variable_to_display)
+  #   })
+  # })
   
   # lapply(variable_to_display, function(variable) {
   #   local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
@@ -782,24 +826,24 @@ server <- function(input, output, session) {
   # })
   # Map and time series
   # Loop through variables and set up the modules
-  lapply(variable_to_display, function(variable) {
-    local({
-      variable <- variable
-      flog.info(sprintf("pieMapTimeSeriesServer for %s", variable))
-      pieMapTimeSeriesServer(
-        paste0(variable, "_module"), 
-        category_var = variable, 
-        data = final_filtered_data, 
-        data_witout_geom_ = data_without_geom,
-        submitTrigger = submitTrigger, 
-        geom = initial_data,
-        newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
-        global_topn = global_topn, 
-        map_mode_val     = rv_map_mode,
-        enabled = map_enabled
-      )
-    })
-  })
+  # lapply(variable_to_display, function(variable) {
+  #   local({
+  #     variable <- variable
+  #     flog.info(sprintf("pieMapTimeSeriesServer for %s", variable))
+  #     pieMapTimeSeriesServer(
+  #       paste0(variable, "_module"), 
+  #       category_var = variable, 
+  #       data = final_filtered_data, 
+  #       data_witout_geom_ = data_without_geom,
+  #       submitTrigger = submitTrigger, 
+  #       geom = initial_data,
+  #       newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
+  #       global_topn = global_topn, 
+  #       map_mode_val     = rv_map_mode,
+  #       enabled = map_enabled
+  #     )
+  #   })
+  # })
   
   # output$map_area_pie_map <- renderUI({ # deprecated
   #   if (isTRUE(map_enabled())) {
@@ -962,20 +1006,7 @@ server <- function(input, output, session) {
   
   
   output$dynamic_panels <- renderUI({
-    vars <- req(variable_choicesintersect())
-    vars <- unname(vars)            # <-- enlève les names éventuels
-    ids  <- id_safe(vars)
-    
-    panel_list <- Map(function(lbl, id) {
-      nav_panel(
-        title = lbl,      # ce que l’utilisateur voit
-        value = id,       # l’ID interne de l’onglet
-        geographic_catches_by_variable_ui(id)  # ton UI enfant attend cet id
-      )
-    }, vars, ids)
-    
-    panel_list <- unname(panel_list)           
-    do.call(navset_card_tab, c(list(id = "variable_tabs"), panel_list))
+    geographic_catches_ui_compact() # ID fixe plus de lapply
   })
   
   # Data and graphics outputs

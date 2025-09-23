@@ -88,6 +88,23 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
     updateSelectInput(session, "cumul_dim", choices = choices, selected = if (!is.null(current) && current %in% c("", dims)) current else "")
   })
   
+  # === helpers ===
+  ym_idx <- function(year, month) year*12L + as.integer(month)          # pas = 1
+  label_ym_from_idx <- function(i){
+    y <- (i - 1L) %/% 12L
+    m <- (i - 1L) %% 12L + 1L
+    sprintf("%04d-%02d", y, m)
+  }
+  
+  # Pré-agrégat commun
+  monthly_sum <- reactive({
+    data_topN() |>
+      dplyr::mutate(month_idx = ym_idx(year, month)) |>
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE),
+                       .by = c(month_idx, cat2)) |>
+      dplyr::arrange(month_idx)
+  })
+  
   # ---- PIE
   output$pie_chart <- renderPlotly({
     cat_col <- value_of(category)
@@ -120,55 +137,36 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
   # ---- STACKED ABSOLUTE
   output$stacked_bar_absolute <- renderPlot({
     pal <- pal_cat()
-    df <- data_topN() %>%
-      dplyr::group_by(time_start, cat2) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
-      dplyr::mutate(
-        time_start = as.Date(substr(as.character(time_start), 1, 10)),
-        time_month = factor(format(time_start, "%Y-%m"),
-                            levels = sort(unique(format(time_start, "%Y-%m"))))
-      )
+    df  <- monthly_sum()
     
-    # ~12 ticks max sur l’axe 
-    all_x <- levels(df$time_month)
-    step  <- max(1L, floor(length(all_x) / 12L))
-    x_breaks <- all_x[seq(1, length(all_x), by = step)]
+    brks <- scales::breaks_pretty(n = 12)(range(df$month_idx))
     
-    ggplot2::ggplot(df, ggplot2::aes(x = time_month, y = measurement_value, fill = cat2)) +
-      ggplot2::geom_bar(stat = "identity") +
+    ggplot2::ggplot(df, ggplot2::aes(x = month_idx, y = measurement_value, fill = cat2)) +
+      ggplot2::geom_col(width = 1) +                               # <<< barres collées
       ggplot2::scale_fill_manual(values = pal, na.translate = FALSE) +
-      ggplot2::scale_x_discrete(breaks = x_breaks, guide = ggplot2::guide_axis(angle = 45)) +
+      ggplot2::scale_x_continuous(breaks = brks, labels = label_ym_from_idx,
+                                  expand = c(0, 0)) +              # pas d’espace aux bords
       ggplot2::labs(x = "Time", y = "Total", fill = value_of(category)) +
       ggplot2::theme_minimal(base_size = 11) +
-      ggplot2::theme(
-        axis.text.x = ggplot2::element_text(hjust = 1),
-        panel.grid.minor = ggplot2::element_blank()
-      )
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
+                     panel.grid.minor = ggplot2::element_blank())
   })
   
   # ---- STACKED RELATIVE
   output$stacked_bar_relative <- renderPlot({
     pal <- pal_cat()
-    df <- data_topN() %>%
-      dplyr::group_by(time_start, cat2) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>%
-      dplyr::group_by(time_start) %>%
-      dplyr::mutate(perc = measurement_value / sum(measurement_value)) %>%
-      dplyr::ungroup() %>%
-      dplyr::mutate(
-        time_start = as.Date(substr(as.character(time_start), 1, 10)),
-        time_month = factor(format(time_start, "%Y-%m"),
-                            levels = sort(unique(format(time_start, "%Y-%m"))))
-      )
-    all_x <- levels(df$time_month)
-    step  <- max(1L, floor(length(all_x) / 12L))
-    x_breaks <- all_x[seq(1, length(all_x), by = step)]
-    ggplot2::ggplot(df, ggplot2::aes(x = time_month, y = perc, fill = cat2)) +
-      ggplot2::geom_bar(stat = "identity") +
+    df  <- monthly_sum()
+    brks <- scales::breaks_pretty(n = 12)(range(df$month_idx))
+    
+    ggplot2::ggplot(df, ggplot2::aes(x = month_idx, y = measurement_value, fill = cat2)) +
+      ggplot2::geom_col(width = 1, position = "fill") +            # <<< 100% + collées
       ggplot2::scale_fill_manual(values = pal, na.translate = FALSE) +
-      ggplot2::scale_x_discrete(breaks = x_breaks, guide = ggplot2::guide_axis(angle = 45)) +
+      ggplot2::scale_x_continuous(breaks = brks, labels = label_ym_from_idx,
+                                  expand = c(0, 0)) +
+      ggplot2::scale_y_continuous(labels = scales::percent) +
       ggplot2::labs(x = "Time", y = "Proportion", fill = value_of(category)) +
-      ggplot2::theme_minimal()
+      ggplot2::theme_minimal(base_size = 11) +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
   })
   
   # ---- TREEMAP (même palette catégories)

@@ -14,7 +14,6 @@ rmd/metadata_dcmi.rds
 Markdown/*
 !DOI.csv
 # 3) Réinclure uniquement les fichiers .qs voulus
-!data/global_catch_tunaatlasird_level2_1950_2023_15496164.qs
-!data/global_catch_tunaatlasird_level2_1950_2023_15496164_updated.qs
+!data/*_updated.qs
 !data/centroid.qs
 !renv/library

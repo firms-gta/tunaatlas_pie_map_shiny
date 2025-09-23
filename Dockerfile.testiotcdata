@@ -1,0 +1,20 @@
+FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
+
+COPY data/global_catch_tunaatlasird_level2_1950_2023_15496164_updated.qs /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
+
+# Script pour traiter et sauvegarder les données
+
+RUN R -e "\
+library(qs); \
+default_dataset <- qs::qread('data/default_dataset.qs'); \
+default_dataset <- subset(default_dataset, source_authority == 'IOTC'); \
+qs::qsave(default_dataset, 'data/default_dataset.qs'); \
+"
+
+# Définir le répertoire de travail
+
+WORKDIR /root/tunaatlas_pie_map_shiny
+
+# Lancer l'application avec le chemin explicite
+
+CMD ["R", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', host='0.0.0.0', port=3838)"]

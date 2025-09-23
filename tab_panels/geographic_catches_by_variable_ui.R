@@ -1,4 +1,3 @@
-# Un seul panneau compact : select dimension + slider + chart + map
 geographic_catches_by_variable <- function() {
   tagList(
     # Sélecteur de dimension (rempli côté server via output$dim_selector)

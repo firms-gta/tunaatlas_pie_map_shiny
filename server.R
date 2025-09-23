@@ -1006,7 +1006,7 @@ server <- function(input, output, session) {
   
   
   output$dynamic_panels <- renderUI({
-    geographic_catches_ui_compact() # ID fixe plus de lapply
+    geographic_catches_by_variable() # ID fixe plus de lapply
   })
   
   # Data and graphics outputs

@@ -1,0 +1,90 @@
+# .github/workflows/build.yml
+name: Build images (data -> app)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write   
+
+env:
+  REGISTRY: ghcr.io
+  DOCKER_BUILDKIT: 1
+  IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny
+  FINAL_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage
+  RENV_PATHS_ROOT: /root/.cache/R/renv
+
+jobs:
+  build-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute DOI.csv hash
+        id: datahash
+        run: echo "value=$(sha256sum DOI.csv | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push data artifact
+        uses: docker/build-push-action@v6
+        with:
+          file: Dockerfile.multistage-test-only-DOI-data            
+          target: doi-data                  # nom du stage "data" utilisé plus tard dans le Dockerfile.multistage-
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-latest
+          build-args: |
+            DOI_CSV_HASH=${{ steps.datahash.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # (Optionnel) Attente 1h a tester
+      # - name: Wait 1 hour
+      #   run: sleep 3600
+
+  build-app:
+    runs-on: ubuntu-latest
+    needs: build-data         # <-- execute job only if second build-data succeed
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Recalcule le hash pour tagger correctement la base data si DOI.csv change
+      - name: Compute DOI.csv hash
+        id: datahash
+        run: echo "value=$(sha256sum DOI.csv | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push app (uses data artifact)
+        uses: docker/build-push-action@v6
+        with:
+          file: Dockerfile.multistage-test-only-code             
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:app-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:latest
+          build-args: |
+            DATA_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

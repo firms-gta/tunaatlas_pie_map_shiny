@@ -1,5 +1,5 @@
 # === Étape 1 : builder (votre image complète) ===
-FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest AS builder
+FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage:latest AS builder
 WORKDIR /root/tunaatlas_pie_map_shiny
 RUN mkdir -p /tmp/flattened_lib \
  && cp -LR renv/library/R-4.2/x86_64-pc-linux-gnu/* /tmp/flattened_lib/
@@ -33,8 +33,10 @@ RUN find /usr/local/lib/R/site-library -name '*.so' \
 # 4) Nettoyage des docs/tests/vignettes
 RUN rm -rf /usr/local/lib/R/site-library/*/{tests,inst/doc,vignettes}
 
-# 5) Copier vos données & code (QS + Shiny)
 COPY --from=builder /root/tunaatlas_pie_map_shiny/data/*_updated.qs data/
+COPY --from=builder /root/tunaatlas_pie_map_shiny/data/centroids.qs data/
+COPY --from=builder /root/tunaatlas_pie_map_shiny/data/cl_areal_grid.qs data/
+COPY --from=builder /root/tunaatlas_pie_map_shiny/data/data.qs data/
 COPY --from=builder /root/tunaatlas_pie_map_shiny/R ./R
 COPY --from=builder /root/tunaatlas_pie_map_shiny/doc ./doc
 COPY --from=builder /root/tunaatlas_pie_map_shiny/rmd ./rmd

@@ -84,6 +84,8 @@ RUN bash -c "tail -n +2 DOI.csv | tr -d '\r' | \
         fi; \
     done"
 
+RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
+
 ENV RENV_PATHS_ROOT=/root/.cache/R/renv
 
 # Si en mode dev, changer pour le user rstudio
@@ -129,6 +131,8 @@ RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 
 COPY update_data.R ./update_data.R 
 COPY R/load_data.R ./R/load_data.R 
+
+RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 RUN Rscript update_data.R

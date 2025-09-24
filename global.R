@@ -1,3 +1,17 @@
+if ((Sys.getenv("MODE") == "dev" || isTRUE(getOption("use_reactlog"))) &&
+    requireNamespace("reactlog", quietly = TRUE)) {
+  
+  message("🔧 reactlog activé (mode dev)")
+  
+  options(
+    shiny.sanitize.errors = FALSE,   # montre les vrais messages dans l’UI
+    shiny.fullstacktrace = TRUE,     # stacktrace complète
+    shiny.trace = TRUE               # trace les invalidations dans la console
+  )
+  reactlog::reactlog_enable()
+} else {
+  message("reactlog no activated (prod or not installed)")
+}
 # Restore the renv environment, excluding shinyuieditor
 # renv::restore(exclude = c("shinyuieditor"), prompt= FALSE)
 # try(pool::dbDisconnect(pool))
@@ -9,6 +23,9 @@ require(here)
 require(sf)
 sf::sf_use_s2(FALSE)
 # tempory add
+`%||%` <- function(x, y) {
+  if (is.null(x)) y else x
+}
 unique_packages <- c("xts", "ggplot2",
   "RPostgreSQL", "here", "tools", "sf", "dplyr", "qs", 
   "futile.logger", "shinyjs", "tidyr", "bslib", 

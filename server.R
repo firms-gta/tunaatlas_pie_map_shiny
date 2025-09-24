@@ -2,6 +2,7 @@ server <- function(input, output, session) {
   map_enabled <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","1")=="1")
   observeEvent(input$map_enabled, map_enabled(input$map_enabled), ignoreInit = TRUE)
   
+  
   # map_enabled_pie <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","0")=="1")
   # observeEvent(input$map_enabled_pie, map_enabled_pie(input$map_enabled_pie), ignoreInit = TRUE)
   
@@ -16,6 +17,10 @@ server <- function(input, output, session) {
     wkt        = NULL       # dernier WKT utilisé (as.character)
   )
   
+  id_safe <- function(x) {
+    x <- gsub("[^A-Za-z0-9_\\-]", "_", x)
+    gsub("_+", "_", x)
+  }
   
   # prev/curr "vides" => TOUTES les valeurs de l'univers
   normalize_sel <- function(x, universe) {
@@ -119,7 +124,6 @@ server <- function(input, output, session) {
   # )
   
   observeEvent(dataset_choices$submit(), {
-    # browser()
     flog.info("Submit dataset clicked")
     
     selected_dataset <- dataset_choices$selected_dataset()
@@ -164,8 +168,9 @@ server <- function(input, output, session) {
       
     } else {
       if (stringr::str_detect(dataset_choices$selected_dataset(), "\\.csv$") | stringr::str_detect(dataset_choices$selected_dataset(), "\\.qs$")) {
+        showNotification("Loading big dataset, please wait. ", type = "message", duration = NULL, id = "loadingbigdata")
         base_filename <- tools::file_path_sans_ext(dataset_choices$selected_dataset())
-        qs_file_path <- file.path('data', paste0(base_filename, 'updated.qs'))
+        qs_file_path <- file.path('data', paste0(base_filename, '_updated.qs'))
         default_dataset <- as.data.frame(qs::qread(here::here(qs_file_path)) %>% dplyr::mutate(geographic_identifier = as.character(geographic_identifier)))%>% 
           dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
                                                      measurement_unit == "no" ~ "Number of fish",
@@ -178,8 +183,8 @@ server <- function(input, output, session) {
         req(pool())
         flog.info("Connection to DB accessible, querying the data")
         
-        # shinyjs::hide("main_content")
-        # shinyjs::show("loading_page")
+        shinyjs::hide("main_content")
+        shinyjs::show("loading_page")
         issueddata <- FALSE
         if(issueddata){
           selected_viewissued = "public.issueddata"
@@ -189,57 +194,65 @@ server <- function(input, output, session) {
         dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
         flog.info("Default dataset loaded")
       }
+      
       default_dataset <- dataset_not_init$data_for_filters
+      
+      res <- generate_dimensions_palettes(
+        df = default_dataset,
+        variable = variable,           # ton vecteur global des variables possibles
+        seed = 2643598
+      )
+      
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
       # qs::qsave(default_dataset, file = "default_dataset.qs")
       variable_to_display_ancient <- variable_to_display
       variable_to_display <- intersect(variable,colnames(default_dataset))
       # qs::qsave(variable_to_display, file = "variable_to_display")
       
+      palettes <- res$palettes
+      targettes <- res$targettes
+      variable_to_display <- res$variables
+      
       flog.info(sprintf("Variable to display %s:", variable_to_display))
-      for (col in variable_to_display) {
-        assign(paste0("target_", col), unique(default_dataset[[col]]), envir = .GlobalEnv)
-        flog.info(sprintf("Target assigned %s:", col))
-        
-      }
-      analysis_options <- lapply(variable_to_display, generate_analysis_option)
-      dimensions <- lapply(variable_to_display, generate_dimension)
-      targetVariables <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
+      # for (col in variable_to_display) {
+      #   assign(paste0("target_", col), unique(default_dataset[[col]]), envir = .GlobalEnv)
+      #   flog.info(sprintf("Target assigned %s:", col))
+      #   
+      # }
       
-      targetVariables2 <- lapply(targetVariables, as.data.frame)
-      
-      targettes <- setNames(lapply(variable_to_display, generate_target_variables), variable_to_display)
+      initial_data(dataset_not_init$initial_data)
       # # Initialize color palettes with a fixed seed for reproducibility
-      palettes <- initialiserPalettes(targetVariables2, seed = 2643598)
-      default_dataset <<- default_dataset
-      dimensions <<- dimensions
-      variable_to_display <<- variable_to_display
+      # default_dataset <<- default_dataset
+      # dimensions <<- dimensions
+      # variable_to_display <<- variable_to_display
       palettes <<- palettes
       flog.info("Palettes initialised session")
       flog.info("Reloading session")
       # source(here::here("tab_panels/sidebar_ui_with_variable_to_display.R"))
       # source(here::here("ui.R"))
       
-      initial_data(dataset_not_init$initial_data)
+      # initial_data(dataset_not_init$initial_data)
       data_for_filters(dataset_not_init$data_for_filters)
       flog.info(sprintf("colnames %s", colnames(default_dataset)))
+      # session$sendCustomMessage("soft-reload", list())
       # session$reload() # ne relance pas global.R
-      flog.info(sprintf("Launching global.R again"))
+      # session$sendCustomMessage("soft-reload", list(newtab = TRUE))
+      # flog.info(sprintf("Launching global.R again"))
       
       # shinyjs::refresh() #relance global.R
       
       # shinyjs::hide("loading_page")
-      
+      firstSubmit(TRUE)
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
       shinyjs::show("main_content")
       wkt(global_wkt)
-      
-      # shinyjs::delay(100,{
-      # shinyjs::click("submit")
-      data_for_filters_trigger(data_for_filters_trigger() + 1)
-      updateNavbarPage(session, "main", selected = "generaloverview")
-      
-      # })
+      # browser()
+      shinyjs::delay(100,{
+        
+        data_for_filters_trigger(data_for_filters_trigger() + 1)
+        updateNavbarPage(session, "main", selected = "generaloverview")
+        shinyjs::click("submit")
+      })
       
     }
     
@@ -274,156 +287,157 @@ server <- function(input, output, session) {
     req(data_for_filters())
     # browser()
     if(!secondSubmit()){
-      if(!firstSubmit()){
-      flog.info("Submit button clicked")
       # browser()
-      # req(initial_data())
-      current_wkt <- wkt()
-      if (!firstSubmit()) {
-        showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
-      }
-      flog.info("Filtering started")
-      df_base <- as.data.frame(req(data_for_filters()))
-      vars    <- variable_to_display
-      U <- lapply(vars, function(v) sort(unique(as.character(df_base[[v]]))))
-      names(U) <- vars
-      curr_sel <- setNames(vector("list", length(vars)), vars)
-      change   <- setNames(character(length(vars)),  vars)
-      for (v in vars) {
-        id <- paste0("select_", v)
-        curr_sel[[v]] <- normalize_sel(input[[id]], U[[v]])
-        
-        prev_sel <- rv_prev$sel[[v]]
-        # au tout premier passage, si pas de précédent, on considère "ALL"
-        if (is.null(prev_sel)) prev_sel <- U[[v]]
-        
-        change[[v]] <- classify_change(prev_sel, curr_sel[[v]], U[[v]])
-      }
-      
-      # --- plage temporelle courante (2 bornes)
-      if (!is.null(input$toggle_year) && !is.null(input$years)) {
-        if (isTRUE(input$toggle_year)) {
-          yrs <- sort(unique(as.integer(input$years)))   # sélection discrète
-          curr_time_range <- c(min(yrs), max(yrs))
-        } else {
-          curr_time_range <- c(as.integer(input$years[1]), as.integer(input$years[2])) # slider range
+      if(!firstSubmit()){
+        flog.info("Submit button clicked")
+        # browser()
+        # req(initial_data())
+        current_wkt <- wkt()
+        if (!firstSubmit()) {
+          showNotification("Filtering the data", type = "message", duration = NULL, id = "filtrage")
         }
-      } else {
-        all_years <- sort(unique(as.integer(df_base$year)))
-        curr_time_range <- c(min(all_years), max(all_years))
-      }
-      
-      prev_time_range <- rv_prev$time_range
-      change_year <- classify_range(prev_time_range, curr_time_range)
-      current_wkt <- as.character(wkt())
-      wkt_changed <- !identical(current_wkt, rv_prev$wkt)
-      
-      flog.info("Change map: %s", paste(sprintf("%s=%s", names(change), change), collapse=", "))
-      
-      # 3) choisir le point de départ
-      only_narrow_or_same <- all(change %in% c("same","narrow")) && change_year %in% c("same","narrow") && !wkt_changed
-      
-      if (!is.null(rv_prev$df) && only_narrow_or_same) {
-        df <- rv_prev$df
-        flog.info("Start from PREV df (cats+year narrow/same, wkt unchanged). n=%s", nrow(df))
-      } else {
-        df <- df_base
-        flog.info("Start from BASE df (widen/other or WKT change/cold start). n=%s", nrow(df))
-      }
-      
-      
-      vars_to_apply <- if (identical(df, rv_prev$df)) {
-        names(change)[change == "narrow"]
-      } else {
-        names(change)[change != "same"]
-      }
-      
-      apply_year_now <- !identical(df, rv_prev$df) || change_year != "same"
-      
-      # Si l’un des filtres catégoriels est "widen", on force réappliquer tout + année
-      if ("widen" %in% change) {
-        vars_to_apply <- variable_to_display
-        apply_year_now <- TRUE
-      }
-      
-      # catés
-      if (length(vars_to_apply)) {
-        for (v in vars_to_apply) {
-          sel <- normalize_sel(curr_sel[[v]], U[[v]])
-          if (length(sel)) {
-            col <- df[[v]]; if (is.factor(col)) col <- as.character(col)
-            df <- df[col %in% sel, , drop = FALSE]
+        flog.info("Filtering started")
+        df_base <- as.data.frame(req(data_for_filters()))
+        vars    <- variable_to_display
+        U <- lapply(vars, function(v) sort(unique(as.character(df_base[[v]]))))
+        names(U) <- vars
+        curr_sel <- setNames(vector("list", length(vars)), vars)
+        change   <- setNames(character(length(vars)),  vars)
+        for (v in vars) {
+          id <- paste0("select_", v)
+          curr_sel[[v]] <- normalize_sel(input[[id]], U[[v]])
+          
+          prev_sel <- rv_prev$sel[[v]]
+          # au tout premier passage, si pas de précédent, on considère "ALL"
+          if (is.null(prev_sel)) prev_sel <- U[[v]]
+          
+          change[[v]] <- classify_change(prev_sel, curr_sel[[v]], U[[v]])
+        }
+        
+        # --- plage temporelle courante (2 bornes)
+        if (!is.null(input$toggle_year) && !is.null(input$years)) {
+          if (isTRUE(input$toggle_year)) {
+            yrs <- sort(unique(as.integer(input$years)))   # sélection discrète
+            curr_time_range <- c(min(yrs), max(yrs))
+          } else {
+            curr_time_range <- c(as.integer(input$years[1]), as.integer(input$years[2])) # slider range
           }
-          if (!nrow(df)) break
+        } else {
+          all_years <- sort(unique(as.integer(df_base$year)))
+          curr_time_range <- c(min(all_years), max(all_years))
         }
-      }
-      
-      # temps
-      if (apply_year_now && nrow(df)) {
-        yrs_set <- seq(curr_time_range[1], curr_time_range[2])
-        df <- df[df$year %in% yrs_set, , drop = FALSE]
-      }
-      
-      
-      final_filtered_data <- df
-      flog.info("Rows after categorical filters: %d", nrow(df))
-      
-      
-      
-      # if(firstSubmit()){
-      #   if("t/HOOKS" %in% unique(final_filtered_data$measurement_unit)){
-      #     final_filtered_data <- final_filtered_data %>% dplyr::filter(measurement_unit %in% c("t/HOOKS"))
-      #   } else if("ALB - Albacore"%in% unique(final_filtered_data$species))
-      #     final_filtered_data <- final_filtered_data %>%
-      #       dplyr::filter(species == "ALB - Albacore") %>% dplyr::filter(measurement_unit %in% c("t"))
-      
-      flog.info("Rows after all categorical filters: %d", nrow(final_filtered_data))
-      
-      
-      # flog.info("Nombre de lignes après filtrage: %d", nrow(filtered_data))
-      
-      flog.info("Change map: %s | year=%s | wkt_changed=%s",
-                paste(sprintf("%s=%s", names(change), change), collapse=", "),
-                change_year, wkt_changed)
-      
-      
-      if(as.character(current_wkt) != global_wkt){
-        # Your spatial filtering code
-        sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
-        final_filtered_data <- final_filtered_data %>% 
-          dplyr::inner_join(initial_data() %>% dplyr::select(-c(gridtype, X,Y)), by = c("geographic_identifier"))
-        # Step 1: Select unique geographic identifiers and their associated geometries
-        unique_id_geom <- final_filtered_data %>%
-          dplyr::select(geographic_identifier, geom) %>%
-          dplyr::distinct()
         
-        # Step 2: Convert to sf object
-        unique_id_geom <- st_as_sf(unique_id_geom)
-        st_crs(unique_id_geom) <- st_crs(sf_wkt)
+        prev_time_range <- rv_prev$time_range
+        change_year <- classify_range(prev_time_range, curr_time_range)
+        current_wkt <- as.character(wkt())
+        wkt_changed <- !identical(current_wkt, rv_prev$wkt)
         
-        # Step 3: Perform spatial intersection
-        within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
+        flog.info("Change map: %s", paste(sprintf("%s=%s", names(change), change), collapse=", "))
         
-        # Step 4: Filter based on spatial intersection
-        unique_id_geom_filtered <- unique_id_geom[rowSums(within_unique) > 0, ]
+        # 3) choisir le point de départ
+        only_narrow_or_same <- all(change %in% c("same","narrow")) && change_year %in% c("same","narrow") && !wkt_changed
         
-        # Step 5: Filter the original data
-        final_filtered_data <- final_filtered_data %>%
-          dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
-        final_filtered_data$geom_wkt <- NULL
-        final_filtered_data$geom <- NULL
-      }
-      
-      if (!firstSubmit()) {
-        showNotification("Filtering finished", type = "message", id = "filtrage")
-      }
-      
-      rv_prev$df  <- final_filtered_data
-      rv_prev$sel <- curr_sel
-      rv_prev$time_range <- curr_time_range
-      rv_prev$wkt        <- current_wkt
-      
-      flog.info("Filtering finished")
+        if (!is.null(rv_prev$df) && only_narrow_or_same) {
+          df <- rv_prev$df
+          flog.info("Start from PREV df (cats+year narrow/same, wkt unchanged). n=%s", nrow(df))
+        } else {
+          df <- df_base
+          flog.info("Start from BASE df (widen/other or WKT change/cold start). n=%s", nrow(df))
+        }
+        
+        
+        vars_to_apply <- if (identical(df, rv_prev$df)) {
+          names(change)[change == "narrow"]
+        } else {
+          names(change)[change != "same"]
+        }
+        
+        apply_year_now <- !identical(df, rv_prev$df) || change_year != "same"
+        
+        # Si l’un des filtres catégoriels est "widen", on force réappliquer tout + année
+        if ("widen" %in% change) {
+          vars_to_apply <- variable_to_display
+          apply_year_now <- TRUE
+        }
+        
+        # catés
+        if (length(vars_to_apply)) {
+          for (v in vars_to_apply) {
+            sel <- normalize_sel(curr_sel[[v]], U[[v]])
+            if (length(sel)) {
+              col <- df[[v]]; if (is.factor(col)) col <- as.character(col)
+              df <- df[col %in% sel, , drop = FALSE]
+            }
+            if (!nrow(df)) break
+          }
+        }
+        
+        # temps
+        if (apply_year_now && nrow(df)) {
+          yrs_set <- seq(curr_time_range[1], curr_time_range[2])
+          df <- df[df$year %in% yrs_set, , drop = FALSE]
+        }
+        
+        
+        final_filtered_data <- df
+        flog.info("Rows after categorical filters: %d", nrow(df))
+        
+        
+        
+        # if(firstSubmit()){
+        #   if("t/HOOKS" %in% unique(final_filtered_data$measurement_unit)){
+        #     final_filtered_data <- final_filtered_data %>% dplyr::filter(measurement_unit %in% c("t/HOOKS"))
+        #   } else if("ALB - Albacore"%in% unique(final_filtered_data$species))
+        #     final_filtered_data <- final_filtered_data %>%
+        #       dplyr::filter(species == "ALB - Albacore") %>% dplyr::filter(measurement_unit %in% c("t"))
+        
+        flog.info("Rows after all categorical filters: %d", nrow(final_filtered_data))
+        
+        
+        # flog.info("Nombre de lignes après filtrage: %d", nrow(filtered_data))
+        
+        flog.info("Change map: %s | year=%s | wkt_changed=%s",
+                  paste(sprintf("%s=%s", names(change), change), collapse=", "),
+                  change_year, wkt_changed)
+        
+        
+        if(as.character(current_wkt) != global_wkt){
+          # Your spatial filtering code
+          sf_wkt <- st_as_sfc(as.character(current_wkt), crs = 4326)
+          final_filtered_data <- final_filtered_data %>% 
+            dplyr::inner_join(initial_data() %>% dplyr::select(-c(gridtype, X,Y)), by = c("geographic_identifier"))
+          # Step 1: Select unique geographic identifiers and their associated geometries
+          unique_id_geom <- final_filtered_data %>%
+            dplyr::select(geographic_identifier, geom) %>%
+            dplyr::distinct()
+          
+          # Step 2: Convert to sf object
+          unique_id_geom <- st_as_sf(unique_id_geom)
+          st_crs(unique_id_geom) <- st_crs(sf_wkt)
+          
+          # Step 3: Perform spatial intersection
+          within_unique <- st_within(unique_id_geom, sf_wkt, sparse = FALSE)
+          
+          # Step 4: Filter based on spatial intersection
+          unique_id_geom_filtered <- unique_id_geom[rowSums(within_unique) > 0, ]
+          
+          # Step 5: Filter the original data
+          final_filtered_data <- final_filtered_data %>%
+            dplyr::filter(geographic_identifier %in% unique_id_geom_filtered$geographic_identifier)
+          final_filtered_data$geom_wkt <- NULL
+          final_filtered_data$geom <- NULL
+        }
+        
+        if (!firstSubmit()) {
+          showNotification("Filtering finished", type = "message", id = "filtrage")
+        }
+        
+        rv_prev$df  <- final_filtered_data
+        rv_prev$sel <- curr_sel
+        rv_prev$time_range <- curr_time_range
+        rv_prev$wkt        <- current_wkt
+        
+        flog.info("Filtering finished")
       } else {
         final_filtered_data <- as.data.frame(req(data_for_filters()))
       }
@@ -475,7 +489,7 @@ server <- function(input, output, session) {
   variable_choicesintersect <- reactive({
     req(data_for_filters())
     
-    priority_vars <- c("source_authority", "species", "gear_type", "fishing_fleet")
+    priority_vars <- c("source_authority","species", "gear_type", "fishing_fleet")
     
     variable_choicesintersect <- intersect(colnames(data_for_filters()), variable_to_display)
     
@@ -698,56 +712,103 @@ server <- function(input, output, session) {
   })
   
   newwkttest <- reactiveVal(NULL)
-  global_topn <- reactiveVal(5)
   
-  global_topn <- reactive({
-    req(input$variable_tabs)
-    input[[paste0("topn_", input$variable_tabs)]]
-  })
+  # global_topn <- reactive({
+  #   sel_id <- req(input$variable_tabs)         # renvoie l’ID sûr (pas le label)
+  #   val <- input[[paste0("topn_", sel_id)]]
+  #   if (is.null(val) || !is.numeric(val) || val < 1) 5L else as.integer(val)
+  # })
   
-  observeEvent(input$variable_tabs, {
-    req(input$variable_tabs)
-    sel <- input$variable_tabs
-    df <- data_without_geom()
-    ncat <- length(unique(df[[sel]]))
-    old_val <- global_topn()
-    if (is.null(old_val)) old_val <- 1
-    
-    output[[paste0("slider_ui_", sel)]] <- renderUI({
-      sliderInput(
-        inputId = paste0("topn_", sel),
-        # on emballe le texte du label dans un span dont on contrôle la taille
-        label = tags$span(style = "font-size:14px;", 
-                          paste("Number of", sel, "to display")),
-        min = 1,
-        max = max(ncat, 1),
-        value = min(old_val, ncat), 
-        round = TRUE
-      )
-    })
-    
-    
-    
-  })
+  # observeEvent(list(input$variable_tabs, data_without_geom()), {
+  #   df     <- req(data_without_geom())
+  #   vars   <- req(variable_choicesintersect())
+  #   ids    <- id_safe(vars)
+  #   
+  #   sel_id  <- req(input$variable_tabs)             # ID sûr de l’onglet actif
+  #   sel_var <- vars[match(sel_id, ids)]             # vrai nom de colonne (label)
+  #   
+  #   # nb catégories dans la colonne réelle (robuste)
+  #   ncat <- if (sel_var %in% names(df)) length(unique(stats::na.omit(df[[sel_var]]))) else 1L
+  #   
+  #   slider_id <- paste0("topn_", sel_id)
+  #   old_val <- isolate(input[[slider_id]])
+  #   if (is.null(old_val) || !is.numeric(old_val) || old_val < 1) old_val <- 5L
+  #   
+  #   output[[paste0("slider_ui_", sel_id)]] <- renderUI({
+  #     sliderInput(
+  #       inputId = slider_id,
+  #       label   = tags$span(style = "font-size:14px;", paste("Number of", sel_var, "to display")),
+  #       min     = 1L,
+  #       max     = max(ncat, 1L),
+  #       value   = min(as.integer(old_val), as.integer(ncat)),
+  #       step    = 1L,
+  #       round   = TRUE
+  #     )
+  #   })
+  # }, ignoreInit = FALSE)
+  
   
   # observe({
   #   sel <- input$variable_tabs
   #   req(sel)
   #   val <- input[[paste0("topn_", sel)]]
   #   if (!is.null(val)) global_topn(val)
-  # })
-  # 
+  # }) # utile pour nouveau dataset met à jour les sliders
   
-  # Pie charts
-  lapply(variable_to_display, function(variable) {
-    local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
-      variable <- variable
-      flog.info(sprintf("categoryglobalchartsever for %s", variable))
-      categoryGlobalChartServer(paste0(variable, "_chart"), category  = variable, reactive_data = data_without_geom, 
-                                global_topn = global_topn, 
-                                variable_to_display = variable_to_display)
-    })
+  output$dim_selector <- renderUI({
+    vars <- req(variable_choicesintersect())
+    selectInput("active_dim", "Dimension", choices = vars, selected = vars[[1]])
   })
+  
+  active_dim <- reactive({ req(input$active_dim) })
+  
+  output$slider_ui <- renderUI({
+    df <- req(data_without_geom())
+    var <- req(active_dim())
+    ncat <- if (var %in% names(df)) length(unique(stats::na.omit(df[[var]]))) else 1L
+    sliderInput("topn", paste("Number of", var, "to display"),
+                min = 1, max = max(1L, ncat), value = min(5L, ncat), step = 1)
+  })
+  global_topn <- reactive({ input$topn %||% 5L })
+  
+  # active_dim <- reactive({ req(input$active_dim) })
+  categoryGlobalChartServer(
+    id                  = "chart",
+    category            = active_dim,              # réactif
+    reactive_data       = data_without_geom,
+    global_topn         = global_topn,
+    variable_to_display = variable_choicesintersect # réactif OK (module gère les 2 cas)
+  ) # mieux que un lapply des tabs. 
+  
+  pieMapTimeSeriesServer(
+    id                = "map",
+    category_var      = active_dim,        
+    data              = final_filtered_data,
+    data_witout_geom_ = data_without_geom,
+    submitTrigger     = submitTrigger,
+    geom              = initial_data,
+    newwkttest        = newwkttest,
+    global_topn       = global_topn,
+    map_mode_val      = rv_map_mode,
+    enabled           = map_enabled
+  )  # mieux que un lapply des tabs. 
+  
+  # for (o in c("stacked_bar_split","stacked_bar_relative","stacked_bar_absolute","pie_chart","treemap_chart")) {
+  #   try(outputOptions(output, paste0("chart-", o), suspendWhenHidden = FALSE), silent = TRUE)
+  # }
+  # for (o in c("map_plot","map_legend","map_stats","timeseries_plot")) {
+  #   try(outputOptions(output, paste0("map-", o), suspendWhenHidden = FALSE), silent = TRUE)
+  # }
+  # # Pie charts
+  # lapply(variable_to_display, function(variable) {
+  #   local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
+  #     variable <- variable
+  #     flog.info(sprintf("categoryglobalchartsever for %s", variable))
+  #     categoryGlobalChartServer(paste0(variable, "_chart"), category  = variable, reactive_data = data_without_geom, 
+  #                               global_topn = global_topn, 
+  #                               variable_to_display = variable_to_display)
+  #   })
+  # })
   
   # lapply(variable_to_display, function(variable) {
   #   local({ # to isolate each variable in its own environement, otherwise sometimes its only one of the variables that is displayed
@@ -765,24 +826,24 @@ server <- function(input, output, session) {
   # })
   # Map and time series
   # Loop through variables and set up the modules
-  lapply(variable_to_display, function(variable) {
-    local({
-      variable <- variable
-      flog.info(sprintf("pieMapTimeSeriesServer for %s", variable))
-      pieMapTimeSeriesServer(
-        paste0(variable, "_module"), 
-        category_var = variable, 
-        data = final_filtered_data, 
-        data_witout_geom_ = data_without_geom,
-        submitTrigger = submitTrigger, 
-        geom = initial_data,
-        newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
-        global_topn = global_topn, 
-        map_mode_val     = rv_map_mode,
-        enabled = map_enabled
-      )
-    })
-  })
+  # lapply(variable_to_display, function(variable) {
+  #   local({
+  #     variable <- variable
+  #     flog.info(sprintf("pieMapTimeSeriesServer for %s", variable))
+  #     pieMapTimeSeriesServer(
+  #       paste0(variable, "_module"), 
+  #       category_var = variable, 
+  #       data = final_filtered_data, 
+  #       data_witout_geom_ = data_without_geom,
+  #       submitTrigger = submitTrigger, 
+  #       geom = initial_data,
+  #       newwkttest = newwkttest,  # Pass the single newwkt reactive value to each module
+  #       global_topn = global_topn, 
+  #       map_mode_val     = rv_map_mode,
+  #       enabled = map_enabled
+  #     )
+  #   })
+  # })
   
   # output$map_area_pie_map <- renderUI({ # deprecated
   #   if (isTRUE(map_enabled())) {
@@ -945,20 +1006,8 @@ server <- function(input, output, session) {
   
   
   output$dynamic_panels <- renderUI({
-    req(variable_choicesintersect())
-    panel_list <- lapply(variable_choicesintersect(), function(column_name) {
-      nav_panel(
-        title = column_name,
-        geographic_catches_by_variable_ui(column_name)
-      )
-    })
-    
-    do.call(navset_card_tab, c(
-      list(id = "variable_tabs"),
-      panel_list
-    ))
+    geographic_catches_by_variable() # ID fixe plus de lapply
   })
-  
   
   # Data and graphics outputs
   output$sql_query_init <- renderText({ 

@@ -35,11 +35,18 @@ pieMapTimeSeriesUI <- function(id) {
 
 
 ## Server: split data by first digit of geographic_identifier
-pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, submitTrigger, newwkttest, geom, global_topn, map_mode_val, enabled = reactive(TRUE)) {
+pieMapTimeSeriesServer <- function(id, category_var, data, data_witout_geom_, submitTrigger,
+                                   newwkttest, geom, global_topn, map_mode_val, enabled = reactive(TRUE)) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+    
+    value_of <- function(x) if (is.function(x)) x() else x   # <- helper
+    
     zoom_level <- reactiveVal(1)
-    target_var <- getTarget(category_var)
+    
+    target_var <- reactive({
+      getTarget(value_of(category_var))
+    })
     require(promises); require(future)
     
     observe({
@@ -69,86 +76,66 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     
     # keep existing reactive and palette
     data_pie_map <- reactive({
-      req(enabled())
-      req(data_witout_geom_(),global_topn(), req(data()))
-      flog.info("Generating pie map data for category: %s", category_var)
-      # observeEvent(input$n_vars, {
-      #   global_topn(input$n_vars)
-      # }, ignoreInit = TRUE)
-      dt <- as.data.table(data_witout_geom_())
+      req(enabled(), data_witout_geom_(), global_topn(), data())
+      flog.info("Generating pie map data for category: %s", value_of(category_var))
+      dt <- data.table::as.data.table(data_witout_geom_())
       
-      # 1) Sum by category & geoid
+      cat_col <- value_of(category_var)     # "species", "gear_type", etc.
+      
+      # 1) Somme par catégorie & geoid
       dt <- dt[, .(measurement_value = sum(measurement_value)),
-               by = c(category_var, "geographic_identifier")]
+               by = c(cat_col, "geographic_identifier")]
       
-      # 2) Compute global totals per category and pick top N
-      totals <- dt[, .(grand = sum(measurement_value)), by = category_var][
-        order(-grand)
-      ]
-      
+      # 2) Top N global
+      totals <- dt[, .(grand = sum(measurement_value)), by = cat_col][order(-grand)]
       N <- global_topn()
+      topn <- head(totals[[cat_col]], N)
       
-      topn <- head(totals[[category_var]], N)
+      # 3) Recode "Other"
+      dt[!(get(cat_col) %in% topn), (cat_col) := "Other"]
       
-      # 3) Recode everything else as "Other"
-      dt[!(get(category_var) %in% topn), (category_var) := "Other"]
-      
-      # 4) Re‐aggregate now that we have “Other”
+      # 4) Regrouper
       dt <- dt[, .(measurement_value = round(sum(measurement_value))),
-               by = c(category_var, "geographic_identifier")]
+               by = c(cat_col, "geographic_identifier")]
       
-      # 5) Pivot to wide
-      dt_wide <- dcast(
-        dt,
-        geographic_identifier ~ get(category_var),
-        value.var = "measurement_value",
-        fill = 0
-      )
+      # 5) Wide
+      fml <- stats::as.formula(paste("geographic_identifier ~", cat_col))
+      dt_wide <- data.table::dcast(dt, fml, value.var = "measurement_value", fill = 0)
       
-      # 6) Total column
-      dt_wide[, total := rowSums(.SD),
-              .SDcols = setdiff(names(dt_wide), "geographic_identifier")]
+      # 6) Total
+      data_cols <- setdiff(names(dt_wide), "geographic_identifier")
+      dt_wide[, total := rowSums(.SD), .SDcols = data_cols]
       
-      # # 7) Join geometry no nedd ? 
-      # geom_df <- geom() %>% dplyr::select(-gridtype)
-      # st_as_sf(dplyr::left_join(dt_wide, geom_df, by = "geographic_identifier"))
-      geom_df <- dt_wide %>% dplyr::left_join(centroids, by = c("geographic_identifier")) 
+      # 7) Join centroids (X,Y) -> retourne bien quelque chose !
+      geom_df <- dt_wide %>%
+        dplyr::left_join(centroids, by = c("geographic_identifier"))
+      
+      geom_df   # <- IMPORTANT: retourner l’objet
     })
-    la_palette_all <- reactive({
-      pal <- getPalette(category_var)
-      pal[names(pal) %in% colnames(data_pie_map())]
+
+    la_palette <- reactive({
+      req(enabled())
+      pal <- getPalette(value_of(category_var))     # prend une string
+      cols <- colnames(data_pie_map())
+      pal[names(pal) %in% cols]
     })
     
-    # Split into two datasets
     data_pie_map_5deg <- reactive({
       req(enabled())
       df <- data_pie_map()
-      
-      df <- df[ substr(df$geographic_identifier, 1, 1) == "6", ]
-      
+      df <- df[substr(df$geographic_identifier, 1, 1) == "6", ]
       df$Y <- as.numeric(df$Y)
-      
       df
     })
-    
     
     data_pie_map_1deg <- reactive({
       req(enabled())
       df <- data_pie_map()
-      df <- df[substr(df$geographic_identifier,1,1) == "5", ]
-      
+      df <- df[substr(df$geographic_identifier, 1, 1) == "5", ]
       df$Y <- as.numeric(df$Y)
-      
       df
     })
     
-    # Palettes for each
-    la_palette <- reactive({
-      req(enabled())
-      la_palette
-      pal <- getPalette(category_var)
-      pal[names(pal) %in% colnames(data_pie_map())]
-    })
     
     ### UI renderers for each map
     output$map_ui_5deg <- renderUI({
@@ -172,33 +159,31 @@ pieMapTimeSeriesServer <- function(id, category_var, data,data_witout_geom_, sub
     ### Static plots
     render_pie_plot <- function(df, pal) {
       req(enabled())
-      if(!exists("world")){
+      if (!exists("world", inherits = TRUE)) {
         flog.info("Reloading world")
         world <<- rnaturalearth::ne_countries(scale = "small", returnclass = "sf")
-        flog.info("World reloaded")
-        
       }
       plot_df <- df %>% dplyr::select(-geographic_identifier) %>%
-        mutate(r = scales::rescale(total, to = c(1,5), from = range(total, na.rm=TRUE)))
+        dplyr::mutate(r = scales::rescale(total, to = c(1,5), from = range(total, na.rm=TRUE)))
       pie_cols <- setdiff(names(plot_df), c("X","Y","total","r"))
-      ggplot() +
-        geom_sf(data = world, fill = "antiquewhite", color = "grey70", size = 0.2) +
-        scatterpie::geom_scatterpie(aes(x = X, y = Y, r = r), data = plot_df,
+      ggplot2::ggplot() +
+        ggplot2::geom_sf(data = world, fill = "antiquewhite", color = "grey70", linewidth = 0.2) +
+        scatterpie::geom_scatterpie(ggplot2::aes(x = X, y = Y, r = r), data = plot_df,
                                     cols = pie_cols, colour = NA, alpha = 0.8) +
-        scale_fill_manual(values = pal) + coord_sf() + theme_minimal()
+        ggplot2::scale_fill_manual(values = pal) +
+        ggplot2::coord_sf() + ggplot2::theme_minimal()
     }
     
     output$pie_map_plot_5deg <- renderPlot({
-      req(enabled())
-      req(input$map_mode == "static")
+      req(enabled(), input$map_mode == "static")
       render_pie_plot(data_pie_map_5deg(), la_palette())
     })
     
     output$pie_map_plot_1deg <- renderPlot({
-      req(enabled())
-      req(input$map_mode == "static")
+      req(enabled(), input$map_mode == "static")
       render_pie_plot(data_pie_map_1deg(), la_palette())
     })
+    
     
     data_pie_map_combined <- reactive({
       req(enabled())

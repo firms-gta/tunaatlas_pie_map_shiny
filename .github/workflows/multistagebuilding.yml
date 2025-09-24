@@ -132,7 +132,7 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: .
-          file: Dockerfile.slim
+          file: Dockerfile.multistage
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:slim

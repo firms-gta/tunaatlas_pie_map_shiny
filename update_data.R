@@ -28,12 +28,18 @@ download_and_rename <- function(doi, filename, data_dir = "data") {
   
   # 1) Si déjà renommé, on ne fait rien
   if (file.exists(renamed) | file.exists(updated) | file.exists(renamedinqs)) {
-    message("📦 found renamed file: ", renamed)
-    if(file.exists(renamed)){
-    return(renamed)
-    } else if (file.exists(renamedinqs)){
+    
+    invisible(lapply(c(renamed, updated, renamedinqs), function(f) {
+      if (file.exists(f)) message("📦 found file: ", f)
+    }))
+    
+    if (file.exists(renamedinqs)){
       return(renamedinqs)
-    }
+    } 
+    
+    if(file.exists(renamed) | file.exists(updated)){
+    return(renamed)
+      }
   }
   
   # 2) Si le brut existe, on le renomme

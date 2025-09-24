@@ -88,7 +88,7 @@ FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:doi-data-latest AS doi-data
 
 FROM app AS final
 WORKDIR /root/tunaatlas_pie_map_shiny
-COPY --from=doi-data /artifacts/data/*_updated.qs /root/tunaatlas_pie_map_shiny/data/
+COPY --from=doi-data /artifacts/data/ /root/tunaatlas_pie_map_shiny/data/
 COPY --from=doi-data /artifacts/DOI.csv /root/tunaatlas_pie_map_shiny/DOI.csv
 
 RUN R -q -e "print(list.files('data'));"

@@ -32,7 +32,7 @@ RUN find /usr/local/lib/R/site-library -name '*.so' \
 
 # 4) Nettoyage des docs/tests/vignettes
 RUN rm -rf /usr/local/lib/R/site-library/*/{tests,inst/doc,vignettes}
-# 5) Copier vos données & code (QS + Shiny)
+
 COPY --from=builder /root/tunaatlas_pie_map_shiny/data/*_updated.qs data/
 COPY --from=builder /root/tunaatlas_pie_map_shiny/R ./R
 COPY --from=builder /root/tunaatlas_pie_map_shiny/doc ./doc

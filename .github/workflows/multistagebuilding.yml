@@ -11,7 +11,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: firms-gta/tunaatlas_pie_map_shiny               
+  IMAGE: firms-gta/tunaatlas_pie_map_shiny
   FINAL_IMAGE: firms-gta/tunaatlas_pie_map_shiny-multistage
   CACHE_REF: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-buildcache
   DOCKER_BUILDKIT: 1
@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Buildx (shared builder)
+      - name: Setup Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -31,7 +31,6 @@ jobs:
           driver-opts: |
             network=host
           buildkitd-flags: --debug
-          endpoint: gta-shared-builder
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -47,7 +46,7 @@ jobs:
       - name: Build & push data artifact
         uses: docker/build-push-action@v6
         with:
-          builder: gta-shared-builder
+          builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: Dockerfile.multistage-test-only-DOI-data
           target: doi-data
@@ -68,11 +67,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Buildx (reuse builder)
+      - name: Setup Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
         with:
           install: true
-          endpoint: gta-shared-builder
+          driver-opts: |
+            network=host
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -81,14 +82,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Compute DOI.csv hash (again)
+      - name: Compute DOI.csv hash
         id: datahash
         run: echo "value=$(sha256sum DOI.csv | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Build & push app (uses data artifact)
         uses: docker/build-push-action@v6
         with:
-          builder: gta-shared-builder
+          builder: ${{ steps.buildx.outputs.name }}
           context: .
           file: Dockerfile.multistage-test-only-code
           push: true
@@ -111,11 +112,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Buildx (reuse builder)
+      - name: Setup Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
         with:
           install: true
-          endpoint: gta-shared-builder
+          driver-opts: |
+            network=host
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -124,12 +127,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build slim (from Dockerfile.multistage)
+      - name: Build slim (from Dockerfile.slim)
         uses: docker/build-push-action@v6
         with:
-          builder: gta-shared-builder
+          builder: ${{ steps.buildx.outputs.name }}
           context: .
-          file: Dockerfile.multistage
+          file: Dockerfile.slim
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:slim

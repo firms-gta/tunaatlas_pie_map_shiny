@@ -138,10 +138,8 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:slim
           cache-from: |
             type=registry,ref=${{ env.CACHE_REF }}
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE }}:slim
           cache-to: |
             type=registry,ref=${{ env.CACHE_REF }},mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE }}:slim,mode=max
 
       - name: Show local image sizes
         run: docker images | sed -n '1,20p'

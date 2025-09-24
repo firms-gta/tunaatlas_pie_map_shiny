@@ -23,9 +23,10 @@ download_and_rename <- function(doi, filename, data_dir = "data") {
   
   raw_path    <- file.path(data_dir, filename)
   renamed     <- file.path(data_dir, paste0(base, "_", record_id, ".", ext))
+  updated     <- file.path(data_dir, paste0(base, "_", record_id, "_updated.qs"))
   
   # 1) Si déjà renommé, on ne fait rien
-  if (file.exists(renamed)) {
+  if (file.exists(renamed) | file.exists(updated)) {
     message("📦 found renamed file: ", renamed)
     return(renamed)
   }

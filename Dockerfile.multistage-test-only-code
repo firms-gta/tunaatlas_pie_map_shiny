@@ -1,10 +1,9 @@
 ARG MODE=prod
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-rocker/r-ver:4.2.3}
+FROM rocker/r-ver:4.2.3 AS app
 
-LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
+LABEL maintainer="Grasset Bastien <bastien.grasset@ird.fr>"
 
-# Install system libraries
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
@@ -42,50 +41,6 @@ RUN install2.r --error --skipinstalled --ncpus -1 httpuv
 
 WORKDIR /root/tunaatlas_pie_map_shiny
 
-RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org'); \
-                remotes::install_version('qs', version = '0.26.3', upgrade = 'never', repos = 'https://cran.r-project.org'); \
-                remotes::install_version('jsonlite', version = '1.9.1', upgrade = 'never', repos = 'https://cran.r-project.org'); \
-                remotes::install_version('readr', version = '2.1.5', upgrade = 'never', repos = 'https://cran.r-project.org')"
-
-ARG DOI_CSV_HASH
-RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
-
-RUN mkdir -p data 
-COPY DOI.csv ./DOI.csv
-COPY data/ ./data/
-
-RUN dos2unix DOI.csv && sed -i -e '$a\' DOI.csv
-
-RUN bash -c "tail -n +2 DOI.csv | tr -d '\r' | \
-    while IFS=',' read -r DOI FILE; do \
-        RECORD_ID=\$(echo \"\$DOI\" | awk -F/ '{print \$NF}' | sed 's/zenodo\\.//'); \
-        EXT=\${FILE##*.}; BASE=\${FILE%.*}; \
-        ORIGINAL=\"./data/\$FILE\"; \
-        if [ \"\$EXT\" = \"qs\" ]; then \
-            TARGET=\"./data/\${BASE}_\${RECORD_ID}.qs\"; \
-        else \
-            TARGET_CSV=\"./data/\${BASE}_\${RECORD_ID}.\${EXT}\"; \
-            TARGET=\"\${TARGET_CSV%.*}.qs\"; \
-        fi; \
-        URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
-        if [ -f \"\$TARGET\" ]; then continue; fi; \
-        if [ -f \"\$ORIGINAL\" ]; then \
-            if [ \"\$EXT\" = \"qs\" ]; then cp \"\$ORIGINAL\" \"\$TARGET\"; \
-            else cp \"\$ORIGINAL\" \"\$TARGET_CSV\"; fi; \
-        else \
-            if [ \"\$EXT\" = \"qs\" ]; then \
-                wget -nv -O \"\$TARGET\" \"\$URL\" || { echo \"\$FILE\" >> DOI_failed.csv; continue; } \
-            else \
-                wget -nv -O \"\$TARGET_CSV\" \"\$URL\" || { echo \"\$FILE\" >> DOI_failed.csv; continue; } \
-            fi; \
-        fi; \
-        if [ \"\$EXT\" != \"qs\" ]; then \
-            Rscript -e \"qs::qsave(readr::read_csv('\$TARGET_CSV'), '\$TARGET')\" && rm -f \"\$TARGET_CSV\"; \
-        fi; \
-    done"
-
-RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
-
 ENV RENV_PATHS_ROOT=/root/.cache/R/renv
 
 # Si en mode dev, changer pour le user rstudio
@@ -113,16 +68,31 @@ COPY renv/settings.json renv/
 
 #using remotes incase cache keep ancient renv version
 
-RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org')"
+RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org'); \
+                remotes::install_version('jsonlite', version = '1.9.1', upgrade = 'never', repos = 'https://cran.r-project.org')"
+                
 RUN Rscript -e "remotes::install_version('renv', version = jsonlite::fromJSON('renv.lock')\$Packages[['renv']]\$Version, repos = 'https://cran.r-project.org')"
 
-COPY renv/library/ renv/library/
+COPY renv/library/R-4.2 renv/library/R-4.2
+
+RUN R -q -e "print(list.files(renv::paths\$library(), recursive=FALSE)); renv::status();"
 
 # Restore renv packages
 RUN R -e "renv::activate()" 
 # Used to setup the environment (with the path cache) carreful keep in multiple lines
 RUN R -e "renv::restore()" 
 RUN R -e "renv::repair()" 
+
+
+FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:doi-data-latest AS doi-data
+
+FROM app AS final
+WORKDIR /root/tunaatlas_pie_map_shiny
+COPY --from=doi-data /artifacts/data/*_updated.qs /root/tunaatlas_pie_map_shiny/data/
+COPY --from=doi-data /artifacts/DOI.csv /root/tunaatlas_pie_map_shiny/DOI.csv
+COPY --from=doi-data /artifacts/*cl_areal_grid.csv /root/tunaatlas_pie_map_shiny/data/
+
+RUN R -q -e "print(list.files('data'));"
 
 COPY testing_loading_of_all_packages.R ./testing_loading_of_all_packages.R
 RUN R -e "source('testing_loading_of_all_packages.R')"
@@ -131,8 +101,6 @@ RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 
 COPY update_data.R ./update_data.R 
 COPY R/load_data.R ./R/load_data.R 
-
-RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 RUN Rscript update_data.R

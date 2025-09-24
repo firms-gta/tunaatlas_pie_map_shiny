@@ -3976,6 +3976,17 @@
       ],
       "Hash": "6069eb2a6597963eae0605c1875ff14c"
     },
+    "reactlog": {
+      "Package": "reactlog",
+      "Version": "1.1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "jsonlite"
+      ],
+      "Hash": "745883ab4ed03f20593cd27334712eaf"
+    },
     "readODS": {
       "Package": "readODS",
       "Version": "2.2.0",

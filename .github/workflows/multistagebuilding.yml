@@ -124,12 +124,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build slim (from Dockerfile.slim)
+      - name: Build slim (from Dockerfile.multistage)
         uses: docker/build-push-action@v6
         with:
           builder: gta-shared-builder
           context: .
-          file: Dockerfile.slim
+          file: Dockerfile.multistage
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:slim

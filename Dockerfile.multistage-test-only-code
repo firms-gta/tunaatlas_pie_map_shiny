@@ -96,7 +96,7 @@ RUN R -q -e "print(list.files('data'));"
 COPY testing_loading_of_all_packages.R ./testing_loading_of_all_packages.R
 RUN R -e "source('testing_loading_of_all_packages.R')"
 
-RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
+RUN R -q -e "print(list.files('data'));"
 
 COPY update_data.R ./update_data.R 
 COPY R/load_data.R ./R/load_data.R 

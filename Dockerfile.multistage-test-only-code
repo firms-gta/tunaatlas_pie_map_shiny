@@ -84,7 +84,7 @@ RUN R -e "renv::restore()"
 RUN R -e "renv::repair()" 
 
 
-FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:doi-data-latest AS doi-data
+FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage:doi-data-latest AS doi-data
 
 FROM app AS final
 WORKDIR /root/tunaatlas_pie_map_shiny

@@ -35,10 +35,10 @@ download_and_rename <- function(doi, filename, data_dir = "data") {
     
     if (file.exists(renamedinqs)){
       return(renamedinqs)
-    } 
+    }
     
     if(file.exists(renamed) | file.exists(updated)){
-    return(renamed)
+    return(updated)
       }
   }
   

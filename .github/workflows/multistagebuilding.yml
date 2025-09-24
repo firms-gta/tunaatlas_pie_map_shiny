@@ -11,9 +11,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: firms-gta/tunaatlas_pie_map_shiny
   FINAL_IMAGE: firms-gta/tunaatlas_pie_map_shiny-multistage
-  CACHE_REF: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-buildcache
+  CACHE_REF: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage-buildcache
   DOCKER_BUILDKIT: 1
   RENV_PATHS_ROOT: /root/.cache/R/renv
 
@@ -52,8 +51,8 @@ jobs:
           target: doi-data
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-latest
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:doi-data-latest
           build-args: |
             DOI_CSV_HASH=${{ steps.datahash.outputs.value }}
           cache-from: |
@@ -95,9 +94,9 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:app-${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:latest
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:app-latest
           build-args: |
-            DATA_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
+            DATA_IMAGE=${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
             MODE=prod
             RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }}
             BRANCH=${{ github.ref_name }}
@@ -135,7 +134,7 @@ jobs:
           file: Dockerfile.multistage
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:slim
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:slim
           cache-from: |
             type=registry,ref=${{ env.CACHE_REF }}
           cache-to: |

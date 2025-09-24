@@ -1,5 +1,5 @@
 # === Étape 1 : builder (votre image complète) ===
-FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage:latest AS builder
+FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage:app-latest AS builder
 WORKDIR /root/tunaatlas_pie_map_shiny
 RUN mkdir -p /tmp/flattened_lib \
  && cp -LR renv/library/R-4.2/x86_64-pc-linux-gnu/* /tmp/flattened_lib/

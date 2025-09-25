@@ -56,9 +56,9 @@ jobs:
           build-args: |
             DOI_CSV_HASH=${{ steps.datahash.outputs.value }}
           cache-from: |
-            type=registry,ref=${{ env.CACHE_REF }}
+            type=registry,ref=${{ env.CACHE_REF }}:doi-data-latest
           cache-to: |
-            type=registry,ref=${{ env.CACHE_REF }},mode=max
+            type=registry,ref=${{ env.CACHE_REF }}:doi-data-latest,mode=max
 
   build-app:
     runs-on: ubuntu-latest
@@ -101,9 +101,9 @@ jobs:
             RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }}
             BRANCH=${{ github.ref_name }}
           cache-from: |
-            type=registry,ref=${{ env.CACHE_REF }}
+            type=registry,ref=${{ env.CACHE_REF }}:app-latest
           cache-to: |
-            type=registry,ref=${{ env.CACHE_REF }},mode=max
+            type=registry,ref=${{ env.CACHE_REF }}:app-latest,mode=max
 
   build-slim:
     runs-on: ubuntu-latest
@@ -136,9 +136,9 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:slim
           cache-from: |
-            type=registry,ref=${{ env.CACHE_REF }}
+            type=registry,ref=${{ env.CACHE_REF }}:slim
           cache-to: |
-            type=registry,ref=${{ env.CACHE_REF }},mode=max
+            type=registry,ref=${{ env.CACHE_REF }}:slim,mode=max
 
       - name: Show local image sizes
         run: docker images | sed -n '1,20p'

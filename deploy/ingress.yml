@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myshiny-ingress
+spec:
+  tls:
+  - hosts: 
+    - myshiny.kub.sspcloud.fr
+  rules:
+    - host: myshiny.kub.sspcloud.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: myshiny-service
+                port:
+                  number: 80

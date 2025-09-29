@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.2.3",
+    "Version": "4.5.0",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -302,15 +302,15 @@
     },
     "RPostgreSQL": {
       "Package": "RPostgreSQL",
-      "Version": "0.7-6",
+      "Version": "0.7-8",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "DBI",
         "R",
         "methods"
       ],
-      "Hash": "2b19ca61d09de709c87816cc9b5942a7"
+      "Hash": "b16ccdf1009ea27f8545f443593155d0"
     },
     "RPostgres": {
       "Package": "RPostgres",
@@ -3050,15 +3050,15 @@
     },
     "maps": {
       "Package": "maps",
-      "Version": "3.4.1",
+      "Version": "3.4.3",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "graphics",
         "utils"
       ],
-      "Hash": "644a88fb036ab50cee0b715394eefa1a"
+      "Hash": "fd17b77df6edadecf2fe08382c5a2eb1"
     },
     "maptiles": {
       "Package": "maptiles",

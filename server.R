@@ -51,7 +51,6 @@ server <- function(input, output, session) {
     "other"
   }
   
-  
   variable_to_display <<- data$variable_to_display
   targettes <<- data$targettes
   palettes <<- data$palettes
@@ -81,7 +80,7 @@ server <- function(input, output, session) {
   data_loaded <- reactiveVal(FALSE)
   show <- reactiveVal(FALSE)
   data_for_filters_trigger <- reactiveVal(0)
-  variable_to_display_react <- reactiveVal(variable_to_display)
+  # variable_to_display_react <- reactiveVal(variable_to_display)
   wkt <- reactiveVal(global_wkt)
   # Show main content after loading
   
@@ -194,9 +193,10 @@ server <- function(input, output, session) {
           selected_viewissued = "public.shinyeffort"
         }
         dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
+        shinyjs::click("submit")
         flog.info("Default dataset loaded")
       }
-      
+
       default_dataset <- dataset_not_init$data_for_filters
       
       res <- generate_dimensions_palettes(
@@ -207,8 +207,8 @@ server <- function(input, output, session) {
       
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
       # qs::qsave(default_dataset, file = "default_dataset.qs")
-      variable_to_display_ancient <- variable_to_display
-      variable_to_display <- intersect(variable,colnames(default_dataset))
+      # variable_to_display_ancient <- variable_to_display
+      # variable_to_display <- intersect(variable,colnames(default_dataset))
       # qs::qsave(variable_to_display, file = "variable_to_display")
       
       palettes <- res$palettes
@@ -248,7 +248,6 @@ server <- function(input, output, session) {
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
       shinyjs::show("main_content")
       wkt(global_wkt)
-      # browser()
       shinyjs::delay(100,{
         
         data_for_filters_trigger(data_for_filters_trigger() + 1)
@@ -297,7 +296,6 @@ server <- function(input, output, session) {
       # browser()
       if(!firstSubmit()){
         flog.info("Submit button clicked")
-        # browser()
         # req(initial_data())
         current_wkt <- wkt()
         if (!firstSubmit()) {
@@ -305,12 +303,16 @@ server <- function(input, output, session) {
         }
         flog.info("Filtering started")
         df_base <- as.data.frame(req(data_for_filters()))
+        
+        if(exists("variable_choicesintersect")){
+          variable_to_display <- variable_choicesintersect()
+        }
+        
         vars    <- variable_to_display
         U <- lapply(vars, function(v) sort(unique(as.character(df_base[[v]]))))
         names(U) <- vars
         curr_sel <- setNames(vector("list", length(vars)), vars)
         change   <- setNames(character(length(vars)),  vars)
-        
         for (v in vars) {
           id <- paste0("select_", v)
           # défaut spécifique pour measurement_unit
@@ -455,9 +457,11 @@ server <- function(input, output, session) {
         final_filtered_data <- as.data.frame(req(data_for_filters()))
           if("t/HOOKS" %in% unique(final_filtered_data$measurement_unit)){
             final_filtered_data <- final_filtered_data %>% dplyr::filter(measurement_unit %in% c("t/HOOKS"))
-          } else {
-            final_filtered_data <- final_filtered_data %>%  dplyr::filter(measurement_unit %in% c("t"))}
-      }
+          } else if ("t" %in% unique(final_filtered_data$measurement_unit)) {
+            final_filtered_data <- final_filtered_data %>%  dplyr::filter(measurement_unit %in% c("t"))
+            } else if ("Tons" %in% unique(final_filtered_data$measurement_unit)) {
+        final_filtered_data <- final_filtered_data %>%  dplyr::filter(measurement_unit %in% c("Tons"))}
+    }
       submitTrigger(FALSE)
       
       if(firstSubmit()){secondSubmit(TRUE)}
@@ -472,10 +476,6 @@ server <- function(input, output, session) {
       
       df <- as.data.frame(req(data_for_filters()))
       u_all <- sort(unique(as.character(df$measurement_unit)))
-      
-      .pick_tons_or_first <- function(u) {
-        if ("t" %in% u) "t" else if ("Tons" %in% u) "Tons" else u[1]
-      }
       
       sel_units <- input$select_measurement_unit
       if (is.null(sel_units) || !length(sel_units)) {
@@ -503,20 +503,6 @@ server <- function(input, output, session) {
   #   result
   # })
   
-  
-  
-  # Reactive function for data without geometry
-  data_without_geom <- reactive({
-    req(final_filtered_data())
-    flog.info("Removing geometry columns from data")
-    
-    # Remove 'geom_wkt' and 'geom' columns in one step
-    data_without_geom <- final_filtered_data()[, setdiff(names(final_filtered_data()), c("geom_wkt", "geom"))]
-    
-    flog.info("Geometry columns removed")
-    data_without_geom
-  })
-  
   variable_choicesintersect <- reactive({
     req(data_for_filters())
     
@@ -529,6 +515,17 @@ server <- function(input, output, session) {
     flog.info("variable_choicesintersect %s", variable_choicesintersect)
     
     variable_choicesintersect
+  })
+  
+  # Reactive function for data without geometry
+  data_without_geom <- reactive({
+    req(final_filtered_data())
+    flog.info("Removing geometry columns from data")
+    # Remove 'geom_wkt' and 'geom' columns in one step
+    data_without_geom <- final_filtered_data()[, setdiff(names(final_filtered_data()), c("geom_wkt", "geom"))]
+    
+    flog.info("Geometry columns removed")
+    data_without_geom
   })
   
   original_data <- reactiveVal()
@@ -749,15 +746,21 @@ server <- function(input, output, session) {
   #   updateSelectInput(session, "select_species_name", selected = species_name)
   # })
   
-  lapply(variable_to_display, function(variable) {
-    observeEvent(input[[paste0("all_", variable)]], {
-      flog.info(paste("Select all", variable))
-      req(data_for_filters())
-      all_values <- data_for_filters() %>% dplyr::select(!!sym(variable)) %>% dplyr::distinct() %>%
-        pull(!!sym(variable))
-      updateSelectInput(session, paste0("select_", variable), selected = all_values)
+  observe({
+    vars <- req(variable_choicesintersect())  
+    lapply(vars, function(variable) {
+      observeEvent(input[[paste0("all_", variable)]], {
+        flog.info(paste("Select all", variable))
+        req(data_for_filters())
+        all_values <- data_for_filters() %>%
+          dplyr::select(!!sym(variable)) %>%
+          dplyr::distinct() %>%
+          pull(!!sym(variable))
+        updateSelectInput(session, paste0("select_", variable), selected = all_values)
+      })
     })
   })
+  
   
   newwkttest <- reactiveVal(NULL)
   

@@ -13,8 +13,7 @@ jobs:
           fetch-depth: 0
       - name: Préparer toutes les branches/tags locaux
         run: |
-          # Récupère toutes les branches/tags du repo GitHub dans des refs locales (pas refs/remotes/*)
-          git fetch --prune origin "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*"
+          git fetch --prune origin "+refs/heads/*:refs/remotes/origin/*" "+refs/tags/*:refs/tags/*"
       - name: Push branches + tags vers GitLab (avec prune)
         run: |
           git remote add mirror https://oauth2:${{ secrets.TOKEN_MIRROR_GITHUB_ON_GITLAB }}@forge.ird.fr/marbec/globaltunaatlas/tunaatlas_pie_map_shiny.git

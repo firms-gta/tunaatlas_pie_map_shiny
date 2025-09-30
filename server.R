@@ -733,10 +733,35 @@ server <- function(input, output, session) {
   
   observeEvent(input$major_tunas, {
     flog.info("Select major tunas")
-    req(data_for_filters())
-    species <- data_for_filters() %>% dplyr::select(species)%>% dplyr::filter(species %in% c("YFT - Yellowfin tuna", "SKJ - Skipjack tuna", "ALB - Albacore", "BET - Bigeye tuna", "SBF - Southern bluefin tuna"))  %>% dplyr::distinct() %>% pull(species)
-    updateSelectInput(session, "select_species", selected = species)
+    req(data_for_filters(), input$select_species)
+    
+    df <- data_for_filters()
+    choices <- sort(unique(as.character(na.omit(df$species))))
+    wanted  <- c(
+      "YFT - Yellowfin tuna", "SKJ - Skipjack tuna",
+      "ALB - Albacore", "BET - Bigeye tuna", "SBF - Southern bluefin tuna"
+    )
+    sel <- intersect(choices, wanted)
+    if (!length(sel)) {
+      showNotification("No 'major tuna' in this dataset", type = "warning")
+      return(invisible(NULL))
+    }
+    
+    shinyWidgets::updatePickerInput(
+      session, inputId = "select_species",
+      choices  = choices,
+      selected = sel
+    )
+    
+    firstSubmit(FALSE)
+    secondSubmit(FALSE)
+    
+    # auto-submit une fois que le client a bien appliqué la MAJ
+    later::later(function() submitTrigger(TRUE), 0.05)
+    # Alternative sans {later} :
+    # shinyjs::delay(50, submitTrigger(TRUE))
   })
+  
   
   # observeEvent(input$major_tunas_name, {
   #   flog.info("Select major tunas")

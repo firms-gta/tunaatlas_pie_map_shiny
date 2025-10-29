@@ -5,7 +5,7 @@ server <- function(input, output, session) {
   
   # map_enabled_pie <- reactiveVal(Sys.getenv("APP_ENABLE_MAP","0")=="1")
   # observeEvent(input$map_enabled_pie, map_enabled_pie(input$map_enabled_pie), ignoreInit = TRUE)
-  
+  unit_warn_shown <- reactiveVal(FALSE)
   rv_masks <- reactiveValues(
     vals  = list(),  # dernières sélections observées par variable
     masks = list()   # dernier masque logique calculé par variable
@@ -23,11 +23,12 @@ server <- function(input, output, session) {
   }
   
   # prev/curr "vides" => TOUTES les valeurs de l'univers
-  normalize_sel <- function(x, universe) {
-    x <- if (is.null(x) || !length(x) || all(is.na(x)) || identical(x, "NA")) universe else as.character(x)
-    # sécurités
-    x <- unique(as.character(x))
-    x
+  normalize_sel <- function(x, universe, default = universe) {
+    if (is.null(x) || !length(x) || all(is.na(x)) || identical(x, "NA")) {
+      unique(as.character(default))
+    } else {
+      unique(as.character(as.character(x)))
+    }
   }
   
   classify_change <- function(prev, curr, universe) {
@@ -49,7 +50,6 @@ server <- function(input, output, session) {
     if (all(prev_set %in% curr_set)) return("widen")
     "other"
   }
-  
   
   variable_to_display <<- data$variable_to_display
   targettes <<- data$targettes
@@ -74,12 +74,13 @@ server <- function(input, output, session) {
   selected_dataset <- reactiveVal()
   selected_gridtype <- reactiveVal()
   selected_measurement_unit <- reactiveVal()
+  unit_banner_inserted  <- reactiveVal(FALSE)
   initial_data <- reactiveVal()
   data_for_filters <- reactiveVal()
   data_loaded <- reactiveVal(FALSE)
   show <- reactiveVal(FALSE)
   data_for_filters_trigger <- reactiveVal(0)
-  variable_to_display_react <- reactiveVal(variable_to_display)
+  # variable_to_display_react <- reactiveVal(variable_to_display)
   wkt <- reactiveVal(global_wkt)
   # Show main content after loading
   
@@ -192,9 +193,10 @@ server <- function(input, output, session) {
           selected_viewissued = "public.shinyeffort"
         }
         dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
+        shinyjs::click("submit")
         flog.info("Default dataset loaded")
       }
-      
+
       default_dataset <- dataset_not_init$data_for_filters
       
       res <- generate_dimensions_palettes(
@@ -205,8 +207,8 @@ server <- function(input, output, session) {
       
       flog.info(sprintf("Columns for new dataset loaded %s", colnames(default_dataset)))
       # qs::qsave(default_dataset, file = "default_dataset.qs")
-      variable_to_display_ancient <- variable_to_display
-      variable_to_display <- intersect(variable,colnames(default_dataset))
+      # variable_to_display_ancient <- variable_to_display
+      # variable_to_display <- intersect(variable,colnames(default_dataset))
       # qs::qsave(variable_to_display, file = "variable_to_display")
       
       palettes <- res$palettes
@@ -246,7 +248,6 @@ server <- function(input, output, session) {
       showNotification("Dataframe loaded", type = "message", id = "loadingbigdata")
       shinyjs::show("main_content")
       wkt(global_wkt)
-      # browser()
       shinyjs::delay(100,{
         
         data_for_filters_trigger(data_for_filters_trigger() + 1)
@@ -282,15 +283,19 @@ server <- function(input, output, session) {
     }
   })
   
+  .pick_tons_or_first <- function(u) {
+    if ("t" %in% u) "t" else if ("Tons" %in% u) "Tons" else u[1]
+  }
+  
   final_filtered_data <- eventReactive(input$submit, {
     req(wkt())
     req(data_for_filters())
+    
     # browser()
     if(!secondSubmit()){
       # browser()
       if(!firstSubmit()){
         flog.info("Submit button clicked")
-        # browser()
         # req(initial_data())
         current_wkt <- wkt()
         if (!firstSubmit()) {
@@ -298,6 +303,11 @@ server <- function(input, output, session) {
         }
         flog.info("Filtering started")
         df_base <- as.data.frame(req(data_for_filters()))
+        
+        if(exists("variable_choicesintersect")){
+          variable_to_display <- variable_choicesintersect()
+        }
+        
         vars    <- variable_to_display
         U <- lapply(vars, function(v) sort(unique(as.character(df_base[[v]]))))
         names(U) <- vars
@@ -305,12 +315,12 @@ server <- function(input, output, session) {
         change   <- setNames(character(length(vars)),  vars)
         for (v in vars) {
           id <- paste0("select_", v)
-          curr_sel[[v]] <- normalize_sel(input[[id]], U[[v]])
+          # défaut spécifique pour measurement_unit
+          def_v <- if (v == "measurement_unit") .pick_tons_or_first(U[[v]]) else U[[v]]
+          curr_sel[[v]] <- normalize_sel(input[[id]], U[[v]], default = def_v)
           
           prev_sel <- rv_prev$sel[[v]]
-          # au tout premier passage, si pas de précédent, on considère "ALL"
-          if (is.null(prev_sel)) prev_sel <- U[[v]]
-          
+          if (is.null(prev_sel)) prev_sel <- def_v  # idem : ne pas partir sur "tout"
           change[[v]] <- classify_change(prev_sel, curr_sel[[v]], U[[v]])
         }
         
@@ -350,6 +360,11 @@ server <- function(input, output, session) {
           names(change)[change == "narrow"]
         } else {
           names(change)[change != "same"]
+        }
+        
+        if (!identical(df, rv_prev$df)) {
+          # On redémarre depuis la BASE -> on impose d’appliquer le filtre d’unités
+          vars_to_apply <- union(vars_to_apply, "measurement_unit")
         }
         
         apply_year_now <- !identical(df, rv_prev$df) || change_year != "same"
@@ -440,7 +455,13 @@ server <- function(input, output, session) {
         flog.info("Filtering finished")
       } else {
         final_filtered_data <- as.data.frame(req(data_for_filters()))
-      }
+          if("t/HOOKS" %in% unique(final_filtered_data$measurement_unit)){
+            final_filtered_data <- final_filtered_data %>% dplyr::filter(measurement_unit %in% c("t/HOOKS"))
+          } else if ("t" %in% unique(final_filtered_data$measurement_unit)) {
+            final_filtered_data <- final_filtered_data %>%  dplyr::filter(measurement_unit %in% c("t"))
+            } else if ("Tons" %in% unique(final_filtered_data$measurement_unit)) {
+        final_filtered_data <- final_filtered_data %>%  dplyr::filter(measurement_unit %in% c("Tons"))}
+    }
       submitTrigger(FALSE)
       
       if(firstSubmit()){secondSubmit(TRUE)}
@@ -452,9 +473,19 @@ server <- function(input, output, session) {
     } else {
       secondSubmit(FALSE)
       flog.info("Second submit to false")
-      final_filtered_data <- data_for_filters()
+      
+      df <- as.data.frame(req(data_for_filters()))
+      u_all <- sort(unique(as.character(df$measurement_unit)))
+      
+      sel_units <- input$select_measurement_unit
+      if (is.null(sel_units) || !length(sel_units)) {
+        sel_units <- .pick_tons_or_first(u_all)
+      }
+      
+      final_filtered_data <- df[df$measurement_unit %in% sel_units, , drop = FALSE]
       final_filtered_data
     }
+    
   }, ignoreNULL = FALSE)
   
   # Calculate the centroid of the map
@@ -472,20 +503,6 @@ server <- function(input, output, session) {
   #   result
   # })
   
-  
-  
-  # Reactive function for data without geometry
-  data_without_geom <- reactive({
-    req(final_filtered_data())
-    flog.info("Removing geometry columns from data")
-    
-    # Remove 'geom_wkt' and 'geom' columns in one step
-    data_without_geom <- final_filtered_data()[, setdiff(names(final_filtered_data()), c("geom_wkt", "geom"))]
-    
-    flog.info("Geometry columns removed")
-    data_without_geom
-  })
-  
   variable_choicesintersect <- reactive({
     req(data_for_filters())
     
@@ -498,6 +515,17 @@ server <- function(input, output, session) {
     flog.info("variable_choicesintersect %s", variable_choicesintersect)
     
     variable_choicesintersect
+  })
+  
+  # Reactive function for data without geometry
+  data_without_geom <- reactive({
+    req(final_filtered_data())
+    flog.info("Removing geometry columns from data")
+    # Remove 'geom_wkt' and 'geom' columns in one step
+    data_without_geom <- final_filtered_data()[, setdiff(names(final_filtered_data()), c("geom_wkt", "geom"))]
+    
+    flog.info("Geometry columns removed")
+    data_without_geom
   })
   
   original_data <- reactiveVal()
@@ -602,7 +630,7 @@ server <- function(input, output, session) {
         flog.info("Creation initial de chaque filtre")
         
         df_all <- as.data.frame(req(data_for_filters()))
-        vars   <- req(variable_choicesintersect())
+        vars   <- setdiff(req(variable_choicesintersect()), "measurement_unit")
         
         lapply(vars, function(variable) {
           local({
@@ -626,6 +654,23 @@ server <- function(input, output, session) {
               )
             })
           })
+        })
+        
+        output[["select_measurement_unit"]] <- renderUI({
+          choices_init <- sort(unique(df_all[["measurement_unit"]]))
+          preselect <- .pick_tons_or_first(as.character(choices_init))
+          shinyWidgets::pickerInput(
+            inputId  = "select_measurement_unit",
+            label    = "Select measurement unit",
+            choices  = choices_init,
+            multiple = TRUE,
+            selected = if (!is.null(preselect)) preselect else choices_init,
+            options  = list(
+              `actions-box` = TRUE, `live-search` = TRUE, `size` = 100,
+              `selected-text-format` = "count > 5"
+            ),
+            width = "100%"
+          )
         })
       }
     }, ignoreInit = FALSE)
@@ -688,10 +733,35 @@ server <- function(input, output, session) {
   
   observeEvent(input$major_tunas, {
     flog.info("Select major tunas")
-    req(data_for_filters())
-    species <- data_for_filters() %>% dplyr::select(species)%>% dplyr::filter(species %in% c("YFT - Yellowfin tuna", "SKJ - Skipjack tuna", "ALB - Albacore", "BET - Bigeye tuna", "SBF - Southern bluefin tuna"))  %>% dplyr::distinct() %>% pull(species)
-    updateSelectInput(session, "select_species", selected = species)
+    req(data_for_filters(), input$select_species)
+    
+    df <- data_for_filters()
+    choices <- sort(unique(as.character(na.omit(df$species))))
+    wanted  <- c(
+      "YFT - Yellowfin tuna", "SKJ - Skipjack tuna",
+      "ALB - Albacore", "BET - Bigeye tuna", "SBF - Southern bluefin tuna"
+    )
+    sel <- intersect(choices, wanted)
+    if (!length(sel)) {
+      showNotification("No 'major tuna' in this dataset", type = "warning")
+      return(invisible(NULL))
+    }
+    
+    shinyWidgets::updatePickerInput(
+      session, inputId = "select_species",
+      choices  = choices,
+      selected = sel
+    )
+    
+    firstSubmit(FALSE)
+    secondSubmit(FALSE)
+    
+    # auto-submit une fois que le client a bien appliqué la MAJ
+    later::later(function() submitTrigger(TRUE), 0.05)
+    # Alternative sans {later} :
+    # shinyjs::delay(50, submitTrigger(TRUE))
   })
+  
   
   # observeEvent(input$major_tunas_name, {
   #   flog.info("Select major tunas")
@@ -701,15 +771,21 @@ server <- function(input, output, session) {
   #   updateSelectInput(session, "select_species_name", selected = species_name)
   # })
   
-  lapply(variable_to_display, function(variable) {
-    observeEvent(input[[paste0("all_", variable)]], {
-      flog.info(paste("Select all", variable))
-      req(data_for_filters())
-      all_values <- data_for_filters() %>% dplyr::select(!!sym(variable)) %>% dplyr::distinct() %>%
-        pull(!!sym(variable))
-      updateSelectInput(session, paste0("select_", variable), selected = all_values)
+  observe({
+    vars <- req(variable_choicesintersect())  
+    lapply(vars, function(variable) {
+      observeEvent(input[[paste0("all_", variable)]], {
+        flog.info(paste("Select all", variable))
+        req(data_for_filters())
+        all_values <- data_for_filters() %>%
+          dplyr::select(!!sym(variable)) %>%
+          dplyr::distinct() %>%
+          pull(!!sym(variable))
+        updateSelectInput(session, paste0("select_", variable), selected = all_values)
+      })
     })
   })
+  
   
   newwkttest <- reactiveVal(NULL)
   
@@ -870,7 +946,7 @@ server <- function(input, output, session) {
   observeEvent(input$resetWkt, {
     showModal(modalDialog(
       title = "Changing spatial coverage",
-      "Attention, you are about to change the geographic coverage of the filter. Are you sure?",
+      "Warning, you are about to change the geographic coverage of the filter. Are you sure?",
       footer = tagList(
         modalButton("No"),
         actionButton("yes_button", "Yes")
@@ -1129,6 +1205,72 @@ server <- function(input, output, session) {
     updateNavbarPage(session, "main", selected = "generaloverview")
     shinyjs::click("dataset_and_db_module-submitDataset") 
   })
+  
+  # Remettre le “droit d’afficher” le toast à chaque changement de dataset
+  observeEvent(dataset_choices$submit(), {
+    unit_warn_shown(FALSE)
+  }, ignoreInit = TRUE)
+  
+  # Helper pour lister proprement les unités
+  units_in_df <- function(df) {
+    u <- unique(na.omit(as.character(df$measurement_unit)))
+    sort(u)
+  }
+  
+  observeEvent(TRUE, {
+    if (!isTRUE(unit_banner_inserted())) {
+      insertUI(
+        selector = "head", where = "beforeEnd",
+        ui = tags$style(HTML("
+#unit_banner{
+  position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:9999;
+  display:none; max-width:480px;
+  background:#fff9e6; border:1px solid #f3d98b; border-left:4px solid #f0ad4e;
+  padding:10px 14px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.12);
+  font-size:15px; line-height:1.3;font-size: 15px;
+}
+#unit_banner .title{ font-weight:600; margin-right:6px; }
+#unit_banner .close{ float:right; margin-left:8px; cursor:pointer; 
+  border:0; background:transparent; font-size:18px; line-height:1; }
+"))
+      )
+      insertUI(
+        selector = "body", where = "beforeEnd",
+        ui = tags$div(
+          id = "unit_banner",
+          tags$button(id="unit_banner_close", class="close", "×", title="Dismiss"),
+          tags$span(class="title", "Units notice"),
+          tags$span(id="unit_banner_text", "Multiple measurement units detected.")
+        )
+      )
+      
+      # Clic sur : on cache le bandeau (il reviendra au prochain final_filtered_data)
+      observeEvent(input$unit_banner_close, {
+        shinyjs::hide("unit_banner")
+      }, ignoreInit = TRUE)
+      
+      unit_banner_inserted(TRUE)
+    }
+  }, once = TRUE, ignoreInit = FALSE)
+  
+  # Réagit à chaque nouveau final_filtered_data() :
+  observeEvent(final_filtered_data(), {
+    df <- req(final_filtered_data())
+    u  <- units_in_df(df)
+    
+    if (length(u) <= 1L) {
+      shinyjs::hide("unit_banner")
+      return(invisible(NULL))
+    }
+    
+    shinyjs::html(
+      id   = "unit_banner_text",
+      html = sprintf("This subset contains multiple measurement units: %s",
+                     paste(u, collapse = ", "))
+    )
+    shinyjs::show("unit_banner")
+  }, ignoreInit = TRUE)
+  
   
   
   reportModuleServer(

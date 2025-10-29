@@ -1,0 +1,21 @@
+name: Mirror to Forge IRD
+on:
+  push:
+    branches: ["**"]
+    tags: ["**"]
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Préparer toutes les branches/tags locaux
+        run: |
+          git fetch --prune origin "+refs/heads/*:refs/remotes/origin/*" "+refs/tags/*:refs/tags/*"
+      - name: Push branches + tags vers GitLab (avec prune)
+        run: |
+          git remote add mirror https://oauth2:${{ secrets.TOKEN_MIRROR_GITHUB_ON_GITLAB }}@forge.ird.fr/marbec/globaltunaatlas/tunaatlas_pie_map_shiny.git
+          git push --prune mirror +refs/heads/*:refs/heads/* +refs/tags/*:refs/tags/*
+

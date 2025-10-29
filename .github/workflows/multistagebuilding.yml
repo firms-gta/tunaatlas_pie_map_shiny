@@ -1,4 +1,3 @@
-# .github/workflows/build.yml
 name: Build images (data -> app)
 
 on:
@@ -8,13 +7,13 @@ on:
 
 permissions:
   contents: read
-  packages: write   
+  packages: write
 
 env:
   REGISTRY: ghcr.io
+  FINAL_IMAGE: firms-gta/tunaatlas_pie_map_shiny-multistage
+  CACHE_REF: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage-buildcache
   DOCKER_BUILDKIT: 1
-  IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny
-  FINAL_IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage
   RENV_PATHS_ROOT: /root/.cache/R/renv
 
 jobs:
@@ -24,7 +23,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver-opts: |
+            network=host
+          buildkitd-flags: --debug
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -40,29 +45,34 @@ jobs:
       - name: Build & push data artifact
         uses: docker/build-push-action@v6
         with:
-          file: Dockerfile.multistage-test-only-DOI-data            
-          target: doi-data                  # nom du stage "data" utilisé plus tard dans le Dockerfile.multistage-
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: Dockerfile.multistage-test-only-DOI-data
+          target: doi-data
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-latest
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:doi-data-latest
           build-args: |
             DOI_CSV_HASH=${{ steps.datahash.outputs.value }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # (Optionnel) Attente 1h a tester
-      # - name: Wait 1 hour
-      #   run: sleep 3600
+          cache-from: |
+            type=registry,ref=${{ env.CACHE_REF }}:doi-data-latest
+          cache-to: |
+            type=registry,ref=${{ env.CACHE_REF }}:doi-data-latest,mode=max
 
   build-app:
     runs-on: ubuntu-latest
-    needs: build-data         # <-- execute job only if second build-data succeed
+    needs: build-data
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver-opts: |
+            network=host
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -71,7 +81,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Recalcule le hash pour tagger correctement la base data si DOI.csv change
       - name: Compute DOI.csv hash
         id: datahash
         run: echo "value=$(sha256sum DOI.csv | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
@@ -79,12 +88,57 @@ jobs:
       - name: Build & push app (uses data artifact)
         uses: docker/build-push-action@v6
         with:
-          file: Dockerfile.multistage-test-only-code             
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: Dockerfile.multistage-test-only-code
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:app-${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:latest
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:app-latest
           build-args: |
-            DATA_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            DATA_IMAGE=${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:doi-data-${{ steps.datahash.outputs.value }}
+            MODE=prod
+            RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }}
+            BRANCH=${{ github.ref_name }}
+          cache-from: |
+            type=registry,ref=${{ env.CACHE_REF }}:app-latest
+          cache-to: |
+            type=registry,ref=${{ env.CACHE_REF }}:app-latest,mode=max
+
+  build-slim:
+    runs-on: ubuntu-latest
+    needs: build-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver-opts: |
+            network=host
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build slim (from Dockerfile.slim)
+        uses: docker/build-push-action@v6
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: Dockerfile.multistage
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.FINAL_IMAGE }}:slim
+          cache-from: |
+            type=registry,ref=${{ env.CACHE_REF }}:slim
+          cache-to: |
+            type=registry,ref=${{ env.CACHE_REF }}:slim,mode=max
+
+      - name: Show local image sizes
+        run: docker images | sed -n '1,20p'

@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myshiny-deployment
+  labels: myshiny
+spec:
+  replicas: 1
+  selector:
+    app: myshiny
+  template:
+    metadata:
+      app: myshiny
+    spec:
+      containers:
+        - name: myshiny
+          image: firms-gta/tunaatlas_pie_map_shiny
+          ports:
+          - containerPort: 3838

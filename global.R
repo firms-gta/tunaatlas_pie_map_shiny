@@ -1,11 +1,17 @@
-if(requireNamespace("reactlog")){ # utiliser unqiuement dans branche dev qui est la seule dont le renv.lock contient reactlog
+if ((Sys.getenv("MODE") == "dev" || isTRUE(getOption("use_reactlog"))) &&
+    requireNamespace("reactlog", quietly = TRUE)) {
+  
+  message("🔧 reactlog activé (mode dev)")
+  
   options(
-  shiny.sanitize.errors = FALSE,   # montre les vrais messages dans l’UI
-  shiny.fullstacktrace = TRUE,     # stacktrace complète
-  shiny.trace = TRUE               # trace les invalidations dans la console
-)
-reactlog::reactlog_enable()        # graphe des dépendances
-} 
+    shiny.sanitize.errors = FALSE,   # montre les vrais messages dans l’UI
+    shiny.fullstacktrace = TRUE,     # stacktrace complète
+    shiny.trace = TRUE               # trace les invalidations dans la console
+  )
+  reactlog::reactlog_enable()
+} else {
+  message("reactlog no activated (prod or not installed)")
+}
 # Restore the renv environment, excluding shinyuieditor
 # renv::restore(exclude = c("shinyuieditor"), prompt= FALSE)
 # try(pool::dbDisconnect(pool))

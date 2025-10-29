@@ -87,6 +87,7 @@ RUN bash -c "tail -n +2 DOI.csv | tr -d '\r' | \
 RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 
 ENV RENV_PATHS_ROOT=/root/.cache/R/renv
+ENV RENV_CONFIG_CACHE_ENABLED=FALSE
 
 # Si en mode dev, changer pour le user rstudio
 RUN if [ "$MODE" = "dev" ]; then \
@@ -117,7 +118,7 @@ RUN Rscript -e "install.packages('remotes', repos='https://cloud.r-project.org')
 RUN Rscript -e "remotes::install_version('renv', version = jsonlite::fromJSON('renv.lock')\$Packages[['renv']]\$Version, repos = 'https://cran.r-project.org')"
 
 COPY renv/library/ renv/library/
-
+ENV RENV_CONFIG_CACHE_ENABLED=FALSE
 # Restore renv packages
 RUN R -e "renv::activate()" 
 # Used to setup the environment (with the path cache) carreful keep in multiple lines
@@ -166,7 +167,7 @@ RUN echo "✅ MODE is: $MODE" && echo "✅ BRANCH is: $BRANCH" && echo "✅ BUIL
 
 RUN mkdir -p /etc/tunaatlas_pie_map_shiny/
 
-RUN if [ "$MODE" = "dev" ]; then R -e "renv::isolate()"; fi
+# RUN if [ "$MODE" = "dev" ]; then R -e "renv::isolate()"; fi
 
 EXPOSE 3838
 EXPOSE 8787

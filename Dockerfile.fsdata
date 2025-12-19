@@ -19,6 +19,7 @@ WORKDIR /root/tunaatlas_pie_map_shiny
 RUN mkdir -p data 
 
 RUN rm /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
+RUN rm /root/tunaatlas_pie_map_shiny/data/data.qs
 
 COPY --from=datafrompaper \
   /root/GTA_NC_DataPaper/inputs/data/FSJ/FS_MAPPED.qs \

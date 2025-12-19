@@ -1,4 +1,4 @@
-name: Build Slim Docker Image
+name: Build image with FS preloaded data
 
 on:
   workflow_dispatch:

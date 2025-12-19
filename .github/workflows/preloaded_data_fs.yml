@@ -6,11 +6,16 @@ on:
       push_slim:
         description: 'Pousser l’image avec FS preloaded sur GHCR ?'
         required: true
-        default: false
+        default: true
         type: boolean
 
 env:
   IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded
+
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build-slim:

@@ -24,7 +24,7 @@ COPY --from=datafrompaper \
   /root/GTA_NC_DataPaper/inputs/data/FSJ/FS_MAPPED.qs \
   /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
 
-RUN rm /root/tunaatlas_pie_map_shiny/data/data.qs
+RUN find /root/tunaatlas_pie_map_shiny/data -type f -name "global*" -exec truncate -s 0 {} \;
 
 RUN Rscript /root/tunaatlas_pie_map_shiny/global.R
 RUN echo "Listing files in ./data after adding mapped QS:" && ls -lh ./data

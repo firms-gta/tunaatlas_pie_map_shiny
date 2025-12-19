@@ -83,7 +83,7 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
         month = 1
       )
     
-    variable <- setdiff(variable, c("species"))
+    variable <- setdiff(variable, c("species", "source_authority"))
   }
   
   data <- load_initial_data(default_dataset)

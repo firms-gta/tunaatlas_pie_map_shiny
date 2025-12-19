@@ -28,3 +28,6 @@ RUN rm /root/tunaatlas_pie_map_shiny/data/data.qs
 
 RUN Rscript /root/tunaatlas_pie_map_shiny/global.R
 RUN echo "Listing files in ./data after adding mapped QS:" && ls -lh ./data
+
+RUN echo 'APP_ENABLE_MAP=0' >> .Renviron
+ENV APP_ENABLE_MAP=0

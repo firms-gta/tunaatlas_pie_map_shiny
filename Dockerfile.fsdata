@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1.7
+#############################
+# 1) Stage "data from the paper IOTC"      #
+#############################
+
+FROM ghcr.io/bastienird/gta_nc_datapaper:latest AS datafrompaper
+
+#############################
+# 2) Stage final: the app
+#############################
+
+FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny:dev AS final
+
+
+WORKDIR /root/tunaatlas_pie_map_shiny
+
+
+# Creating data repo
+RUN mkdir -p data 
+
+RUN rm /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
+
+COPY --from=datafrompaper \
+  /root/GTA_NC_DataPaper/inputs/data/FSJ/FS_MAPPED.qs \
+  /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
+
+RUN rm /root/tunaatlas_pie_map_shiny/data/data.qs
+
+RUN Rscript /root/tunaatlas_pie_map_shiny/global.R
+RUN echo "Listing files in ./data after adding mapped QS:" && ls -lh ./data

@@ -1,6 +1,6 @@
 # === Étape 1 : builder (votre image complète) ===
-FROM ghcr.io/firms-gta/tunaatlas_pie_map_shiny-multistage:app-latest AS builder
-WORKDIR /root/tunaatlas_pie_map_shiny
+FROM ghcr.io/firms-gta/DahsboardCWPdataset-multistage:app-latest AS builder
+WORKDIR /root/DahsboardCWPdataset
 RUN mkdir -p /tmp/flattened_lib \
  && cp -LR renv/library/R-4.2/x86_64-pc-linux-gnu/* /tmp/flattened_lib/
 
@@ -21,7 +21,7 @@ RUN apt-get update \
       redland-utils pandoc \
  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /root/tunaatlas_pie_map_shiny
+WORKDIR /root/DahsboardCWPdataset
 
 # 2) Copier la bibliothèque R aplatie
 COPY --from=builder /tmp/flattened_lib/ /usr/local/lib/R/site-library/
@@ -33,19 +33,7 @@ RUN find /usr/local/lib/R/site-library -name '*.so' \
 # 4) Nettoyage des docs/tests/vignettes
 RUN rm -rf /usr/local/lib/R/site-library/*/{tests,inst/doc,vignettes}
 
-COPY --from=builder /root/tunaatlas_pie_map_shiny/data/*_updated.qs data/
-COPY --from=builder /root/tunaatlas_pie_map_shiny/data/centroids.qs data/
-COPY --from=builder /root/tunaatlas_pie_map_shiny/data/cl_areal_grid.qs data/
-COPY --from=builder /root/tunaatlas_pie_map_shiny/data/data.qs data/
-COPY --from=builder /root/tunaatlas_pie_map_shiny/R ./R
-COPY --from=builder /root/tunaatlas_pie_map_shiny/doc ./doc
-COPY --from=builder /root/tunaatlas_pie_map_shiny/rmd ./rmd
-COPY --from=builder /root/tunaatlas_pie_map_shiny/global ./global
-COPY --from=builder /root/tunaatlas_pie_map_shiny/*.R ./
-COPY --from=builder /root/tunaatlas_pie_map_shiny/*.csv ./
-COPY --from=builder /root/tunaatlas_pie_map_shiny/www/ www/
-COPY --from=builder /root/tunaatlas_pie_map_shiny/modules/ modules/
-COPY --from=builder /root/tunaatlas_pie_map_shiny/tab_panels/ tab_panels/
+COPY --from=builder /root/DahsboardCWPdataset/ ./
 
 RUN rm -rf /tmp/flattened_lib \
  && rm -rf /root/.cache/R/renv \

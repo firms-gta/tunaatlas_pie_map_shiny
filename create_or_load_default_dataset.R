@@ -2,11 +2,11 @@
 lapply(c("here", "futile.logger", "readr", "tools", "sf", "dplyr", "data.table", "qs"), require, character.only = TRUE)
 flog.info("Sourced create or load default dataset")
 
-variable <- c("source_authority",
-              "species",
+variable <- c("species",
               "species_label",
               "fishing_fleet_label",
               "fishing_fleet",
+              "source_authority",
               "FLEET_CODE",
               "GEAR_CODE",
               "SPECIES_CODE",
@@ -29,7 +29,8 @@ variable <- c("source_authority",
               "species_group", 
               "species",
               "issue", 
-              "species_group"
+              "species_group", 
+              "Ocean", "ocean_basin","source_authority","AREA.CODE"
 )
 
 # Paths for processed files
@@ -67,10 +68,28 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
  }
   source(here::here("R/data_loading.R"))
   source(here::here("global/generate_dimensions_palettes.R"))
+  
+  if("AREA.CODE" %in% colnames(default_dataset)){
+    
+    Sys.setenv(APP_ENABLE_MAP = "0")
+    
+    flog.info("Fishsstatdataset changed")
+    default_dataset <- default_dataset %>%
+      dplyr::mutate(
+        year_chr = str_trim(as.character(year)),
+        date = suppressWarnings(ymd(year_chr)),
+        date = if_else(is.na(date), as.Date(year_chr), date),
+        year  = lubridate::year(date),
+        month = 1
+      )
+    
+    variable <- setdiff(variable, c("species"))
+  }
+  
   data <- load_initial_data(default_dataset)
   res <- generate_dimensions_palettes(
     df = data$data_for_filters,
-    variable = variable,           # ton vecteur global des variables possibles
+    variable = variable,           
     seed = 2643598
   )
   data$palettes  <- res$palettes
@@ -82,3 +101,5 @@ if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_datase
   data <- qs::qread("data/data.qs")
   flog.info("data.qs read")
 }
+
+

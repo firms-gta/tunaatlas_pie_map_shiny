@@ -739,7 +739,9 @@ server <- function(input, output, session) {
     choices <- sort(unique(as.character(na.omit(df$species))))
     wanted  <- c(
       "YFT - Yellowfin tuna", "SKJ - Skipjack tuna",
-      "ALB - Albacore", "BET - Bigeye tuna", "SBF - Southern bluefin tuna"
+      "ALB - Albacore", "BET - Bigeye tuna", "SBF - Southern bluefin tuna", 
+      "YFT", "ALB", "BET", "SKJ", "SBF", 
+      "Yellowfin tuna", "Albacore", "Bigeye tuna", "Skipjack tuna", "Southern bluefin tuna"
     )
     sel <- intersect(choices, wanted)
     if (!length(sel)) {

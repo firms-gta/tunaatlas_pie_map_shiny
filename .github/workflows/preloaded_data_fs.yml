@@ -10,7 +10,7 @@ on:
         type: boolean
 
 env:
-  IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded
+  IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded-light
 
 
 permissions:

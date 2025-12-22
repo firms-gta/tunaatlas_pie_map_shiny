@@ -19,6 +19,7 @@ WORKDIR /root/tunaatlas_pie_map_shiny
 RUN mkdir -p data 
 
 RUN rm /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
+# this does not reduce tht size but is for launching new default_dataset
 RUN rm /root/tunaatlas_pie_map_shiny/data/data.qs
 
 COPY --from=datafrompaper \
@@ -26,6 +27,7 @@ COPY --from=datafrompaper \
   /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
 
 RUN find /root/tunaatlas_pie_map_shiny/data -type f -name "global*" -exec truncate -s 0 {} \;
+# this does not reduce tht size but is for launching new default_dataset, however the size wouod need to be handled somewhere
 
 RUN Rscript /root/tunaatlas_pie_map_shiny/global.R
 RUN echo "Listing files in ./data after adding mapped QS:" && ls -lh ./data

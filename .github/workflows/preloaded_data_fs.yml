@@ -9,10 +9,6 @@ on:
         default: true
         type: boolean
 
-env:
-  IMAGE: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded-light
-
-
 permissions:
   contents: read
   packages: write
@@ -47,39 +43,15 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
-    - name: Pull base & cache
-      run: |
-        docker pull $IMAGE:latest      || true
-        docker pull $IMAGE:latest-cache || true
-
-    - name: Original image size
-      run: |
-        echo "::group::Taille de l'image de base"
-        docker images $IMAGE:latest \
-          --format "{{.Repository}}:{{.Tag}}\t{{.Size}}"
-        echo "::endgroup::"
-
-    - name: Build & push slim image
+    - name: Build & push
       uses: docker/build-push-action@v4
       with:
         context: .
         file: Dockerfile.fsdata
         push: ${{ inputs.push_slim }}
         tags: |
-          ${{ env.IMAGE }}:latest
-        cache-from: |
-          type=registry,ref=${{ env.IMAGE }}:latest-cache
-        cache-to: |
-          type=registry,ref=${{ env.IMAGE }}:latest-cache,mode=max
-    
-    - name: Docker disk usage
-      run: docker system df
+          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest
+          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:${{ github.sha }} # autre nom mais ça push au même endroit
 
-    - name: Verify slim image size (remote)
-      run: |
-        echo "::group::Taille de l'image slim sur GHCR"
-        docker manifest inspect $IMAGE:latest | \
-          grep size | \
-          awk '{total += $2} END {print total/1024/1024 " MB"}'
-        echo "::endgroup::"
-
+    - name: Inspect remote manifest
+      run: docker buildx imagetools inspect ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest

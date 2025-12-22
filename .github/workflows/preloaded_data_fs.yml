@@ -51,7 +51,7 @@ jobs:
         push: ${{ inputs.push_slim }}
         tags: |
           ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest
-          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:${{ github.sha }} # autre nom mais ça push au même endroit
+          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:${{ github.sha }}
 
     - name: Inspect remote manifest
       run: docker buildx imagetools inspect ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest

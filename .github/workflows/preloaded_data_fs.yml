@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   build-slim:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Free disk space
@@ -36,19 +37,17 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded
+        images: ghcr.io/bastienird/tunaatlas_pie_map_shiny-fsdata-preloaded
         flavor: latest=true
         tags: |
           type=ref,event=branch
           type=ref,event=pr
           type=semver,pattern={{version}}
         labels: |
-          org.opencontainers.image.url=${{ github.repository }}
           org.opencontainers.image.title=GlobalTunaAtlasExplorer
           org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization with FS preloaded data
           org.opencontainers.image.vendor=IRD
           org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
-          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           org.opencontainers.image.revision=${{ github.sha }}
 
     - name: Login to GHCR
@@ -70,8 +69,8 @@ jobs:
         provenance: false
         sbom: false
         tags: |
-          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest
-          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:${{ github.sha }}
+          ghcr.io/bastienird/tunaatlas_pie_map_shiny-fsdata-preloaded:latest
+          ghcr.io/bastienird/tunaatlas_pie_map_shiny-fsdata-preloaded:${{ github.sha }}
 
     - name: Inspect remote manifest
-      run: docker buildx imagetools inspect ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest
+      run: docker buildx imagetools inspect ghcr.io/bastienird/tunaatlas_pie_map_shiny-fsdata-preloaded:latest

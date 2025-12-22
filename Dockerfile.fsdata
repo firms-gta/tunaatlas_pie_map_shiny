@@ -34,3 +34,7 @@ RUN echo "Listing files in ./data after adding mapped QS:" && ls -lh ./data
 
 RUN echo 'APP_ENABLE_MAP=0' >> .Renviron
 ENV APP_ENABLE_MAP=0
+
+EXPOSE 3838
+
+CMD ["R", "-q", "-e", "shiny::runApp('/root/tunaatlas_pie_map_shiny', host='0.0.0.0', port=3838)"]

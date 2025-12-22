@@ -15,7 +15,6 @@ permissions:
 
 jobs:
   build-slim:
-    runs-on: ubuntu-latest
 
     steps:
     - name: Free disk space

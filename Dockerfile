@@ -87,15 +87,20 @@ RUN bash -c "tail -n +2 DOI.csv | tr -d '\r' | \
 RUN echo "✅ Listing files in ./data after conversion:" && ls -lh ./data
 
 ENV RENV_PATHS_ROOT=/root/.cache/R/renv
+ENV MODE=${MODE}
 
 # Si en mode dev, changer pour le user rstudio
 RUN if [ "$MODE" = "dev" ]; then \
-      export NEW_PATH="/home/rstudio/.cache/R/renv" && \
-      mkdir -p "$NEW_PATH" && \
-      chown -R rstudio:rstudio "$(dirname $NEW_PATH)" && \
-      echo "RENV_PATHS_ROOT=$NEW_PATH" >> /etc/environment && \
-      echo "RENV_PATHS_CACHE=$NEW_PATH" >> /etc/environment; \
+      mkdir -p /home/rstudio/.cache/R/renv && \
+      mkdir -p /home/rstudio/tunaatlas_pie_map_shiny/renv/library && \
+      chown -R rstudio:rstudio /home/rstudio && \
+      printf '%s\n' \
+        "RENV_CONFIG_CACHE_ENABLED=FALSE" \
+        "RENV_PATHS_ROOT=/home/rstudio/tunaatlas_pie_map_shiny/renv" \
+        "RENV_PATHS_CACHE=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" \
+        > /home/rstudio/.Renviron ; \
     fi
+
 
 # Ces variables sont utilisées par R/renv à runtime
 ENV RENV_PATHS_CACHE=${RENV_PATHS_ROOT}
@@ -123,6 +128,13 @@ RUN R -e "renv::activate()"
 # Used to setup the environment (with the path cache) carreful keep in multiple lines
 RUN R -e "renv::restore()" 
 RUN R -e "renv::repair()" 
+RUN R -e "renv::isolate()" 
+RUN R -e "renv::status()" 
+
+ENV RENV_CONFIG_CACHE_ENABLED=FALSE
+ENV RENV_PATHS_ROOT=/root/tunaatlas_pie_map_shiny/renv
+ENV RENV_PATHS_CACHE=/root/tunaatlas_pie_map_shiny/renv/library
+RUN mkdir -p /root/tunaatlas_pie_map_shiny/renv/library
 
 COPY testing_loading_of_all_packages.R ./testing_loading_of_all_packages.R
 RUN R -e "source('testing_loading_of_all_packages.R')"
@@ -173,12 +185,6 @@ EXPOSE 8787
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-RUN if [ "$MODE" = "dev" ] && [ -d "/home/rstudio" ]; then \
-      echo "RENV_PATHS_ROOT=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
-      echo "RENV_PATHS_CACHE=/home/rstudio/tunaatlas_pie_map_shiny/renv/library" >> /home/rstudio/.Renviron && \
-      chown rstudio:rstudio /home/rstudio/.Renviron; \
-    fi
 
 ENTRYPOINT ["/entrypoint.sh"]
 

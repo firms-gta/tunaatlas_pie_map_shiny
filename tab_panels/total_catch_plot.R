@@ -87,6 +87,7 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
       df
     })
     data_month <- reactive({
+      req("month" %in% names(data_without_geom()))
       req(input$variable)  # Ensure that a variable is selected
       req(input$topn)      # Ensure that the number for top n is provided
       
@@ -114,6 +115,7 @@ catches_by_variable_moduleServer <- function(id, data_without_geom) {
     
     # Plot for monthly data
     output$plot_month <- renderPlot({
+      if (unique(data_without_geom()$month == 1)) return(NULL)
       df <- data_month()  # Get the reactive monthly data
       # Replace NA values with 0
       df_clean <- df %>% dplyr::mutate(measurement_value = ifelse(is.na(measurement_value), 0, measurement_value))

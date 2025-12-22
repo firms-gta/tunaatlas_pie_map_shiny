@@ -26,6 +26,7 @@ COPY --from=datafrompaper \
   /root/GTA_NC_DataPaper/inputs/data/FSJ/FS_MAPPED.qs \
   /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
 
+RUN rm /root/tunaatlas_pie_map_shiny/data/data.qs
 RUN find /root/tunaatlas_pie_map_shiny/data -type f -name "global*" -exec truncate -s 0 {} \;
 # this does not reduce tht size but is for launching new default_dataset, however the size wouod need to be handled somewhere
 

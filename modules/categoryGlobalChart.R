@@ -91,6 +91,7 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
   # === helpers ===
   ym_idx <- function(year, month) year*12L + as.integer(month)          # pas = 1
   label_ym_from_idx <- function(i){
+    i <- as.integer(i)
     y <- (i - 1L) %/% 12L
     m <- (i - 1L) %% 12L + 1L
     sprintf("%04d-%02d", y, m)
@@ -98,8 +99,22 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
   
   # Pré-agrégat commun
   monthly_sum <- reactive({
-    data_topN() |>
-      dplyr::mutate(month_idx = ym_idx(year, month)) |>
+    df <- data_topN()
+    
+    y_chr  <- as.character(df$year)
+    d      <- suppressWarnings(lubridate::ymd(y_chr, quiet = TRUE))
+    y_num  <- suppressWarnings(as.integer(y_chr))
+    
+    year2  <- dplyr::if_else(!is.na(d), lubridate::year(d), y_num)
+    month2 <- if ("month" %in% names(df)) as.integer(df$month) else dplyr::if_else(!is.na(d), lubridate::month(d), 1L)
+    if("month" %in% names(df)){
+      width <- 12
+    } else{
+      width <- 1
+    }
+    df |>
+      dplyr::mutate(year = year2, month = month2, month_idx = ym_idx(year, month)) |>
+      dplyr::filter(!is.na(month_idx)) |>
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE),
                        .by = c(month_idx, cat2)) |>
       dplyr::arrange(month_idx)
@@ -138,36 +153,55 @@ categoryGlobalChartServer <- function(id, category, reactive_data, sql_query = N
   output$stacked_bar_absolute <- renderPlot({
     pal <- pal_cat()
     df  <- monthly_sum()
+    req(nrow(df) > 0)
     
-    brks <- scales::breaks_pretty(n = 12)(range(df$month_idx))
-    
-    ggplot2::ggplot(df, ggplot2::aes(x = month_idx, y = measurement_value, fill = cat2)) +
-      ggplot2::geom_col(width = 1) +                               # <<< barres collées
+    ggplot2::ggplot(
+      df,
+      ggplot2::aes(
+        x = factor(month_idx),   # ← discret = barres épaisses
+        y = measurement_value,
+        fill = cat2
+      )
+    ) +
+      ggplot2::geom_col() +
       ggplot2::scale_fill_manual(values = pal, na.translate = FALSE) +
-      ggplot2::scale_x_continuous(breaks = brks, labels = label_ym_from_idx,
-                                  expand = c(0, 0)) +              # pas d’espace aux bords
+      ggplot2::scale_x_discrete(
+        labels = label_ym_from_idx
+      ) +
       ggplot2::labs(x = "Time", y = "Total", fill = value_of(category)) +
       ggplot2::theme_minimal(base_size = 11) +
-      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
-                     panel.grid.minor = ggplot2::element_blank())
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
+        panel.grid.minor = ggplot2::element_blank()
+      )
   })
+  
   
   # ---- STACKED RELATIVE
   output$stacked_bar_relative <- renderPlot({
     pal <- pal_cat()
     df  <- monthly_sum()
-    brks <- scales::breaks_pretty(n = 12)(range(df$month_idx))
+    req(nrow(df) > 0)
     
-    ggplot2::ggplot(df, ggplot2::aes(x = month_idx, y = measurement_value, fill = cat2)) +
-      ggplot2::geom_col(width = 1, position = "fill") +            # <<< 100% + collées
+    ggplot2::ggplot(
+      df,
+      ggplot2::aes(
+        x = factor(month_idx),
+        y = measurement_value,
+        fill = cat2
+      )
+    ) +
+      ggplot2::geom_col(position = "fill") +
       ggplot2::scale_fill_manual(values = pal, na.translate = FALSE) +
-      ggplot2::scale_x_continuous(breaks = brks, labels = label_ym_from_idx,
-                                  expand = c(0, 0)) +
+      ggplot2::scale_x_discrete(labels = label_ym_from_idx) +
       ggplot2::scale_y_continuous(labels = scales::percent) +
       ggplot2::labs(x = "Time", y = "Proportion", fill = value_of(category)) +
       ggplot2::theme_minimal(base_size = 11) +
-      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)
+      )
   })
+  
   
   # ---- TREEMAP (même palette catégories)
   output$treemap_chart <- renderPlot({

@@ -49,9 +49,11 @@ jobs:
         context: .
         file: Dockerfile.fsdata
         push: ${{ inputs.push_slim }}
+        provenance: false
+        sbom: false
         tags: |
-          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest
-          ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:${{ github.sha }}
+          ghcr.io/firms-gta/bastienird-fsdata-preloaded:latest
+          ghcr.io/firms-gta/bastienird-fsdata-preloaded:${{ github.sha }}
 
     - name: Inspect remote manifest
-      run: docker buildx imagetools inspect ghcr.io/firms-gta/tunaatlas_pie_map_shiny-fsdata-preloaded:latest
+      run: docker buildx imagetools inspect ghcr.io/firms-gta/bastienird-fsdata-preloaded:latest

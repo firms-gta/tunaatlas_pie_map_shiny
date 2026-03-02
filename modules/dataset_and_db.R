@@ -1,219 +1,365 @@
+# modules/dataset_and_db.R
+
 dataset_and_db_ui <- function(id) {
-  ns <- NS(id)
-  nav_panel(
+  ns <- shiny::NS(id)
+  
+  bslib::nav_panel(
     title = "Choose dataset and connect",
     value = "dataset_and_db_value",
     
-    grid_container(
-      layout = c(
-        "choosesourcetype subpanels",
-        "submitbutton submitbutton"
-      ),
-      row_sizes = c(
-        "400px",
-        "400px"
-      ),
-      col_sizes = c(
-        "0.5fr", 
-        "0.5fr"
-      ),
-      
-      # Choix de la source de données
-      grid_card(
-        area = "choosesourcetype",
-        card_body(
-          radioButtons(ns("source_type"), "Choose data source:", 
-                       choices = c("Database" = "db", "Workspace/DOI" = "doi"), 
-                       selected = "doi")
-        )
-      ),
-      
-      # Contenu conditionnel : DOI ou Database
-      grid_card(
-        area = "subpanels",
-        card_body(
-          conditionalPanel(
-            condition = paste0("input['", ns("source_type"), "'] == 'doi'"),
-            uiOutput(ns("doi_panel"))
-          ),
-          conditionalPanel(
-            condition = paste0("input['", ns("source_type"), "'] == 'db'"),
-            uiOutput(ns("db_panel"))
+    shiny::fluidRow(
+      shiny::column(
+        width = 6,
+        bslib::card(
+          bslib::card_header("Data source"),
+          shiny::radioButtons(
+            ns("source_type"),
+            "Choose data source:",
+            choices = c("Database" = "db", "Workspace/DOI" = "doi"),
+            selected = "doi"
           )
         )
       ),
       
-      # Bouton de soumission
-      grid_card(
-        area = "submitbutton",
-        card_body(actionButton(ns("submitDataset"), "Submit Dataset"))
+      shiny::column(
+        width = 6,
+        bslib::card(
+          bslib::card_header("Options"),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("source_type"), "'] == 'doi'"),
+            shiny::uiOutput(ns("doi_panel"))
+          ),
+          shiny::conditionalPanel(
+            condition = paste0("input['", ns("source_type"), "'] == 'db'"),
+            shiny::uiOutput(ns("db_panel"))
+          )
+        )
+      )
+    ),
+    
+    shiny::fluidRow(
+      shiny::column(
+        width = 12,
+        bslib::card(
+          shiny::actionButton(ns("submitDataset"), "Submit Dataset")
+        )
       )
     )
   )
 }
 
 
-dataset_and_db_server <- function(id, filters_combinations, default_dataset, default_gridtype, default_measurement_unit) {
-  moduleServer(id, function(input, output, session) {
+dataset_and_db_server <- function(id,
+                                  filters_combinations,
+                                  default_dataset = NULL,
+                                  default_gridtype = NULL,
+                                  default_measurement_unit = NULL) {
+  
+  shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    pool_reactive <- reactiveVal(NULL)
-    # ReactiveValues pour stocker le statut de la connexion DB
-    db_results <- reactiveValues(
+    
+    pool_reactive <- shiny::reactiveVal(NULL)
+    
+    db_results <- shiny::reactiveValues(
       status = "Not connected",
-      pool = NULL
+      connected = FALSE
     )
     
-    # Charger les données DOI une fois
+    # ----------------------------
+    # Helpers
+    # ----------------------------
+    parse_schema_object <- function(x) {
+      parts <- strsplit(x, "\\.")[[1]]
+      if (length(parts) != 2) stop("Invalid object name (expected schema.object)")
+      list(schema = parts[1], name = parts[2])
+    }
+    
+    close_pool_if_any <- function() {
+      old <- pool_reactive()
+      if (!is.null(old)) {
+        try(pool::poolClose(old), silent = TRUE)
+      }
+      pool_reactive(NULL)
+      db_results$connected <- FALSE
+      db_results$status <- "Not connected"
+      filters_combinations(NULL)
+    }
+    
+    # Get columns using pg_catalog (works better than information_schema with matviews/permissions)
+    get_columns_pg <- function(pool, schema, name) {
+      DBI::dbGetQuery(pool, "
+        SELECT a.attname AS column_name
+        FROM pg_attribute a
+        JOIN pg_class c ON c.oid = a.attrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = $1
+          AND c.relname = $2
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+        ORDER BY a.attnum;
+      ", params = list(schema, name))$column_name
+    }
+    
+    # Find a column among candidates (case-insensitive)
+    pick_col <- function(cols, candidates) {
+      cols_l <- tolower(cols)
+      cand_l <- tolower(candidates)
+      idx <- match(cand_l, cols_l)
+      idx <- idx[!is.na(idx)]
+      if (length(idx) == 0) return(NULL)
+      cols[idx[1]]
+    }
+    
+    # ----------------------------
+    # DOI panel
+    # ----------------------------
     doi_data <- tryCatch(
-      read_csv("DOI.csv", show_col_types = FALSE),
-      error = function(e) {
-        flog.error("Erreur lors de la lecture du fichier DOI.csv : %s", e$message)
-        data.frame(Filename = character())
-      }
+      readr::read_csv("DOI.csv", show_col_types = FALSE),
+      error = function(e) data.frame(DOI = character(), Filename = character())
     )
-    for (i in (1:length(doi_data)+1)){
-    record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", DOI$DOI[i])
-    filename <- DOI$Filename[i]
-    dataset <- tools::file_path_sans_ext(filename)
-    ext <- tools::file_ext(filename)
     
-    renamed <- file.path(paste0(dataset, "_", record_id,".", ext))
-    # renamed <- file.path("data", paste0(dataset, "_", record_id, "_updated.qs"))
-    doi_data$Filename[i] <- renamed
-    
+    if (nrow(doi_data) > 0 && all(c("DOI", "Filename") %in% names(doi_data))) {
+      for (i in seq_len(nrow(doi_data))) {
+        record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", doi_data$DOI[i])
+        filename  <- doi_data$Filename[i]
+        dataset   <- tools::file_path_sans_ext(filename)
+        ext       <- tools::file_ext(filename)
+        doi_data$Filename[i] <- file.path(paste0(dataset, "_", record_id, ".", ext))
+      }
     }
     
-    if (nrow(doi_data) == 0 || !"Filename" %in% colnames(doi_data)) {
-      stop("Le fichier DOI.csv est invalide ou vide.")
-    }
+    output$doi_panel <- shiny::renderUI({
+      if (nrow(doi_data) == 0 || !"Filename" %in% names(doi_data)) {
+        return(shiny::tags$p("DOI.csv missing or invalid.", style = "color: red;"))
+      }
+      shiny::selectizeInput(
+        ns("select_doi_dataset"),
+        "Select Dataset from DOI:",
+        choices = doi_data$Filename,
+        selected = doi_data$Filename[1]
+      )
+    })
     
-    # Panel DOI
-    output$doi_panel <- renderUI({
-      tagList(
-        selectizeInput(
-          ns("select_doi_dataset"),
-          "Select Dataset from DOI:",
-          choices = doi_data$Filename,
-          selected = doi_data$Filename[1]
+    # ----------------------------
+    # DB panel UI
+    # ----------------------------
+    output$db_panel <- shiny::renderUI({
+      shiny::tagList(
+        shiny::tags$p(
+          db_results$status,
+          style = if (db_results$connected) "color: green;" else "color: #666;"
+        ),
+        
+        shiny::selectInput(
+          ns("db_name"),
+          "Choose database:",
+          choices = c("tunaatlas_sandbox"),
+          selected = "tunaatlas_sandbox"
+        ),
+        
+        shiny::selectInput(
+          ns("db_object"),
+          "Choose DB object:",
+          choices = c(
+            "Effort (matview: shinyeffort)" = "public.shinyeffort",
+            "Catch (matview: shinycatch)" = "public.shinycatch",
+            "Catch georef (matview: shinycatch_georef)" = "public.shinycatch_georef"
+          ),
+          selected = "public.shinyeffort"
+        ),
+        
+        shiny::actionButton(ns("connect_db"), "Connect"),
+        shiny::tags$hr(),
+        
+        shiny::uiOutput(ns("select_dataset")),
+        shiny::tags$br(),
+        shiny::uiOutput(ns("select_gridtype")),
+        shiny::uiOutput(ns("select_measurement_unit"))
+      )
+    })
+    
+    # Close pool when leaving DB mode
+    shiny::observeEvent(input$source_type, {
+      if (input$source_type != "db") close_pool_if_any()
+    }, ignoreInit = TRUE)
+    
+    # ----------------------------
+    # Connect on button
+    # ----------------------------
+    shiny::observeEvent(input$connect_db, {
+      shiny::req(input$source_type == "db")
+      shiny::req(input$db_name, input$db_object)
+      
+      close_pool_if_any()
+      db_results$status <- "Connecting..."
+      
+      if (file.exists("connection_tunaatlas_inv.txt")) {
+        try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"), silent = TRUE)
+      }
+      
+      db_host <- Sys.getenv("DB_HOST")
+      db_port <- as.integer(Sys.getenv("DB_PORT"))
+      db_user_readonly <- Sys.getenv("DB_USER_READONLY")
+      db_password <- Sys.getenv("DB_PASSWORD")
+      
+      tryCatch({
+        pool <- pool::dbPool(
+          RPostgreSQL::PostgreSQL(),
+          host = db_host,
+          port = db_port,
+          dbname = input$db_name,
+          user = db_user_readonly,
+          password = db_password
         )
-      )
-    })
-    
-    # Connexion à la base de données
-    observeEvent(input$source_type, {
-      if (input$source_type == "db") {
-        db_results$status <- "Connecting to the database..."
-        if (file.exists("connection_tunaatlas_inv.txt")) {
-          try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
+        
+        if (!pool::dbIsValid(pool)) stop("invalid pool")
+        
+        pool_reactive(pool)
+        db_results$connected <- TRUE
+        db_results$status <- paste("Connected to", input$db_name)
+        
+        obj <- parse_schema_object(input$db_object)
+        cols <- get_columns_pg(pool, obj$schema, obj$name)
+        
+        if (length(cols) == 0) {
+          stop("Could not read columns for selected object (permissions?)")
         }
-          db_host <- Sys.getenv("DB_HOST")
-          db_port <- as.integer(Sys.getenv("DB_PORT"))
-          db_name <- "tunaatlas_sandbox"
-          db_user_readonly <- Sys.getenv("DB_USER_READONLY")
-          db_password <- Sys.getenv("DB_PASSWORD")
-          
-          tryCatch({
-            pool <- dbPool(RPostgreSQL::PostgreSQL(),
-                           host = db_host,
-                           port = db_port,
-                           dbname = db_name,
-                           user = db_user_readonly,
-                           password = db_password)
-            
-            if (pool::dbIsValid(pool)) {
-              flog.info("Connexion valide.")
-              pool_reactive(pool)
-              flog.info("Connexion reactive")
-              # Récupérer les filtres de la base de données
-              filters_query <- glue_sql("
-                SELECT DISTINCT dataset, measurement_unit, gridtype 
-                FROM public.shinyeffort;", .con = pool)
-              filters_data <- DBI::dbGetQuery(pool, filters_query) %>% dplyr::filter(dataset == "global_georeferenced_effort_ird")
-              
-              filters_combinations(filters_data)
-              db_results$status <- "Connected successfully!"
-            } else {
-              db_results$status <- "Connection failed: invalid pool."
-            }
-          }, error = function(e) {
-            db_results$status <- paste("Connection error:", e$message)
-          })
-      }
+        
+        # Auto-map common column names (adjust candidates if needed)
+        dataset_col <- pick_col(cols, c("dataset", "dataset_name", "db_mapping_dataset_name"))
+        unit_col    <- pick_col(cols, c("measurement_unit", "unit", "meas_unit"))
+        grid_col    <- pick_col(cols, c("gridtype", "grid_type", "grid"))
+        
+        # Require at least unit+grid (if your app depends on them)
+        if (is.null(unit_col) || is.null(grid_col)) {
+          db_results$status <- paste0(
+            "Connected, but could not find required columns. Found cols: ",
+            paste(cols, collapse = ", ")
+          )
+          filters_combinations(data.frame())
+          return()
+        }
+        
+        # dataset is optional -> fallback constant
+        dataset_expr <- if (!is.null(dataset_col)) {
+          glue::glue("{`dataset_col`}")
+        } else {
+          glue::glue_sql("{shQuote(obj$name)}", .con = pool) # e.g. 'shinyeffort'
+        }
+        
+        q <- glue::glue_sql("
+          SELECT DISTINCT
+            {DBI::SQL(dataset_expr)} AS dataset,
+            {`unit_col`} AS measurement_unit,
+            {`grid_col`} AS gridtype
+          FROM {`obj$schema`}.{`obj$name`};
+        ", .con = pool)
+        
+        filters_data <- DBI::dbGetQuery(pool, q)
+        
+        filters_combinations(filters_data)
+        db_results$status <- paste(
+          "Connected. Loaded", nrow(filters_data), "filter rows from", input$db_object
+        )
+        
+      }, error = function(e) {
+        close_pool_if_any()
+        db_results$status <- paste("Connection/query error:", e$message)
+      })
     })
     
-    # Panel Database
-    output$db_panel <- renderUI({
-      if (is.null(filters_combinations()) || nrow(filters_combinations()) == 0) {
-        return(tags$p(db_results$status, style = "color: red;"))
+    # ----------------------------
+    # Dataset / gridtype / unit selectors
+    # NOTE: single selection by default (avoid length>1 issues elsewhere)
+    # ----------------------------
+    output$select_dataset <- shiny::renderUI({
+      shiny::req(input$source_type == "db")
+      dat <- filters_combinations()
+      shiny::validate(shiny::need(!is.null(dat), "Not connected. Click Connect."))
+      shiny::validate(shiny::need(nrow(dat) > 0, "No filters available for this object."))
+      
+      datasets <- dat %>% dplyr::distinct(dataset) %>% dplyr::arrange(dataset)
+      selected <- if (!is.null(default_dataset) && default_dataset %in% datasets$dataset) {
+        default_dataset
+      } else {
+        datasets$dataset[1]
       }
-      tagList(
-        uiOutput(ns("select_dataset")),
-        tags$br(),
-        uiOutput(ns("select_gridtype")),
-        uiOutput(ns("select_measurement_unit"))
-      )
-    })
-    
-    # UI pour sélectionner un dataset
-    output$select_dataset <- renderUI({
-      req(filters_combinations())
-      datasets <- filters_combinations() %>% dplyr::select(dataset) %>% dplyr::distinct()
-      selectizeInput(
+      
+      shiny::selectizeInput(
         ns("select_dataset"),
         "Select the Dataset",
         choices = datasets$dataset,
-        selected = ifelse(nrow(datasets) > 0, default_dataset, NULL)
+        selected = selected,
+        multiple = FALSE
       )
     })
     
-    # UI pour sélectionner un grid type
-    output$select_gridtype <- renderUI({
-      req(filters_combinations(), input$select_dataset)
-      gridtypes <- filters_combinations() %>%
+    output$select_gridtype <- shiny::renderUI({
+      shiny::req(input$source_type == "db", input$select_dataset)
+      dat <- filters_combinations()
+      shiny::validate(shiny::need(!is.null(dat) && nrow(dat) > 0, "No filters available."))
+      
+      gridtypes <- dat %>%
         dplyr::filter(dataset == input$select_dataset) %>%
-        dplyr::select(gridtype) %>%
-        dplyr::distinct()
-      selectizeInput(
+        dplyr::distinct(gridtype) %>%
+        dplyr::arrange(gridtype)
+      
+      selected <- if (!is.null(default_gridtype) && default_gridtype %in% gridtypes$gridtype) {
+        default_gridtype
+      } else {
+        gridtypes$gridtype[1]
+      }
+      
+      shiny::selectizeInput(
         ns("select_gridtype"),
         "Select the Grid Type",
         choices = gridtypes$gridtype,
-        selected = ifelse(nrow(gridtypes) > 0, gridtypes$gridtype, NULL),
+        selected = selected,
         multiple = TRUE
       )
     })
     
-    # UI pour sélectionner une unité de mesure
-    output$select_measurement_unit <- renderUI({
-      req(filters_combinations(), input$select_dataset)
-      measurement_units <- filters_combinations() %>%
+    output$select_measurement_unit <- shiny::renderUI({
+      shiny::req(input$source_type == "db", input$select_dataset)
+      dat <- filters_combinations()
+      shiny::validate(shiny::need(!is.null(dat) && nrow(dat) > 0, "No filters available."))
+      
+      units <- dat %>%
         dplyr::filter(dataset == input$select_dataset) %>%
-        dplyr::select(measurement_unit) %>%
-        dplyr::distinct()
-      selectizeInput(
+        dplyr::distinct(measurement_unit) %>%
+        dplyr::arrange(measurement_unit)
+      
+      selected <- if (!is.null(default_measurement_unit) && default_measurement_unit %in% units$measurement_unit) {
+        default_measurement_unit
+      } else {
+        units$measurement_unit[1]
+      }
+      
+      shiny::selectizeInput(
         ns("select_measurement_unit"),
         "Select the Measurement Unit",
-        choices = measurement_units$measurement_unit,
-        selected = ifelse(nrow(measurement_units) > 0, measurement_units$measurement_unit, NULL),
+        choices = units$measurement_unit,
+        selected = selected,
         multiple = TRUE
       )
     })
     
-    # Retourner les valeurs sélectionnées et la connexion
-    return(list(
-      selected_source = reactive(input$source_type),
-      selected_dataset = reactive({
-        if (input$source_type == "db") {
-          input$select_dataset
-        } else {
-          input$select_doi_dataset
-        }
+    # ----------------------------
+    # Return reactives
+    # ----------------------------
+    list(
+      selected_source = shiny::reactive(input$source_type),
+      selected_db_object = shiny::reactive(if (input$source_type == "db") input$db_object else NULL),
+      
+      selected_dataset = shiny::reactive({
+        if (input$source_type == "db") input$select_dataset else input$select_doi_dataset
       }),
-      selected_gridtype = reactive(input$select_gridtype),
-      selected_measurement_unit = reactive(input$select_measurement_unit),
+      
+      selected_gridtype = shiny::reactive(input$select_gridtype),
+      selected_measurement_unit = shiny::reactive(input$select_measurement_unit),
+      
       pool = pool_reactive,
-      submit = reactive(input$submitDataset)
-    ))
+      submit = shiny::reactive(input$submitDataset)
+    )
   })
 }
-
-

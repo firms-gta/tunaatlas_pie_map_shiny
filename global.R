@@ -129,8 +129,6 @@ source(here::here("modules/db_connect.R"))
 load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
 
-flog.info(sprintf("Variables: %s", paste0(variable)))
-
 # Load functions from external sources
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i11_CatchesByCountry.R")
@@ -176,6 +174,8 @@ flog.info("Menu generated ")
 outputmoreabout <- more_about()
 source(here::here("R/data_loading.R"))
 source(here::here("create_or_load_default_dataset.R"))
+flog.info(sprintf("Variables: %s", paste0(variable)))
+
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

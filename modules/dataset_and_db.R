@@ -143,10 +143,31 @@ dataset_and_db_server <- function(id, filters_combinations, default_dataset, def
     
     # Panel Database
     output$db_panel <- renderUI({
-      if (is.null(filters_combinations()) || nrow(filters_combinations()) == 0) {
-        return(tags$p(db_results$status, style = "color: red;"))
-      }
       tagList(
+        tags$p(db_results$status, style = "color: #666;"),
+        
+        selectInput(
+          ns("db_name"),
+          "Choose database:",
+          choices = c("tunaatlas_sandbox", "tunaatlas_prod"),
+          selected = "tunaatlas_sandbox"
+        ),
+        
+        selectInput(
+          ns("db_table"),
+          "Choose table:",
+          choices = c(
+            "Effort (shinyeffort)" = "public.shinyeffort",
+            "Catch"               = "public.catch",
+            "Nominal"             = "public.nominal"
+          ),
+          selected = "public.shinyeffort"
+        ),
+        
+        actionButton(ns("connect_db"), "Connect"),
+        tags$hr(),
+        
+        # seulement si connecté + filters_combinations dispo
         uiOutput(ns("select_dataset")),
         tags$br(),
         uiOutput(ns("select_gridtype")),

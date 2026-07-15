@@ -91,10 +91,14 @@ if(!file.exists(cl_areal_grid_path)| !file.exists("data/centroids.qs")){
 }
 require(here)
 source(here::here("R/load_data.R"))
-if(!exists("default_dataset")){
-  load_data(DOI) 
+# Download/process every DOI dataset only when explicitly requested
+if (identical(
+  tolower(Sys.getenv("REFRESH_ALL_DATA", "false")),
+  "true"
+)) {
+  flog.info("REFRESH_ALL_DATA=true: preparing every DOI dataset")
+  load_data(DOI)
 }
-
 
 
 

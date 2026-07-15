@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1.7
+
+FROM rocker/r-ver:4.2.3 AS data-builder
+
+RUN Rscript -e "install.packages( \
+      c('qs', 'readr'), \
+      repos = 'https://cloud.r-project.org' \
+    )"
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      curl \
+      dos2unix \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+COPY DOI.csv ./DOI.csv
+
+RUN mkdir -p /output/data \
+ && dos2unix DOI.csv \
+ && sed -i -e '$a\' DOI.csv \
+ && tail -n +2 DOI.csv | while IFS=',' read -r DOI FILE; do \
+      set -eu; \
+      RECORD_ID="$(printf '%s' "$DOI" | sed 's|.*/||; s/^zenodo\\.//')"; \
+      EXT="${FILE##*.}"; \
+      BASE="${FILE%.*}"; \
+      RAW_TARGET="/tmp/${FILE}"; \
+      QS_TARGET="/output/data/${BASE}_${RECORD_ID}.qs"; \
+      URL="https://zenodo.org/records/${RECORD_ID}/files/${FILE}?download=1"; \
+      curl --fail --location --retry 3 \
+        --output "${RAW_TARGET}" "${URL}"; \
+      if [ "${EXT}" = "qs" ]; then \
+        mv "${RAW_TARGET}" "${QS_TARGET}"; \
+      else \
+        Rscript -e " \
+          value <- readr::read_csv('${RAW_TARGET}', show_col_types = FALSE); \
+          qs::qsave(value, '${QS_TARGET}') \
+        "; \
+        rm -f "${RAW_TARGET}"; \
+      fi; \
+    done \
+ && cp DOI.csv /output/data/DOI.csv \
+ && ls -lh /output/data
+
+
+# Image finale : uniquement les données, sans R ni système Linux
+FROM scratch AS data
+
+COPY --from=data-builder /output/data/ /data/

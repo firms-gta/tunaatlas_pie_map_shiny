@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1.4
+
+ARG APP_IMAGE=ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
+ARG DATA_IMAGE=ghcr.io/firms-gta/gta-data:latest
+
+FROM ${DATA_IMAGE} AS all-data
+FROM ${APP_IMAGE}
+
+ARG DATASET_FILE
+
+RUN test -n "${DATASET_FILE}" || { \
+      echo "❌ DATASET_FILE est obligatoire"; \
+      exit 1; \
+    }
+
+RUN mkdir -p /root/tunaatlas_pie_map_shiny/data
+
+# Le montage BuildKit permet de lire la grosse image de données
+# sans copier tous ses fichiers dans l'image finale.
+RUN --mount=type=bind,from=all-data,source=/data,target=/mnt/all-data,ro \
+    echo "✅ Dataset demandé : ${DATASET_FILE}" \
+    && test -f "/mnt/all-data/${DATASET_FILE}" || { \
+         echo "❌ Dataset introuvable"; \
+         echo "Datasets disponibles :"; \
+         ls -lh /mnt/all-data; \
+         exit 1; \
+       } \
+    && cp \
+         "/mnt/all-data/${DATASET_FILE}" \
+         /root/tunaatlas_pie_map_shiny/data/default_dataset.qs
+
+RUN printf '%s\n' \
+      "DATA_IMAGE=${DATA_IMAGE}" \
+      "DATASET_FILE=${DATASET_FILE}" \
+      > /root/tunaatlas_pie_map_shiny/data/dataset.properties
+
+RUN echo "✅ Image finale construite avec un seul dataset :" \
+    && cat /root/tunaatlas_pie_map_shiny/data/dataset.properties \
+    && ls -lh /root/tunaatlas_pie_map_shiny/data

@@ -661,101 +661,94 @@ server <- function(input, output, session) {
     data_for_filters_trigger(data_for_filters_trigger() + 1)
   })
   
-  observeEvent(data_for_filters_trigger(), {
-    flog.info("dataforfilterstriggered")
-    req(data_for_filters())
-    req(variable_choicesintersect())
-    data_for_filters <- data_for_filters()
-    
-    # Création initiale de chaque filtre (une seule fois)
-    observeEvent(list(data_for_filters_trigger(), variable_choicesintersect()), {
-      if(firstSubmit()){
-        flog.info("Creation initial de chaque filtre")
+  observeEvent(
+    list(data_for_filters_trigger(), variable_choicesintersect()),
+    {
+      flog.info("Initialisation des filtres")
+      
+      df_all <- req(data_for_filters())
+      vars <- setdiff(
+        req(variable_choicesintersect()),
+        "measurement_unit"
+      )
+      
+      df_all <- as.data.frame(df_all)
+      
+      for (variable_name in vars) {
+        choices <- sort(unique(na.omit(
+          df_all[[variable_name]]
+        )))
         
-        df_all <- as.data.frame(req(data_for_filters()))
-        vars   <- setdiff(req(variable_choicesintersect()), "measurement_unit")
+        flog.info(
+          "Creation initial de %s : %d choix",
+          variable_name,
+          length(choices)
+        )
         
-        lapply(vars, function(variable) {
-          local({
-            choices_init <- sort(unique(df_all[[variable]]))
-            flog.info(sprintf("Creation initial de %s", variable))
-            
-            output[[paste0("select_", variable)]] <- renderUI({
-              shinyWidgets::pickerInput(
-                inputId  = paste0("select_", variable),
-                label    = paste("Select", gsub("_", " ", variable)),
-                choices  = choices_init,
-                multiple = TRUE,
-                selected = choices_init, 
-                options  = list(
-                  `actions-box`          = TRUE,
-                  `live-search`          = TRUE,
-                  `size`                 = 100,
-                  `selected-text-format` = "count > 5"
-                ),
-                width = "100%"
-              )
-            })
+        local({
+          current_variable <- variable_name
+          current_choices <- choices
+          
+          output[[paste0(
+            "select_",
+            current_variable
+          )]] <- renderUI({
+            shinyWidgets::pickerInput(
+              inputId = paste0(
+                "select_",
+                current_variable
+              ),
+              label = paste(
+                "Select",
+                gsub("_", " ", current_variable)
+              ),
+              choices = current_choices,
+              multiple = TRUE,
+              selected = current_choices,
+              options = list(
+                `actions-box` = TRUE,
+                `live-search` = TRUE,
+                `size` = 100,
+                `selected-text-format` = "count > 5"
+              ),
+              width = "100%"
+            )
           })
         })
-        
-        output[["select_measurement_unit"]] <- renderUI({
-          choices_init <- sort(unique(df_all[["measurement_unit"]]))
-          preselect <- .pick_tons_or_first(as.character(choices_init))
-          shinyWidgets::pickerInput(
-            inputId  = "select_measurement_unit",
-            label    = "Select measurement unit",
-            choices  = choices_init,
-            multiple = TRUE,
-            selected = if (!is.null(preselect)) preselect else choices_init,
-            options  = list(
-              `actions-box` = TRUE, `live-search` = TRUE, `size` = 100,
-              `selected-text-format` = "count > 5"
-            ),
-            width = "100%"
-          )
-        })
       }
-    }, ignoreInit = FALSE)
-    
-    
-    
-    # lapply(variable_choicesintersect(), function(variable) { avant
-    #   local({
-    #     variable <- variable
-    #     flog.info(paste("Initialising", variable))
-    #     # récupère les valeurs distinctes pour cette variable
-    #     variable_data <- data_for_filters %>%
-    #       dplyr::select(all_of(variable)) %>%
-    #       dplyr::distinct() %>%
-    #       pull(!!sym(variable))
-    #     req(final_filtered_data())
-    #     selected <- final_filtered_data() %>%
-    #       dplyr::select(all_of(variable)) %>%
-    #       dplyr::distinct() %>%
-    #       pull(!!sym(variable))
-    #     
-    #     output[[paste0("select_", variable)]] <- renderUI({
-    #       shinyWidgets::pickerInput(
-    #         inputId  = paste0('select_', variable), 
-    #         label    = paste('Select', gsub("_", " ", variable)), 
-    #         choices  = variable_data, 
-    #         multiple = TRUE,
-    #         selected = selected,     # sélectionne tout (ici pour species_label c’est 1 seule valeur)
-    #         options  = list(
-    #           `actions-box`         = TRUE,
-    #           `live-search`         = TRUE,
-    #           `size`                = 100,
-    #           `selected-text-format`= "count > 5"
-    #         ),
-    #         width = "100%"
-    #       )
-    #     })
-    #     
-    #     flog.info(paste(variable, "UI element initialized"))
-    #   })
-    # })
-  })
+      
+      output$select_measurement_unit <- renderUI({
+        choices <- sort(unique(na.omit(
+          df_all$measurement_unit
+        )))
+        
+        preselect <- .pick_tons_or_first(
+          as.character(choices)
+        )
+        
+        shinyWidgets::pickerInput(
+          inputId = "select_measurement_unit",
+          label = "Select measurement unit",
+          choices = choices,
+          multiple = TRUE,
+          selected = preselect %||% choices,
+          options = list(
+            `actions-box` = TRUE,
+            `live-search` = TRUE,
+            `size` = 100,
+            `selected-text-format` = "count > 5"
+          ),
+          width = "100%"
+        )
+      })
+      
+      flog.info("Tous les filtres sont initialisés")
+      
+      shinyjs::hide("loading_page")
+      shinyjs::show("main_content")
+    },
+    ignoreInit = TRUE
+  )
   
   
   output$year_input <- renderUI({

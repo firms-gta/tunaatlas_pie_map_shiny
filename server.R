@@ -127,9 +127,21 @@ server <- function(input, output, session) {
   observeEvent(dataset_choices$submit(), {
     flog.info("Submit dataset clicked")
     
-    selected_dataset <- dataset_choices$selected_dataset()
-    selected_gridtype <- dataset_choices$selected_gridtype()
-    selected_measurement_unit <- dataset_choices$selected_measurement_unit()
+    # req(
+    #   dataset_choices$selected_dataset(),
+    #   dataset_choices$selected_gridtype(),
+    #   dataset_choices$selected_measurement_unit()
+    # )
+    
+    selected_dataset_value <- dataset_choices$selected_dataset()
+    selected_gridtype_value <- dataset_choices$selected_gridtype()
+    selected_measurement_unit_value <- dataset_choices$selected_measurement_unit()
+    
+    # # Mise à jour des reactiveVal, sans les écraser
+    # selected_dataset(selected_dataset_value)
+    # selected_gridtype(selected_gridtype_value)
+    # selected_measurement_unit(selected_measurement_unit_value)
+    
     firstsubmit <- firstSubmit()
     if (firstsubmit) {
       flog.info("First submit")
@@ -187,21 +199,53 @@ server <- function(input, output, session) {
         shinyjs::hide("main_content")
         shinyjs::show("loading_page")
         issueddata <- FALSE
-        if(issueddata){
-          selected_viewissued = "public.issueddata"
+        selected_viewissued <- if (
+          stringr::str_detect(
+            tolower(selected_dataset_value),
+            "effort"
+          )
+        ) {
+          "public.shinyeffort"
+        } else if (
+          stringr::str_detect(
+            tolower(selected_dataset_value),
+            "issue"
+          )
+        ) {
+          "public.issueddata"
         } else {
-          selected_viewissued = "public.shinyeffort"
+          "public.shinycatch"
         }
+        
+        
+        flog.info("Selected database view: %s", selected_viewissued)
+        
         dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
         shinyjs::click("submit")
-        flog.info("Default dataset loaded")
+        flog.info(
+          "DB result: %s rows",
+          nrow(dataset_not_init$data_for_filters)
+        )
+        
+        validate(
+          need(
+            nrow(dataset_not_init$data_for_filters) > 0,
+            paste(
+              "La requête ne retourne aucune ligne.",
+              "Vue :", selected_viewissued,
+              "Dataset :", selected_dataset_value,
+              "Gridtype :", paste(selected_gridtype_value, collapse = ", "),
+              "Unité :", paste(selected_measurement_unit_value, collapse = ", ")
+            )
+          )
+        )
       }
 
       default_dataset <- dataset_not_init$data_for_filters
       
       res <- generate_dimensions_palettes(
         df = default_dataset,
-        variable = variable,           # ton vecteur global des variables possibles
+        variable = variable,           
         seed = 2643598
       )
       
@@ -564,7 +608,6 @@ server <- function(input, output, session) {
     filtered_data <- as.data.frame(filtered_data %>% dplyr::ungroup() %>% 
                                      dplyr::mutate(year = as.numeric(year), month = as.numeric(month)) %>% 
                                      dplyr::mutate(measurement_value = as.numeric(measurement_value)))
-    
     data <- load_initial_data(filtered_data)
     
     flog.info("Initial Data loaded")

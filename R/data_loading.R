@@ -37,76 +37,197 @@ load_initial_data <- function(default_dataset_preloaded) {
   )
 }
 
-load_query_data <- function(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = "public.shinycatch", debug, pool) {
+load_query_data <- function(
+    selected_dataset,
+    selected_gridtype,
+    selected_measurement_unit,
+    selected_view = "public.shinycatch",
+    debug,
+    pool
+) {
   
-  if (selected_view == "public.shinycatch") {
-    base_query <- "
-    SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month, source_authority
-    FROM {selected_view}
-    WHERE dataset = {selected_dataset}
-    AND gridtype IN ({selected_gridtype*})
-    AND measurement_unit IN ({selected_measurement_unit*})
-    GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit, source_authority"
-  } else if (selected_view == "public.issueddata"){
-    base_query <- "
-    SELECT gridtype, codesource_area, species, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month, source_authority, issue
-    FROM {selected_view}
-    WHERE dataset = {selected_dataset}
-    AND gridtype IN ({selected_gridtype*})
-    AND measurement_unit IN ({selected_measurement_unit*})
-    GROUP BY gridtype, species, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit, source_authority, issue"
-  } else if (selected_view == "public.shinyeffort"){
-    base_query <- "
-    SELECT gridtype, codesource_area, gear_type, fishing_fleet, SUM(measurement_value) as measurement_value, measurement_unit, fishing_mode, year, month
-    FROM {selected_view}
-    WHERE dataset = {selected_dataset}
-    AND gridtype IN ({selected_gridtype*})
-    AND measurement_unit IN ({selected_measurement_unit*})
-    GROUP BY gridtype, fishing_fleet, codesource_area, year, month, gear_type, fishing_mode, measurement_unit"
-  } else {
-    stop("Provide a view to request")
+  view_name <- as.character(selected_view)
+  
+  # Expected dimensions for each database view
+  wanted_dimensions <- switch(
+    view_name,
+    "public.shinycatch" = c(
+      "gridtype",
+      "codesource_area",
+      "species",
+      "gear_type",
+      "fishing_fleet",
+      "measurement_unit",
+      "fishing_mode",
+      "year",
+      "month",
+      "source_authority"
+    ),
+    "public.issueddata" = c(
+      "gridtype",
+      "codesource_area",
+      "species",
+      "gear_type",
+      "fishing_fleet",
+      "measurement_unit",
+      "fishing_mode",
+      "year",
+      "month",
+      "source_authority",
+      "issue"
+    ),
+    "public.shinyeffort" = c(
+      "gridtype",
+      "codesource_area",
+      "gear_type",
+      "fishing_fleet",
+      "measurement_unit",
+      "fishing_mode",
+      "year",
+      "month"
+    ),
+    stop("Provide a valid view to request")
+  )
+  
+  # The view name has been validated by switch()
+  selected_view <- DBI::SQL(view_name)
+  
+  # Retrieve column names without loading data
+  available_columns <- names(
+    DBI::dbGetQuery(
+      pool,
+      glue::glue_sql(
+        "SELECT * FROM {selected_view} LIMIT 0",
+        .con = pool
+      )
+    )
+  )
+  
+  flog.info(
+    "Columns available in %s: %s",
+    view_name,
+    paste(available_columns, collapse = ", ")
+  )
+  
+  # Columns required by the query and the application
+  required_columns <- c(
+    "dataset",
+    "gridtype",
+    "codesource_area",
+    "measurement_value",
+    "measurement_unit",
+    "year"
+  )
+  
+  missing_required <- setdiff(
+    required_columns,
+    available_columns
+  )
+  
+  if (length(missing_required) > 0L) {
+    stop(
+      "Required columns missing from ",
+      view_name,
+      ": ",
+      paste(missing_required, collapse = ", ")
+    )
   }
-
+  
+  # Keep only dimensions that are actually available
+  group_columns <- intersect(
+    wanted_dimensions,
+    available_columns
+  )
+  
+  missing_optional <- setdiff(
+    wanted_dimensions,
+    available_columns
+  )
+  
+  if (length(missing_optional) > 0L) {
+    flog.warn(
+      "Columns absent from %s and ignored: %s",
+      view_name,
+      paste(missing_optional, collapse = ", ")
+    )
+  }
+  
+  group_columns_sql <- DBI::SQL(
+    paste(group_columns, collapse = ", ")
+  )
+  
+  base_query <- "
+    SELECT {group_columns_sql},
+           SUM(measurement_value) AS measurement_value
+    FROM {selected_view}
+    WHERE dataset = {selected_dataset}
+      AND gridtype IN ({selected_gridtype*})
+      AND measurement_unit IN ({selected_measurement_unit*})
+    GROUP BY {group_columns_sql}"
   
   if (debug) {
     base_query <- paste(base_query, "LIMIT 10000")
   }
   
-  query <- glue::glue_sql(base_query, 
-                          selected_dataset = selected_dataset, 
-                          selected_gridtype = selected_gridtype, 
-                          selected_measurement_unit = selected_measurement_unit, 
-                          selected_view = selected_view,
-                          .con = pool)
-  flog.info(print(query))
-  geom_query <- glue_sql("
-  SELECT DISTINCT codesource_area
-  FROM {selected_view}
-  WHERE dataset = {selected_dataset}
-    AND gridtype IN ({selected_gridtype*})
-    AND measurement_unit IN ({selected_measurement_unit*})",
-                         .con = pool)  
-  geom_query <- glue::glue_sql(geom_query, 
-                          selected_dataset = selected_dataset, 
-                          selected_gridtype = selected_gridtype, 
-                          selected_measurement_unit = selected_measurement_unit, 
-                          .con = pool)
+  query <- glue::glue_sql(
+    base_query,
+    selected_dataset = selected_dataset,
+    selected_gridtype = selected_gridtype,
+    selected_measurement_unit = selected_measurement_unit,
+    selected_view = selected_view,
+    group_columns_sql = group_columns_sql,
+    .con = pool
+  )
+  
+  flog.info("%s", as.character(query))
+  
+  geom_query <- glue::glue_sql(
+    "
+    SELECT DISTINCT codesource_area
+    FROM {selected_view}
+    WHERE dataset = {selected_dataset}
+      AND gridtype IN ({selected_gridtype*})
+      AND measurement_unit IN ({selected_measurement_unit*})
+    ",
+    selected_dataset = selected_dataset,
+    selected_gridtype = selected_gridtype,
+    selected_measurement_unit = selected_measurement_unit,
+    selected_view = selected_view,
+    .con = pool
+  )
   
   geom <- qs::qread("data/cl_areal_grid.qs")
-  geometry <- dbGetQuery(pool, geom_query) %>% dplyr::rename(geographic_identifier = codesource_area) 
-  geom <-geom %>% dplyr::semi_join(geometry, by = "geographic_identifier")
   
-  data <- dbGetQuery(pool, query) %>% dplyr::rename(geographic_identifier = codesource_area)%>% 
-    dplyr::mutate(measurement_unit = case_when(measurement_unit =="t"~"Tons", 
-                                               measurement_unit == "no" ~ "Number of fish",
-                                               TRUE ~ measurement_unit))
-  # data_sf <- as.data.frame(st_as_sf(data, wkt = "geom_wkt", crs = 4326))
-  # 
-  # initial_data <- data_sf
-  # initial_data$geom <- NULL
-  # data_for_filters <- initial_data
+  geometry <- DBI::dbGetQuery(pool, geom_query) %>%
+    dplyr::rename(
+      geographic_identifier = codesource_area
+    )
   
-  list(initial_data = geom,
-       data_for_filters = data
+  geom <- geom %>%
+    dplyr::semi_join(
+      geometry,
+      by = "geographic_identifier"
+    )
+  
+  data <- DBI::dbGetQuery(pool, query) %>%
+    dplyr::rename(
+      geographic_identifier = codesource_area
+    ) %>%
+    dplyr::mutate(
+      measurement_unit = dplyr::case_when(
+        measurement_unit == "t" ~ "Tons",
+        measurement_unit == "no" ~ "Number of fish",
+        TRUE ~ measurement_unit
+      )
+    )
+  
+  # Annual datasets may not contain a month column
+  if (!"month" %in% colnames(data)) {
+    data$month <- 1L
+  }
+  
+  list(
+    initial_data = geom,
+    data_for_filters = data
   )
 }

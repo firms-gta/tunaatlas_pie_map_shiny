@@ -113,7 +113,6 @@ server <- function(input, output, session) {
   )
   
   pool <- reactive({
-    req(dataset_choices$pool())
     dataset_choices$pool()
   })
   # dataset_choices <- dataset_choice_server(
@@ -127,11 +126,11 @@ server <- function(input, output, session) {
   observeEvent(dataset_choices$submit(), {
     flog.info("Submit dataset clicked")
     
-    # req(
-    #   dataset_choices$selected_dataset(),
-    #   dataset_choices$selected_gridtype(),
-    #   dataset_choices$selected_measurement_unit()
-    # )
+    on.exit({
+      flog.info("Fin du chargement : affichage de l'application")
+      shinyjs::hide("loading_page")
+      shinyjs::show("main_content")
+    }, add = TRUE)
     
     selected_dataset_value <- dataset_choices$selected_dataset()
     selected_gridtype_value <- dataset_choices$selected_gridtype()
@@ -162,7 +161,6 @@ server <- function(input, output, session) {
       # flog.info("delay finished")
       shinyjs::hide("loading_page")
       shinyjs::show("main_content")
-      shinyjs::show("loading_page")
       
       # showModal(                   modalDialog(
       #   title = "Information",
@@ -220,15 +218,23 @@ server <- function(input, output, session) {
         
         flog.info("Selected database view: %s", selected_viewissued)
         
-        dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
+        dataset_not_init <- load_query_data(
+          selected_dataset = selected_dataset_value,
+          selected_gridtype = selected_gridtype_value,
+          selected_measurement_unit =
+            selected_measurement_unit_value,
+          selected_view = DBI::SQL(selected_viewissued),
+          debug = debug,
+          pool = pool()
+        )
         shinyjs::click("submit")
         flog.info(
           "DB result: %s rows",
           nrow(dataset_not_init$data_for_filters)
         )
         
-        validate(
-          need(
+        shiny::validate(
+          shiny::need(
             nrow(dataset_not_init$data_for_filters) > 0,
             paste(
               "La requête ne retourne aucune ligne.",

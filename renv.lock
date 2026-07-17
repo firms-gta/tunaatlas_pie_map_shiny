@@ -351,14 +351,15 @@
     },
     "Rcpp": {
       "Package": "Rcpp",
-      "Version": "1.0.14",
+      "Version": "1.1.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
+        "R",
         "methods",
         "utils"
       ],
-      "Hash": "e7bdd9ee90e96921ca8a0f1972d66682"
+      "Hash": "60df6f11cbeffbf9d50ad0852867f6b6"
     },
     "RcppEigen": {
       "Package": "RcppEigen",
@@ -503,7 +504,7 @@
       "Package": "arrow",
       "Version": "17.0.0.1",
       "Source": "Repository",
-      "Repository": "https://packagemanager.posit.co/cran/__linux__/jammy/latest",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "R6",
@@ -1434,9 +1435,9 @@
     },
     "e1071": {
       "Package": "e1071",
-      "Version": "1.7-16",
+      "Version": "1.7-17",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "class",
         "grDevices",
@@ -1446,7 +1447,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "27a09ca40266a1066d62ef5402dd51d6"
+      "Hash": "9d516dde384526d4784166f888cd2c6c"
     },
     "ellipsis": {
       "Package": "ellipsis",
@@ -3002,13 +3003,13 @@
     },
     "magrittr": {
       "Package": "magrittr",
-      "Version": "2.0.3",
+      "Version": "2.0.4",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "R"
       ],
-      "Hash": "7ce2733a9826b3aeb1775d56fd305472"
+      "Hash": "8b3b213aa0c54a0dec254288ccb545d1"
     },
     "mapedit": {
       "Package": "mapedit",
@@ -3785,7 +3786,7 @@
     },
     "proxy": {
       "Package": "proxy",
-      "Version": "0.4-27",
+      "Version": "0.4-29",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -3793,7 +3794,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "e0ef355c12942cf7a6b91a6cfaea8b3e"
+      "Hash": "b6c826e897b46b163c51a3b990113a21"
     },
     "pryr": {
       "Package": "pryr",
@@ -3996,6 +3997,17 @@
         "reactR"
       ],
       "Hash": "6069eb2a6597963eae0605c1875ff14c"
+    },
+    "reactlog": {
+      "Package": "reactlog",
+      "Version": "1.1.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "jsonlite"
+      ],
+      "Hash": "745883ab4ed03f20593cd27334712eaf"
     },
     "readODS": {
       "Package": "readODS",
@@ -4996,14 +5008,16 @@
     "terra": {
       "Package": "terra",
       "Version": "1.8-50",
-      "Source": "Repository",
-      "Repository": "RSPM",
+      "Source": "URL",
+      "Repository": "CRAN",
+      "RemoteType": "url",
+      "RemoteUrl": "https://cran.r-project.org/src/contrib/Archive/terra/terra_1.8-50.tar.gz",
       "Requirements": [
         "R",
         "Rcpp",
         "methods"
       ],
-      "Hash": "057783c6c0f092168a8fef1efbb3adb8"
+      "Hash": "9bb1c4f25ec7f7fd650154e42f505804"
     },
     "testthat": {
       "Package": "testthat",
@@ -5276,14 +5290,14 @@
     },
     "units": {
       "Package": "units",
-      "Version": "0.8-7",
+      "Version": "1.0-0",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "R",
         "Rcpp"
       ],
-      "Hash": "5d0b024902d5da97a2b64f002e92a869"
+      "Hash": "3797c73fd3bde8b1601a4e1bf53557ac"
     },
     "urlchecker": {
       "Package": "urlchecker",
@@ -5503,13 +5517,13 @@
     },
     "wk": {
       "Package": "wk",
-      "Version": "0.9.4",
+      "Version": "0.9.5",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "37be35d733130f1de1ef51672cf7cdc0"
+      "Hash": "10fb21ed42dbd4ed9162aaab818146e3"
     },
     "writexl": {
       "Package": "writexl",

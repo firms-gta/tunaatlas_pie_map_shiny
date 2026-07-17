@@ -111,9 +111,10 @@ load_data <- function(DOI) {
       message("✨ Enriching data from: ", qs_path)
       data_tbl <- qs::qread(qs_path)
       # fix types
-      if ("gear_type" %in% names(data_tbl))
-        data_tbl$gear_type <- as.character(data_tbl$gear_type)
+      if ("gear_type" %in% names(data_tbl)){
+      data_tbl$gear_type <- as.character(data_tbl$gear_type)}
       data_tbl$geographic_identifier <- as.character(data_tbl$geographic_identifier)
+      data_tbl$measurement_unit <- as.character(data_tbl$measurement_unit)
       
       # enrich
       require(CWP.dataset)

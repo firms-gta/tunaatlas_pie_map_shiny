@@ -57,6 +57,12 @@ WORKDIR /root/tunaatlas_pie_map_shiny
 COPY renv.lock ./
 COPY renv/activate.R renv/activate.R
 COPY renv/settings.json renv/settings.json
+COPY .here .Rprofile tunaatlas_pie_map_shiny.Rproj ./
+
+RUN Rscript -e "\
+    message('Bibliothèques utilisées :'); \
+    print(.libPaths()); \
+    renv::restore(prompt = FALSE)"
 
 RUN Rscript -e "\
     install.packages( \
@@ -93,9 +99,12 @@ COPY update_data.R ./
 COPY download_GTA_data.R ./
 
 COPY global.R server.R ui.R app_debug.R install.R ./
-COPY .here .Rprofile tunaatlas_pie_map_shiny.Rproj ./
 COPY .zenodo.json ./
 COPY README.md README.Rmd LICENSE ./
+
+ENV RENV_CONFIG_CACHE_ENABLED=FALSE
+ENV RENV_PATHS_ROOT=/root/tunaatlas_pie_map_shiny/renv
+ENV RENV_PATHS_CACHE=/root/tunaatlas_pie_map_shiny/renv/library
 
 # Le répertoire existe, mais reste vide dans cette image.
 # Il sera rempli par un volume ou par Dockerfile.imagewithdata.
@@ -124,6 +133,8 @@ RUN if [ "${MODE}" = "dev" ]; then \
 RUN echo "MODE=${MODE}" \
     && echo "BUILD_BRANCH=${BUILD_BRANCH}" \
     && echo "L'image principale ne contient aucune donnée."
+    
+COPY DOI.csv ./
 
 EXPOSE 3838
 EXPOSE 8787

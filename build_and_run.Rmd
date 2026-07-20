@@ -3,25 +3,15 @@
 ## Build (single DOI)
 
 ```bash
-docker build --progress=plain \
--f docker/Dockerfile.imagewithdata \
---build-arg APP_IMAGE=tunaatlas-app:local \
---build-arg DATA_IMAGE=gta-data-tmp:local \
---build-arg DATASET_FILE=global_catch_ird_level2_1950_2024_harmonized_20834708_updated.qs \
---build-arg DOI_CSV=$'DOI,Filename\n10.5281/zenodo.20834708,global_catch_ird_level2_1950_2024_harmonized.csv\n' \
--t tunaatlas-single:local .
+docker build --progress=plain -f docker/Dockerfile.imagewithdata --build-arg APP_IMAGE=ghcr.io/firms-gta/tunaatlas-app:main --build-arg DATA_IMAGE=ghcr.io/firms-gta/tunaatlas-data:main --build-arg DATASET_FILE=global_catch_ird_level2_1950_2024_harmonized_20834708.qs --build-arg DOI_CSV=$'DOI,Filename\n10.5281/zenodo.20834708,global_catch_ird_level2_1950_2024_harmonized.csv\n' -t tunaatlas-single:local .
+
 ```
 
 ## Build (multiple DOIs)
 
 ```bash
-docker build --progress=plain \
--f docker/Dockerfile.imagewithdata \
---build-arg APP_IMAGE=tunaatlas-app:local \
---build-arg DATA_IMAGE=gta-data-tmp:local \
---build-arg DATASET_FILE=global_catch_ird_level2_1950_2024_harmonized_20834708_updated.qs \
---build-arg DOI_CSV=$'DOI,Filename\n10.5281/zenodo.20834708,global_catch_ird_level2_1950_2024_harmonized.csv\n10.5281/zenodo.20834708,global_effort_ird_1950_2024_public_harmonized.csv\n' \
--t tunaatlas-single:local .
+To be done
+
 ```
 
 ## Run

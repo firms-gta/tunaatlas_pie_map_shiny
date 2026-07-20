@@ -33,73 +33,309 @@ variable <- c("species",
               "Ocean", "ocean_basin","source_authority","AREA.CODE"
 )
 
-# Paths for processed files
-default_dataset_path <- here::here("data/default_dataset.qs")
+# Paths -------------------------------------------------------------------
 
-DOI <- readr::read_csv("DOI.csv")
-if(!file.exists("data/data.qs")){
-if(!file.exists(here::here("data/default_dataset.qs")) & !exists("default_dataset")){
+doi_path <- here::here("DOI.csv")
+data_cache_path <- here::here("data", "data.qs")
+
+DOI <- readr::read_csv(
+  doi_path,
+  show_col_types = FALSE,
+  col_types = readr::cols(.default = readr::col_character())
+)
+
+if (nrow(DOI) == 0) {
+  stop("DOI.csv does not contain any dataset")
+}
+
+# The first DOI.csv row is always the default dataset
+default_doi <- DOI$DOI[[1]]
+default_filename <- DOI$Filename[[1]]
+
+record_id <- sub(
+  ".*zenodo\\.([0-9]+)$",
+  "\\1",
+  default_doi
+)
+
+default_extension <- tolower(
+  tools::file_ext(default_filename)
+)
+
+default_basename <- tools::file_path_sans_ext(
+  default_filename
+)
+
+package_version <- if (
+  requireNamespace("CWP.dataset", quietly = TRUE)
+) {
+  as.character(utils::packageVersion("CWP.dataset"))
+} else {
+  "not-installed"
+}
+
+# Increment this manually when the cache structure changes
+cache_version <- "3"
+
+cache_key <- paste(
+  cache_version,
+  default_doi,
+  default_filename,
+  package_version,
+  sep = "|"
+)
+
+flog.info(
+  "Default DOI dataset: %s",
+  default_filename
+)
+
+# Cache validation --------------------------------------------------------
+
+is_valid_data_cache <- function(x, expected_key) {
+  required_fields <- c(
+    "initial_data",
+    "data_for_filters",
+    "palettes",
+    "targettes",
+    "variable_to_display",
+    "cache_key"
+  )
   
-  flog.info("Loading data ")
-  # Read the DOI CSV file
-  i <- 1
-  record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", DOI$DOI[i])
+  !is.null(x) &&
+    !is.data.frame(x) &&
+    is.list(x) &&
+    all(required_fields %in% names(x)) &&
+    identical(as.character(x$cache_key), expected_key) &&
+    is.data.frame(x$data_for_filters) &&
+    nrow(x$data_for_filters) > 0 &&
+    length(x$variable_to_display) > 0
+}
+
+data <- NULL
+
+if (file.exists(data_cache_path)) {
+  cached_data <- tryCatch(
+    qs::qread(data_cache_path),
+    error = function(e) {
+      flog.warn(
+        "Unable to read data.qs: %s",
+        e$message
+      )
+      NULL
+    }
+  )
   
-  filename <- DOI$Filename[i]
-  dataset <- tools::file_path_sans_ext(filename)
-  renamed <- file.path("data", paste0(dataset, "_", record_id, "_updated.qs"))
-  if(file.exists(here::here(renamed))){
-  default_dataset <- qs::qread(here::here(renamed))
-  flog.info("Saving default dataset to qs file")
-  qs::qsave(default_dataset, here::here("data/default_dataset.qs"))
-  }
-  # updated <- file.path("data", paste0(dataset, "_updated.qs"))
-  
- } else if(!exists("default_dataset") & file.exists("data/default_dataset.qs")){
-  flog.info("reading the data from qs file")
-  default_dataset <- qs::qread("data/default_dataset.qs")
-  flog.info("Data read")
-  flog.info(paste0("colnames of default dataset:", colnames(default_dataset)))
-  flog.info(paste0("class of default dataset", class(default_dataset)))
-  
-  # geom <- qs::qread("data/geom.qs")
-  # default_dataset_shape <- default_dataset %>% dplyr::inner_join(shapefile.fix, by = c("geographic_identifier" = "cwp_code"))
-  
- }
-  source(here::here("R/data_loading.R"))
-  source(here::here("global/generate_dimensions_palettes.R"))
-  
-  if("AREA.CODE" %in% colnames(default_dataset)){
+  if (is_valid_data_cache(cached_data, cache_key)) {
+    data <- cached_data
     
+    flog.info(
+      "Valid data.qs loaded for %s",
+      default_filename
+    )
+  } else {
+    flog.warn(
+      "data.qs is obsolete or invalid and will be rebuilt"
+    )
+  }
+}
+
+# Default dataset loading -------------------------------------------------
+
+read_default_dataset <- function(path) {
+  extension <- tolower(tools::file_ext(path))
+  
+  result <- switch(
+    extension,
+    qs = qs::qread(path),
+    
+    csv = readr::read_csv(
+      path,
+      show_col_types = FALSE,
+      progress = FALSE
+    ),
+    
+    rds = readRDS(path),
+    
+    stop(
+      "Unsupported default dataset extension: ",
+      extension
+    )
+  )
+  
+  if (!is.data.frame(result)) {
+    stop(
+      "The default dataset is not a data.frame or sf object: ",
+      path
+    )
+  }
+  
+  if (!"geographic_identifier" %in% names(result)) {
+    stop(
+      "The default dataset has no geographic_identifier column"
+    )
+  }
+  
+  result$geographic_identifier <-
+    as.character(result$geographic_identifier)
+  
+  result
+}
+
+if (is.null(data)) {
+  source(here::here("R", "data_loading.R"))
+  source(
+    here::here(
+      "global",
+      "generate_dimensions_palettes.R"
+    )
+  )
+  
+  # Prefer an already enriched/converted QS file
+  possible_paths <- c(
+    here::here(
+      "data",
+      paste0(
+        default_basename,
+        "_",
+        record_id,
+        "_updated.qs"
+      )
+    ),
+    here::here(
+      "data",
+      paste0(
+        default_basename,
+        "_",
+        record_id,
+        ".qs"
+      )
+    ),
+    here::here(
+      "data",
+      paste0(
+        default_basename,
+        "_",
+        record_id,
+        ".",
+        default_extension
+      )
+    ),
+    here::here(
+      "data",
+      default_filename
+    )
+  )
+  
+  valid_paths <- possible_paths[
+    file.exists(possible_paths) &
+      file.info(possible_paths)$size > 0
+  ]
+  
+  if (length(valid_paths) > 0) {
+    default_path <- valid_paths[[1]]
+    
+    flog.info(
+      "Using existing default dataset: %s",
+      default_path
+    )
+  } else {
+    flog.info(
+      "Default dataset is missing; downloading first DOI.csv row"
+    )
+    
+    default_path <- download_and_rename(
+      doi = default_doi,
+      filename = default_filename,
+      data_dir = here::here("data")
+    )
+  }
+  
+  if (
+    is.null(default_path) ||
+    !file.exists(default_path) ||
+    file.info(default_path)$size == 0
+  ) {
+    stop(
+      "Unable to retrieve the first DOI.csv dataset: ",
+      default_filename
+    )
+  }
+  
+  default_dataset <- read_default_dataset(
+    default_path
+  )
+  
+  # FishStat-specific preparation
+  if ("AREA.CODE" %in% names(default_dataset)) {
     Sys.setenv(APP_ENABLE_MAP = "0")
     
-    flog.info("Fishsstatdataset changed")
+    flog.info("Preparing FishStat dataset")
+    
     default_dataset <- default_dataset %>%
       dplyr::mutate(
-        year_chr = str_trim(as.character(year)),
-        date = suppressWarnings(ymd(year_chr)),
-        date = if_else(is.na(date), as.Date(year_chr), date),
-        year  = lubridate::year(date),
+        year_chr = stringr::str_trim(
+          as.character(year)
+        ),
+        date = suppressWarnings(
+          lubridate::ymd(year_chr)
+        ),
+        date = dplyr::if_else(
+          is.na(date),
+          as.Date(year_chr),
+          date
+        ),
+        year = lubridate::year(date),
         month = 1
       )
     
-    variable <- setdiff(variable, c("species", "source_authority"))
+    variable <- setdiff(
+      variable,
+      c("species", "source_authority")
+    )
   }
   
-  data <- load_initial_data(default_dataset)
-  res <- generate_dimensions_palettes(
+  # Structure expected by server.R
+  data <- load_initial_data(
+    default_dataset
+  )
+  
+  dimensions <- generate_dimensions_palettes(
     df = data$data_for_filters,
-    variable = variable,           
+    variable = variable,
     seed = 2643598
   )
-  data$palettes  <- res$palettes
-  data$targettes <- res$targettes
-  data$variable_to_display <- res$variables
-  qs::qsave(data,"data/data.qs")
-} else if (is.function(data)){
-  flog.info("reading data.qs")
-  data <- qs::qread("data/data.qs")
-  flog.info("data.qs read")
+  
+  data$palettes <- dimensions$palettes
+  data$targettes <- dimensions$targettes
+  data$variable_to_display <- dimensions$variables
+  
+  # Cache metadata
+  data$cache_key <- cache_key
+  data$cache_version <- cache_version
+  data$default_doi <- default_doi
+  data$default_filename <- default_filename
+  
+  dir.create(
+    dirname(data_cache_path),
+    recursive = TRUE,
+    showWarnings = FALSE
+  )
+  
+  qs::qsave(
+    data,
+    data_cache_path
+  )
+  
+  flog.info(
+    "data.qs created: %s rows; variables=%s",
+    nrow(data$data_for_filters),
+    paste(
+      data$variable_to_display,
+      collapse = ", "
+    )
+  )
 }
 
-
+# Compatibility with existing application code
+default_dataset <- data$data_for_filters

@@ -55,15 +55,79 @@ flog.info("All libraries loaded successfully in %s seconds", Sys.time() - before
 flog.info("All libraries loaded successfully.")
 #create default_dataset
 source(here::here("update_data.R"))
-source(here::here("create_or_load_default_dataset.R"))
+# ---- Diagnose objects created during data initialization ----
+
+default_obj <- get0(
+  "default_dataset",
+  envir = .GlobalEnv,
+  inherits = FALSE
+)
+
+data_obj <- get0(
+  "data",
+  envir = .GlobalEnv,
+  inherits = FALSE
+)
+
+filters_obj <- tryCatch(
+  data_obj[["data_for_filters"]],
+  error = function(e) NULL
+)
+
+initial_obj <- tryCatch(
+  data_obj[["initial_data"]],
+  error = function(e) NULL
+)
+
+display_obj <- tryCatch(
+  data_obj[["variable_to_display"]],
+  error = function(e) NULL
+)
+
+flog.info(
+  "DIAG default_dataset: NULL=%s | class=%s | rows=%s",
+  is.null(default_obj),
+  paste(class(default_obj), collapse = "/"),
+  if (is.data.frame(default_obj)) nrow(default_obj) else "NA"
+)
+
+flog.info(
+  "DIAG data: NULL=%s | class=%s | fields=%s",
+  is.null(data_obj),
+  paste(class(data_obj), collapse = "/"),
+  paste(names(data_obj), collapse = ", ")
+)
+
+flog.info(
+  "DIAG data_for_filters: NULL=%s | class=%s | rows=%s",
+  is.null(filters_obj),
+  paste(class(filters_obj), collapse = "/"),
+  if (is.data.frame(filters_obj)) nrow(filters_obj) else "NA"
+)
+
+flog.info(
+  "DIAG initial_data: NULL=%s | class=%s | rows=%s",
+  is.null(initial_obj),
+  paste(class(initial_obj), collapse = "/"),
+  if (is.data.frame(initial_obj)) nrow(initial_obj) else "NA"
+)
+
+flog.info(
+  "DIAG variable_to_display: length=%s | values=%s",
+  length(display_obj),
+  paste(display_obj, collapse = ", ")
+)
+
+flog.info(
+  "DIAG filter columns: %s",
+  paste(names(filters_obj), collapse = ", ")
+)
 
 source(here::here("modules/load_ui_modules.R"))
 source(here::here("modules/report_module.R"))
 source(here::here("modules/db_connect.R"))
 load_ui_modules()
 flog.info("Sourced loading ui modules dataset")
-
-flog.info(sprintf("Variables: %s", paste0(variable)))
 
 # Load functions from external sources
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i6_SpeciesMap.R")
@@ -109,6 +173,9 @@ more_about = function(){
 flog.info("Menu generated ")
 outputmoreabout <- more_about()
 source(here::here("R/data_loading.R"))
+source(here::here("create_or_load_default_dataset.R"))
+flog.info(sprintf("Variables: %s", paste0(variable)))
+
 # Rprofmem("memory_profile.txt")
 # Rprofmem(NULL)
 # Log that the UI and server files have been sourced successfully

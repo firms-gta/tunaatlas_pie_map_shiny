@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1.4
+
+ARG APP_IMAGE=tunaatlas-app:local
+ARG DATA_IMAGE=gta-data-updated:local
+
+FROM ${DATA_IMAGE} AS all-data
+FROM ${APP_IMAGE}
+
+ARG DATA_IMAGE
+ARG DATASET_FILE
+ARG DOI_CSV
+
+RUN test -n "${DATASET_FILE}" || { \
+      echo "❌ DATASET_FILE est obligatoire"; \
+      exit 1; \
+    } \
+    && test -n "${DOI_CSV}" || { \
+      echo "❌ DOI_CSV est obligatoire"; \
+      exit 1; \
+    }
+
+RUN mkdir -p /root/tunaatlas_pie_map_shiny/data
+
+# Copie uniquement le dataset demandé depuis l'image contenant toutes les données.
+RUN --mount=type=bind,from=all-data,source=/data,target=/mnt/all-data,ro \
+    echo "✅ Dataset demandé : ${DATASET_FILE}" \
+    && test -f "/mnt/all-data/${DATASET_FILE}" || { \
+         echo "❌ Dataset introuvable"; \
+         echo "Datasets disponibles :"; \
+         ls -lh /mnt/all-data; \
+         exit 1; \
+       } \
+    && cp "/mnt/all-data/${DATASET_FILE}" \
+          "/root/tunaatlas_pie_map_shiny/data/${DATASET_FILE}"
+
+RUN printf "%b" "${DOI_CSV}" \
+      > /root/tunaatlas_pie_map_shiny/DOI.csv \
+    && cp /root/tunaatlas_pie_map_shiny/DOI.csv \
+          /root/tunaatlas_pie_map_shiny/data/DOI.csv \
+    && echo "=== DOI.csv racine ===" \
+    && cat /root/tunaatlas_pie_map_shiny/DOI.csv \
+    && echo "=== DOI.csv data ===" \
+    && cat /root/tunaatlas_pie_map_shiny/data/DOI.csv
+
+RUN printf '%s\n' \
+      "DATA_IMAGE=${DATA_IMAGE}" \
+      "DATASET_FILE=${DATASET_FILE}" \
+      > /root/tunaatlas_pie_map_shiny/data/dataset.properties
+
+RUN echo "✅ Image finale construite :" \
+    && cat /root/tunaatlas_pie_map_shiny/data/dataset.properties \
+    && echo "=== Contenu du dossier data ===" \
+    && ls -lh /root/tunaatlas_pie_map_shiny/data
+
+RUN Rscript -e "source('global.R')"

@@ -41,105 +41,307 @@ catches_by_variable_moduleUI <- function(id, variable_choices) {
 #' @export
 
 # Module Server
+# Module Server
 catches_by_variable_moduleServer <- function(id, data_without_geom) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    flog.info("[%s] Initialising catches_by_variable module", id)
+    
     variable_choices <- reactive({
+      flog.info("[%s] Computing available variable choices", id)
+      
       df <- data_without_geom()
-      colnames(df)
-      intersect(colnames(df), variable_to_display)
+      
+      choices <- intersect(colnames(df), variable_to_display)
+      
+      flog.info(
+        "[%s] Available variables: %s",
+        id,
+        paste(choices, collapse = ", ")
+      )
+      
+      choices
     })
     
     # Dynamically generate the selectInput based on available columns
     output$variable_ui <- renderUI({
+      choices <- variable_choices()
+      
+      flog.info(
+        "[%s] Rendering variable selector with %s choices",
+        id,
+        length(choices)
+      )
+      
       selectInput(
-        ns("variable"), 
-        "Variable to display", 
-        choices = setNames(variable_choices(), gsub("_", " ", variable_choices()))
+        ns("variable"),
+        "Variable to display",
+        choices = setNames(
+          choices,
+          gsub("_", " ", choices)
+        )
       )
     })
     
     # Reactive expression for yearly data
     data_year <- reactive({
-      req(input$variable)  # Ensure that a variable is selected
-      req(input$topn)      # Ensure that the number for top n is provided
+      req(input$variable)
+      req(input$topn)
+      
+      flog.info(
+        "[%s] Computing yearly data: variable=%s, topn=%s",
+        id,
+        input$variable,
+        input$topn
+      )
+      
+      input_data <- data_without_geom()
+      
+      flog.info(
+        "[%s] Yearly input data: %s rows, %s columns",
+        id,
+        nrow(input_data),
+        ncol(input_data)
+      )
       
       # Get initial summarised data
-      df <- data_without_geom() %>%
-        dplyr::mutate(year = round(year)) %>% 
+      df <- input_data %>%
+        dplyr::mutate(year = round(year)) %>%
         dplyr::group_by(.data[[input$variable]], year) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop") %>% ungroup()
+        dplyr::summarise(
+          measurement_value = sum(measurement_value),
+          .groups = "drop"
+        ) %>%
+        dplyr::ungroup()
+      
+      flog.info(
+        "[%s] Yearly summarised data: %s rows",
+        id,
+        nrow(df)
+      )
       
       # Determine top n groups
       top_n_groups <- df %>%
         dplyr::group_by(.data[[input$variable]]) %>%
-        dplyr::summarise(total = sum(measurement_value)) %>%
+        dplyr::summarise(
+          total = sum(measurement_value),
+          .groups = "drop"
+        ) %>%
         dplyr::top_n(input$topn, total) %>%
-        pull(.data[[input$variable]])
+        dplyr::pull(.data[[input$variable]])
+      
+      flog.info(
+        "[%s] Yearly top groups for %s: %s",
+        id,
+        input$variable,
+        paste(top_n_groups, collapse = ", ")
+      )
       
       # Modify the dataset to group non-top n values
       df <- df %>%
-        dplyr::mutate(!!sym(input$variable) :=if_else(.data[[input$variable]] %in% top_n_groups, as.character(.data[[input$variable]]), "Other")) %>%
+        dplyr::mutate(
+          !!rlang::sym(input$variable) := dplyr::if_else(
+            .data[[input$variable]] %in% top_n_groups,
+            as.character(.data[[input$variable]]),
+            "Other"
+          )
+        ) %>%
         dplyr::group_by(.data[[input$variable]], year) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
+        dplyr::summarise(
+          measurement_value = sum(measurement_value),
+          .groups = "drop"
+        )
       
-      df
-    })
-    data_month <- reactive({
-      req("month" %in% names(data_without_geom()))
-      req(input$variable)  # Ensure that a variable is selected
-      req(input$topn)      # Ensure that the number for top n is provided
-      
-      # Get initial summarised data
-      df <- data_without_geom() %>%
-        dplyr::group_by(.data[[input$variable]], month) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
-      
-      # Determine top n groups
-      top_n_groups <- df %>%
-        dplyr::group_by(.data[[input$variable]]) %>%
-        dplyr::summarise(total = sum(measurement_value), .groups = "drop") %>%
-        dplyr::top_n(input$topn, total) %>%
-        pull(.data[[input$variable]])
-      
-      # Modify the dataset to group non-top n values
-      df <- df %>%
-        dplyr::mutate(!!sym(input$variable) :=if_else(.data[[input$variable]] %in% top_n_groups, as.character(.data[[input$variable]]), "Other")) %>%
-        dplyr::group_by(.data[[input$variable]], month) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value), .groups = "drop")
+      flog.info(
+        "[%s] Final yearly data ready: %s rows",
+        id,
+        nrow(df)
+      )
       
       df
     })
     
+    data_month <- reactive({
+      req("month" %in% names(data_without_geom()))
+      req(input$variable)
+      req(input$topn)
+      
+      flog.info(
+        "[%s] Computing monthly data: variable=%s, topn=%s",
+        id,
+        input$variable,
+        input$topn
+      )
+      
+      input_data <- data_without_geom()
+      
+      flog.info(
+        "[%s] Monthly input data: %s rows, %s columns",
+        id,
+        nrow(input_data),
+        ncol(input_data)
+      )
+      
+      # Get initial summarised data
+      df <- input_data %>%
+        dplyr::group_by(.data[[input$variable]], month) %>%
+        dplyr::summarise(
+          measurement_value = sum(measurement_value),
+          .groups = "drop"
+        )
+      
+      flog.info(
+        "[%s] Monthly summarised data: %s rows",
+        id,
+        nrow(df)
+      )
+      
+      # Determine top n groups
+      top_n_groups <- df %>%
+        dplyr::group_by(.data[[input$variable]]) %>%
+        dplyr::summarise(
+          total = sum(measurement_value),
+          .groups = "drop"
+        ) %>%
+        dplyr::top_n(input$topn, total) %>%
+        dplyr::pull(.data[[input$variable]])
+      
+      flog.info(
+        "[%s] Monthly top groups for %s: %s",
+        id,
+        input$variable,
+        paste(top_n_groups, collapse = ", ")
+      )
+      
+      # Modify the dataset to group non-top n values
+      df <- df %>%
+        dplyr::mutate(
+          !!rlang::sym(input$variable) := dplyr::if_else(
+            .data[[input$variable]] %in% top_n_groups,
+            as.character(.data[[input$variable]]),
+            "Other"
+          )
+        ) %>%
+        dplyr::group_by(.data[[input$variable]], month) %>%
+        dplyr::summarise(
+          measurement_value = sum(measurement_value),
+          .groups = "drop"
+        )
+      
+      flog.info(
+        "[%s] Final monthly data ready: %s rows",
+        id,
+        nrow(df)
+      )
+      
+      df
+    })
     
     # Plot for monthly data
     output$plot_month <- renderPlot({
-      if (unique(data_without_geom()$month == 1)) return(NULL)
-      df <- data_month()  # Get the reactive monthly data
-      # Replace NA values with 0
-      df_clean <- df %>% dplyr::mutate(measurement_value = ifelse(is.na(measurement_value), 0, measurement_value))
+      flog.info("[%s] Rendering monthly plot", id)
       
-     p <- ggplot(df_clean, aes_string(x = "month", y = "measurement_value", group = input$variable, fill = input$variable)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        labs(title = "Monthly data", x = "Month", y = "Measurement value")+
-       scale_x_continuous(breaks = scales::pretty_breaks(n = 12), limits = c(1,12))
+      if (all(data_without_geom()$month == 1, na.rm = TRUE)) {
+        flog.info(
+          "[%s] Monthly plot skipped because all observations are assigned to month 1",
+          id
+        )
+        return(NULL)
+      }
       
+      df <- data_month()
+      
+      df_clean <- df %>%
+        dplyr::mutate(
+          measurement_value = ifelse(
+            is.na(measurement_value),
+            0,
+            measurement_value
+          )
+        )
+      
+      flog.info(
+        "[%s] Monthly plot data ready: %s rows",
+        id,
+        nrow(df_clean)
+      )
+      
+      p <- ggplot2::ggplot(
+        df_clean,
+        ggplot2::aes_string(
+          x = "month",
+          y = "measurement_value",
+          group = input$variable,
+          fill = input$variable
+        )
+      ) +
+        ggplot2::geom_bar(
+          stat = "identity",
+          position = "dodge"
+        ) +
+        ggplot2::labs(
+          title = "Monthly data",
+          x = "Month",
+          y = "Measurement value"
+        ) +
+        ggplot2::scale_x_continuous(
+          breaks = scales::pretty_breaks(n = 12),
+          limits = c(1, 12)
+        )
+      
+      flog.info("[%s] Monthly plot rendered", id)
       
       p
     })
     
     # Plot for yearly data
     output$plot_year <- renderPlot({
-      df <- data_year()  # Get the reactive yearly data
-      df_clean <- df %>% dplyr::mutate(measurement_value = ifelse(is.na(measurement_value), 0, measurement_value))
+      flog.info("[%s] Rendering yearly plot", id)
       
-      x_breaks <- seq(min(df_clean$year), max(df_clean$year), by = 10)
+      df <- data_year()
       
-      p <- ggplot(df_clean, aes_string(x = "year", y = "measurement_value", group = input$variable, color = input$variable)) +
-        geom_line() + labs(title = "Yearly Data", x = "Year", y = "Measurement Value")+
-        scale_x_continuous(breaks = x_breaks)
+      df_clean <- df %>%
+        dplyr::mutate(
+          measurement_value = ifelse(
+            is.na(measurement_value),
+            0,
+            measurement_value
+          )
+        )
       
+      flog.info(
+        "[%s] Yearly plot data ready: %s rows, years %s-%s",
+        id,
+        nrow(df_clean),
+        min(df_clean$year),
+        max(df_clean$year)
+      )
+      
+      x_breaks <- seq(
+        min(df_clean$year),
+        max(df_clean$year),
+        by = 10
+      )
+      
+      p <- ggplot2::ggplot(
+        df_clean,
+        ggplot2::aes_string(
+          x = "year",
+          y = "measurement_value",
+          group = input$variable,
+          color = input$variable
+        )
+      ) +
+        ggplot2::geom_line() +
+        ggplot2::labs(
+          title = "Yearly Data",
+          x = "Year",
+          y = "Measurement Value"
+        ) +
+        ggplot2::scale_x_continuous(breaks = x_breaks)
+      
+      flog.info("[%s] Yearly plot rendered", id)
       
       p
     })

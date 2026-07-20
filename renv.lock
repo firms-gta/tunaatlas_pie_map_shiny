@@ -25,7 +25,7 @@
       "RemoteRepo": "CWP.dataset",
       "RemoteUsername": "bastienird",
       "RemoteRef": "HEAD",
-      "RemoteSha": "d389f8deaa183e70057dd04d02bfeb0ec4f385fb",
+      "RemoteSha": "381828ca248c3dcc6921ce56cfc7e0a77398c2f9",
       "Requirements": [
         "DBI",
         "DT",
@@ -65,7 +65,7 @@
         "xts",
         "yaml"
       ],
-      "Hash": "532867f6c538d0656e19b9d6bf7f54a3"
+      "Hash": "439ea035a35907f5323f76d377f29a19"
     },
     "DBI": {
       "Package": "DBI",
@@ -398,6 +398,17 @@
       ],
       "Hash": "bf6104ba9f100ca37aee79bbed40b978"
     },
+    "S7": {
+      "Package": "S7",
+      "Version": "0.2.2",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "utils"
+      ],
+      "Hash": "6a72e94a8c9be4ef719af3aa3628f2dc"
+    },
     "SparseM": {
       "Package": "SparseM",
       "Version": "1.84-2",
@@ -493,7 +504,7 @@
       "Package": "arrow",
       "Version": "17.0.0.1",
       "Source": "Repository",
-      "Repository": "https://packagemanager.posit.co/cran/__linux__/jammy/latest",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "R6",
@@ -3332,6 +3343,16 @@
       ],
       "Hash": "bc54d87ebf858b28de18df4bca6528d3"
     },
+    "otel": {
+      "Package": "otel",
+      "Version": "0.2.0",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "627d6993db1043703c0b084fa432f21f"
+    },
     "ows4R": {
       "Package": "ows4R",
       "Version": "0.3-6",
@@ -3981,7 +4002,7 @@
       "Package": "reactlog",
       "Version": "1.1.1",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "jsonlite"
@@ -5592,6 +5613,16 @@
         "utils"
       ],
       "Hash": "6298953be4b60e23b75cf48c9bf9b0a2"
+    },
+    "yyjsonr": {
+      "Package": "yyjsonr",
+      "Version": "0.1.22",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "3357f163d656fe066b23b04c0ebf53b5"
     },
     "zen4R": {
       "Package": "zen4R",

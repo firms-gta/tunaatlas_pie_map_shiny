@@ -113,7 +113,6 @@ server <- function(input, output, session) {
   )
   
   pool <- reactive({
-    req(dataset_choices$pool())
     dataset_choices$pool()
   })
   # dataset_choices <- dataset_choice_server(
@@ -127,9 +126,21 @@ server <- function(input, output, session) {
   observeEvent(dataset_choices$submit(), {
     flog.info("Submit dataset clicked")
     
-    selected_dataset <- dataset_choices$selected_dataset()
-    selected_gridtype <- dataset_choices$selected_gridtype()
-    selected_measurement_unit <- dataset_choices$selected_measurement_unit()
+    on.exit({
+      flog.info("Fin du chargement : affichage de l'application")
+      shinyjs::hide("loading_page")
+      shinyjs::show("main_content")
+    }, add = TRUE)
+    
+    selected_dataset_value <- dataset_choices$selected_dataset()
+    selected_gridtype_value <- dataset_choices$selected_gridtype()
+    selected_measurement_unit_value <- dataset_choices$selected_measurement_unit()
+    
+    # # Mise à jour des reactiveVal, sans les écraser
+    # selected_dataset(selected_dataset_value)
+    # selected_gridtype(selected_gridtype_value)
+    # selected_measurement_unit(selected_measurement_unit_value)
+    
     firstsubmit <- firstSubmit()
     if (firstsubmit) {
       flog.info("First submit")
@@ -150,7 +161,6 @@ server <- function(input, output, session) {
       # flog.info("delay finished")
       shinyjs::hide("loading_page")
       shinyjs::show("main_content")
-      shinyjs::show("loading_page")
       
       # showModal(                   modalDialog(
       #   title = "Information",
@@ -187,21 +197,61 @@ server <- function(input, output, session) {
         shinyjs::hide("main_content")
         shinyjs::show("loading_page")
         issueddata <- FALSE
-        if(issueddata){
-          selected_viewissued = "public.issueddata"
+        selected_viewissued <- if (
+          stringr::str_detect(
+            tolower(selected_dataset_value),
+            "effort"
+          )
+        ) {
+          "public.shinyeffort"
+        } else if (
+          stringr::str_detect(
+            tolower(selected_dataset_value),
+            "issue"
+          )
+        ) {
+          "public.issueddata"
         } else {
-          selected_viewissued = "public.shinyeffort"
+          "public.shinycatch"
         }
-        dataset_not_init <- load_query_data(selected_dataset, selected_gridtype, selected_measurement_unit, selected_view = DBI::SQL(selected_viewissued),debug = debug, pool = pool())
+        
+        
+        flog.info("Selected database view: %s", selected_viewissued)
+        
+        dataset_not_init <- load_query_data(
+          selected_dataset = selected_dataset_value,
+          selected_gridtype = selected_gridtype_value,
+          selected_measurement_unit =
+            selected_measurement_unit_value,
+          selected_view = DBI::SQL(selected_viewissued),
+          debug = debug,
+          pool = pool()
+        )
         shinyjs::click("submit")
-        flog.info("Default dataset loaded")
+        flog.info(
+          "DB result: %s rows",
+          nrow(dataset_not_init$data_for_filters)
+        )
+        
+        shiny::validate(
+          shiny::need(
+            nrow(dataset_not_init$data_for_filters) > 0,
+            paste(
+              "La requête ne retourne aucune ligne.",
+              "Vue :", selected_viewissued,
+              "Dataset :", selected_dataset_value,
+              "Gridtype :", paste(selected_gridtype_value, collapse = ", "),
+              "Unité :", paste(selected_measurement_unit_value, collapse = ", ")
+            )
+          )
+        )
       }
 
       default_dataset <- dataset_not_init$data_for_filters
       
       res <- generate_dimensions_palettes(
         df = default_dataset,
-        variable = variable,           # ton vecteur global des variables possibles
+        variable = variable,           
         seed = 2643598
       )
       
@@ -564,7 +614,6 @@ server <- function(input, output, session) {
     filtered_data <- as.data.frame(filtered_data %>% dplyr::ungroup() %>% 
                                      dplyr::mutate(year = as.numeric(year), month = as.numeric(month)) %>% 
                                      dplyr::mutate(measurement_value = as.numeric(measurement_value)))
-    
     data <- load_initial_data(filtered_data)
     
     flog.info("Initial Data loaded")
@@ -618,101 +667,94 @@ server <- function(input, output, session) {
     data_for_filters_trigger(data_for_filters_trigger() + 1)
   })
   
-  observeEvent(data_for_filters_trigger(), {
-    flog.info("dataforfilterstriggered")
-    req(data_for_filters())
-    req(variable_choicesintersect())
-    data_for_filters <- data_for_filters()
-    
-    # Création initiale de chaque filtre (une seule fois)
-    observeEvent(list(data_for_filters_trigger(), variable_choicesintersect()), {
-      if(firstSubmit()){
-        flog.info("Creation initial de chaque filtre")
+  observeEvent(
+    list(data_for_filters_trigger(), variable_choicesintersect()),
+    {
+      flog.info("Initialisation des filtres")
+      
+      df_all <- req(data_for_filters())
+      vars <- setdiff(
+        req(variable_choicesintersect()),
+        "measurement_unit"
+      )
+      
+      df_all <- as.data.frame(df_all)
+      
+      for (variable_name in vars) {
+        choices <- sort(unique(na.omit(
+          df_all[[variable_name]]
+        )))
         
-        df_all <- as.data.frame(req(data_for_filters()))
-        vars   <- setdiff(req(variable_choicesintersect()), "measurement_unit")
+        flog.info(
+          "Creation initial de %s : %d choix",
+          variable_name,
+          length(choices)
+        )
         
-        lapply(vars, function(variable) {
-          local({
-            choices_init <- sort(unique(df_all[[variable]]))
-            flog.info(sprintf("Creation initial de %s", variable))
-            
-            output[[paste0("select_", variable)]] <- renderUI({
-              shinyWidgets::pickerInput(
-                inputId  = paste0("select_", variable),
-                label    = paste("Select", gsub("_", " ", variable)),
-                choices  = choices_init,
-                multiple = TRUE,
-                selected = choices_init, 
-                options  = list(
-                  `actions-box`          = TRUE,
-                  `live-search`          = TRUE,
-                  `size`                 = 100,
-                  `selected-text-format` = "count > 5"
-                ),
-                width = "100%"
-              )
-            })
+        local({
+          current_variable <- variable_name
+          current_choices <- choices
+          
+          output[[paste0(
+            "select_",
+            current_variable
+          )]] <- renderUI({
+            shinyWidgets::pickerInput(
+              inputId = paste0(
+                "select_",
+                current_variable
+              ),
+              label = paste(
+                "Select",
+                gsub("_", " ", current_variable)
+              ),
+              choices = current_choices,
+              multiple = TRUE,
+              selected = current_choices,
+              options = list(
+                `actions-box` = TRUE,
+                `live-search` = TRUE,
+                `size` = 100,
+                `selected-text-format` = "count > 5"
+              ),
+              width = "100%"
+            )
           })
         })
-        
-        output[["select_measurement_unit"]] <- renderUI({
-          choices_init <- sort(unique(df_all[["measurement_unit"]]))
-          preselect <- .pick_tons_or_first(as.character(choices_init))
-          shinyWidgets::pickerInput(
-            inputId  = "select_measurement_unit",
-            label    = "Select measurement unit",
-            choices  = choices_init,
-            multiple = TRUE,
-            selected = if (!is.null(preselect)) preselect else choices_init,
-            options  = list(
-              `actions-box` = TRUE, `live-search` = TRUE, `size` = 100,
-              `selected-text-format` = "count > 5"
-            ),
-            width = "100%"
-          )
-        })
       }
-    }, ignoreInit = FALSE)
-    
-    
-    
-    # lapply(variable_choicesintersect(), function(variable) { avant
-    #   local({
-    #     variable <- variable
-    #     flog.info(paste("Initialising", variable))
-    #     # récupère les valeurs distinctes pour cette variable
-    #     variable_data <- data_for_filters %>%
-    #       dplyr::select(all_of(variable)) %>%
-    #       dplyr::distinct() %>%
-    #       pull(!!sym(variable))
-    #     req(final_filtered_data())
-    #     selected <- final_filtered_data() %>%
-    #       dplyr::select(all_of(variable)) %>%
-    #       dplyr::distinct() %>%
-    #       pull(!!sym(variable))
-    #     
-    #     output[[paste0("select_", variable)]] <- renderUI({
-    #       shinyWidgets::pickerInput(
-    #         inputId  = paste0('select_', variable), 
-    #         label    = paste('Select', gsub("_", " ", variable)), 
-    #         choices  = variable_data, 
-    #         multiple = TRUE,
-    #         selected = selected,     # sélectionne tout (ici pour species_label c’est 1 seule valeur)
-    #         options  = list(
-    #           `actions-box`         = TRUE,
-    #           `live-search`         = TRUE,
-    #           `size`                = 100,
-    #           `selected-text-format`= "count > 5"
-    #         ),
-    #         width = "100%"
-    #       )
-    #     })
-    #     
-    #     flog.info(paste(variable, "UI element initialized"))
-    #   })
-    # })
-  })
+      
+      output$select_measurement_unit <- renderUI({
+        choices <- sort(unique(na.omit(
+          df_all$measurement_unit
+        )))
+        
+        preselect <- .pick_tons_or_first(
+          as.character(choices)
+        )
+        
+        shinyWidgets::pickerInput(
+          inputId = "select_measurement_unit",
+          label = "Select measurement unit",
+          choices = choices,
+          multiple = TRUE,
+          selected = preselect %||% choices,
+          options = list(
+            `actions-box` = TRUE,
+            `live-search` = TRUE,
+            `size` = 100,
+            `selected-text-format` = "count > 5"
+          ),
+          width = "100%"
+        )
+      })
+      
+      flog.info("Tous les filtres sont initialisés")
+      
+      shinyjs::hide("loading_page")
+      shinyjs::show("main_content")
+    },
+    ignoreInit = TRUE
+  )
   
   
   output$year_input <- renderUI({

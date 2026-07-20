@@ -113,7 +113,7 @@ mapCatchesServer <- function(id, data, geom_sf, enabled = reactive(TRUE)) {
       a <- dplyr::inner_join(geom_ll, df, by = "geographic_identifier")
       shiny::validate(need(nrow(a) > 0, "No data to display for 'full' mode."))
       
-      a  # <-- on RETOURNE l'objet sf
+      a  
     })
     
     # --- rendu Leaflet (uniquement si mode == "full")

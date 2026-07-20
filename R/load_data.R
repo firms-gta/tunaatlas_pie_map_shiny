@@ -34,7 +34,7 @@
 #'
 #' @param DOI tibble avec colonnes `Filename` et `DOI`
 #' @export
-load_data <- function(DOI) {
+load_data <- function(DOI, force_refresh = FALSE) {
   library(qs); library(readr); library(dplyr)
   library(lubridate); library(sf); library(futile.logger)
   library(tools); library(here)
@@ -47,6 +47,15 @@ load_data <- function(DOI) {
     doi_value <- DOI$DOI[i]
     base      <- file_path_sans_ext(filename)
     record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", doi_value)
+    
+    cache_filename <- paste0(base, "_", record_id, "_updated.qs")
+    cache_path <- file.path(data_dir, cache_filename)
+    
+    # 🚦 Skip immédiat si déjà à jour, sans même toucher au téléchargement
+    if (!force_refresh && file.exists(cache_path)) {
+      flog.info("⏭️  Deja enrichi, on saute : %s", cache_path)
+      next
+    }
     
     # 📁 Phase 0: check original file
     alt_path <- file.path(alt_data_dir, filename)
@@ -91,8 +100,6 @@ load_data <- function(DOI) {
     }
     
     # 📥 Phase 2: load/copy/update enriched file
-    cache_filename <- paste0(base, "_", record_id, "_updated.qs")
-    cache_path <- file.path(data_dir, cache_filename)
     alt_cache_path <- file.path(alt_data_dir, cache_filename)
     
     if (!file.exists(cache_path) && dir.exists(alt_data_dir) && file.exists(alt_cache_path)) {
@@ -111,9 +118,10 @@ load_data <- function(DOI) {
       message("✨ Enriching data from: ", qs_path)
       data_tbl <- qs::qread(qs_path)
       # fix types
-      if ("gear_type" %in% names(data_tbl))
-        data_tbl$gear_type <- as.character(data_tbl$gear_type)
+      if ("gear_type" %in% names(data_tbl)){
+      data_tbl$gear_type <- as.character(data_tbl$gear_type)}
       data_tbl$geographic_identifier <- as.character(data_tbl$geographic_identifier)
+      data_tbl$measurement_unit <- as.character(data_tbl$measurement_unit)
       
       # enrich
       require(CWP.dataset)

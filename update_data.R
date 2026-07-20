@@ -33,13 +33,17 @@ download_and_rename <- function(doi, filename, data_dir = "data") {
       if (file.exists(f)) message("📦 found file: ", f)
     }))
     
-    if (file.exists(renamedinqs)){
+    if (file.exists(updated)) {
+      return(updated)
+    }
+    
+    if (file.exists(renamedinqs)) {
       return(renamedinqs)
     }
     
-    if(file.exists(renamed) | file.exists(updated)){
-    return(updated)
-      }
+    if (file.exists(renamed)) {
+      return(renamed)
+    }
   }
   
   # 2) Si le brut existe, on le renomme
@@ -91,10 +95,26 @@ if(!file.exists(cl_areal_grid_path)| !file.exists("data/centroids.qs")){
 }
 require(here)
 source(here::here("R/load_data.R"))
-if(!exists("default_dataset")){
-  load_data(DOI) 
+# Download/process every DOI dataset only when explicitly requested
+data_dir <- here::here("data")
+
+is_updated_missing <- function(doi_df, data_dir) {
+  any(vapply(seq_len(nrow(doi_df)), function(i) {
+    record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", doi_df$DOI[[i]])
+    base      <- tools::file_path_sans_ext(doi_df$Filename[[i]])
+    updated_path <- file.path(data_dir, paste0(base, "_", record_id, "_updated.qs"))
+    !file.exists(updated_path)
+  }, logical(1)))
 }
 
+force_refresh <- identical(tolower(Sys.getenv("REFRESH_ALL_DATA", "false")), "true")
+
+if (force_refresh || is_updated_missing(DOI, data_dir)) {
+  futile.logger::flog.info(
+    "REFRESH_ALL_DATA=true ou _updated.qs manquant : preparation des datasets DOI"
+  )
+  load_data(DOI, force_refresh = force_refresh)
+}
 
 
 

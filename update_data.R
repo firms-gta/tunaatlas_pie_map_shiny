@@ -96,12 +96,24 @@ if(!file.exists(cl_areal_grid_path)| !file.exists("data/centroids.qs")){
 require(here)
 source(here::here("R/load_data.R"))
 # Download/process every DOI dataset only when explicitly requested
-if (identical(
-  tolower(Sys.getenv("REFRESH_ALL_DATA", "false")),
-  "true"
-)) {
-  flog.info("REFRESH_ALL_DATA=true: preparing every DOI dataset")
-  load_data(DOI)
+data_dir <- here::here("data")
+
+is_updated_missing <- function(doi_df, data_dir) {
+  any(vapply(seq_len(nrow(doi_df)), function(i) {
+    record_id <- sub(".*zenodo\\.([0-9]+)$", "\\1", doi_df$DOI[[i]])
+    base      <- tools::file_path_sans_ext(doi_df$Filename[[i]])
+    updated_path <- file.path(data_dir, paste0(base, "_", record_id, "_updated.qs"))
+    !file.exists(updated_path)
+  }, logical(1)))
+}
+
+force_refresh <- identical(tolower(Sys.getenv("REFRESH_ALL_DATA", "false")), "true")
+
+if (force_refresh || is_updated_missing(DOI, data_dir)) {
+  futile.logger::flog.info(
+    "REFRESH_ALL_DATA=true ou _updated.qs manquant : preparation des datasets DOI"
+  )
+  load_data(DOI, force_refresh = force_refresh)
 }
 
 

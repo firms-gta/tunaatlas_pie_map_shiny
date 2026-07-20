@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1.7
+
+ARG APP_IMAGE=tunaatlas-app:local
+ARG DATA_IMAGE=gta-data:local
+
+FROM ${DATA_IMAGE} AS raw-data
+FROM ${APP_IMAGE} AS enrich-builder
+
+WORKDIR /root/tunaatlas_pie_map_shiny
+
+# On copie les .qs bruts + DOI.csv depuis l'image gta-data existante
+COPY --from=raw-data /data/ ./data/
+
+RUN echo "=== Donnees brutes copiees ===" && ls -lh data
+
+# Lance l'enrichissement (load_data / update_data.R) → produit les *_updated.qs
+RUN Rscript -e "source('update_data.R')"
+
+RUN echo "=== Contenu final apres enrichissement ===" && ls -lh data
+
+# Isoler uniquement les fichiers enrichis dans un dossier propre
+RUN mkdir -p /output/data \
+ && find data -maxdepth 1 -name "*_updated.qs" -exec cp {} /output/data/ \; \
+ && cp DOI.csv /output/data/ \
+ && echo "=== Fichiers retenus pour l'image finale ===" \
+ && ls -lh /output/data
+
+# Image finale : uniquement les *_updated.qs, rien d'autre
+FROM scratch AS data
+COPY --from=enrich-builder /output/data/ /data/

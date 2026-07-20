@@ -1,11 +1,4 @@
-# syntax=docker/dockerfile:1.7
-
 FROM rocker/r-ver:4.2.3 AS data-builder
-
-RUN Rscript -e "install.packages( \
-      c('qs', 'readr'), \
-      repos = 'https://cloud.r-project.org' \
-    )"
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -15,20 +8,27 @@ RUN apt-get update \
 
 WORKDIR /build
 
+# On copie uniquement le lockfile, pas tout le projet
+COPY renv.lock ./renv.lock
+
+RUN Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')" \
+ && Rscript -e "renv::restore(lockfile = 'renv.lock', packages = c('qs', 'readr'), prompt = FALSE)"
+
 COPY DOI.csv ./DOI.csv
 
 RUN mkdir -p /output/data \
  && dos2unix DOI.csv \
  && sed -i -e '$a\' DOI.csv \
  && tail -n +2 DOI.csv | while IFS=',' read -r DOI FILE; do \
-      set -eu; \
-      RECORD_ID="$(printf '%s' "$DOI" | sed 's|.*/||; s/^zenodo\\.//')"; \
+      RECORD_ID="$(printf '%s' "$DOI" | sed 's|.*/||; s/^zenodo\.//')"; \
       EXT="${FILE##*.}"; \
       BASE="${FILE%.*}"; \
       RAW_TARGET="/tmp/${FILE}"; \
       QS_TARGET="/output/data/${BASE}_${RECORD_ID}.qs"; \
-      URL="https://zenodo.org/records/${RECORD_ID}/files/${FILE}?download=1"; \
+      URL="https://zenodo.org/api/records/${RECORD_ID}/files/${FILE}/content"; \
+      echo "Telechargement : ${URL}"; \
       curl --fail --location --retry 3 \
+        --user-agent "Mozilla/5.0 (compatible; tunaatlas-docker-build/1.0)" \
         --output "${RAW_TARGET}" "${URL}"; \
       if [ "${EXT}" = "qs" ]; then \
         mv "${RAW_TARGET}" "${QS_TARGET}"; \
@@ -39,12 +39,10 @@ RUN mkdir -p /output/data \
         "; \
         rm -f "${RAW_TARGET}"; \
       fi; \
+      echo "OK : ${QS_TARGET}"; \
     done \
  && cp DOI.csv /output/data/DOI.csv \
  && ls -lh /output/data
 
-
-# Image finale : uniquement les données, sans R ni système Linux
 FROM scratch AS data
-
 COPY --from=data-builder /output/data/ /data/

@@ -1,0 +1,203 @@
+name: Build final Tuna Atlas image
+
+on:
+  push:
+    branches:
+      - main
+      - "**"
+    tags:
+      - "v*"
+
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: "Branch used to build the image"
+        required: true
+        default: "main"
+
+      dataset_file:
+        description: "Enriched .qs file to include"
+        required: true
+        default: "global_catch_ird_level2_1950_2024_harmonized_20834708_updated.qs"
+
+      doi_csv:
+        description: "DOI.csv content using \\n between lines"
+        required: true
+        default: "DOI,Filename\\n10.5281/zenodo.20834708,global_catch_ird_level2_1950_2024_harmonized.csv\\n"
+
+      action:
+        description: "build, build-and-push, or build-no-cache-and-push"
+        required: true
+        type: choice
+        default: "build"
+        options:
+          - build
+          - build-and-push
+          - build-no-cache-and-push
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: firms-gta
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+
+    steps:
+      - name: Determine branch
+        id: branch
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BRANCH_NAME="${{ inputs.base_branch }}"
+          else
+            BRANCH_NAME="${{ github.ref_name }}"
+          fi
+
+          BRANCH_TAG=$(echo "$BRANCH_NAME" \
+            | sed 's/[^a-zA-Z0-9_.-]/_/g' \
+            | tr '[:upper:]' '[:lower:]')
+
+          echo "name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$BRANCH_TAG" >> "$GITHUB_OUTPUT"
+
+          echo "Branch: $BRANCH_NAME"
+          echo "Docker tag: $BRANCH_TAG"
+
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.branch.outputs.name }}
+
+      - name: Log in to GHCR
+        if: >
+          github.event_name == 'push' ||
+          contains(inputs.action, 'push')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Define image names
+        shell: bash
+        run: |
+          BRANCH_TAG="${{ steps.branch.outputs.tag }}"
+
+          echo "APP_IMAGE=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas-app:${BRANCH_TAG}" \
+            >> "$GITHUB_ENV"
+
+          echo "DATA_IMAGE=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas-data:${BRANCH_TAG}" \
+            >> "$GITHUB_ENV"
+
+          echo "ENRICHED_IMAGE=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas-data-enriched:${BRANCH_TAG}-${GITHUB_RUN_ID}" \
+            >> "$GITHUB_ENV"
+
+          echo "FINAL_IMAGE=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas_pie_map_shiny:${BRANCH_TAG}" \
+            >> "$GITHUB_ENV"
+
+      - name: Show selected images
+        run: |
+          echo "APP_IMAGE=$APP_IMAGE"
+          echo "DATA_IMAGE=$DATA_IMAGE"
+          echo "ENRICHED_IMAGE=$ENRICHED_IMAGE"
+          echo "FINAL_IMAGE=$FINAL_IMAGE"
+
+      - name: Create temporary DOI.csv
+        shell: bash
+        env:
+          DOI_CSV_INPUT: ${{ inputs.doi_csv }}
+        run: |
+          mkdir -p /tmp/tunaatlas-enrich
+          printf "%b" "$DOI_CSV_INPUT" \
+            > /tmp/tunaatlas-enrich/DOI.csv
+
+          echo "=== DOI.csv ==="
+          cat /tmp/tunaatlas-enrich/DOI.csv
+
+      - name: Build enriched data image
+        shell: bash
+        run: |
+          NO_CACHE=""
+
+          if [ "${{ inputs.action }}" = "build-no-cache-and-push" ]; then
+            NO_CACHE="--no-cache"
+          fi
+
+          docker buildx build \
+            $NO_CACHE \
+            --progress=plain \
+            --file "$GITHUB_WORKSPACE/docker/Dockerfile.enrich" \
+            --build-arg APP_IMAGE="$APP_IMAGE" \
+            --build-arg DATA_IMAGE="$DATA_IMAGE" \
+            --cache-from "type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas-cache:enrich-${{ steps.branch.outputs.tag }}" \
+            --cache-to "type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas-cache:enrich-${{ steps.branch.outputs.tag }},mode=max" \
+            --tag "$ENRICHED_IMAGE" \
+            --load \
+            /tmp/tunaatlas-enrich
+
+      - name: Build final image
+        shell: bash
+        env:
+          DOI_CSV_INPUT: ${{ inputs.doi_csv }}
+          DATASET_FILE_INPUT: ${{ inputs.dataset_file }}
+        run: |
+          NO_CACHE=""
+
+          if [ "${{ inputs.action }}" = "build-no-cache-and-push" ]; then
+            NO_CACHE="--no-cache"
+          fi
+
+          docker buildx build \
+            $NO_CACHE \
+            --progress=plain \
+            --file docker/Dockerfile.imagewithdata \
+            --build-arg APP_IMAGE="$APP_IMAGE" \
+            --build-arg DATA_IMAGE="$ENRICHED_IMAGE" \
+            --build-arg DATASET_FILE="$DATASET_FILE_INPUT" \
+            --build-arg DOI_CSV="$DOI_CSV_INPUT" \
+            --cache-from "type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas-cache:final-${{ steps.branch.outputs.tag }}" \
+            --cache-to "type=registry,ref=ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas-cache:final-${{ steps.branch.outputs.tag }},mode=max" \
+            --tag "$FINAL_IMAGE" \
+            --load \
+            .
+
+      - name: Push final image
+        if: >
+          github.event_name == 'push' ||
+          contains(inputs.action, 'push')
+        run: |
+          docker push "$FINAL_IMAGE"
+
+      - name: Tag main as latest
+        if: >
+          steps.branch.outputs.tag == 'main' &&
+          (
+            github.event_name == 'push' ||
+            contains(inputs.action, 'push')
+          )
+        run: |
+          docker tag \
+            "$FINAL_IMAGE" \
+            "ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas_pie_map_shiny:latest"
+
+          docker push \
+            "ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas_pie_map_shiny:latest"
+
+      - name: Tag Git version
+        if: github.ref_type == 'tag'
+        run: |
+          docker tag \
+            "$FINAL_IMAGE" \
+            "ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas_pie_map_shiny:${{ github.ref_name }}"
+
+          docker push \
+            "ghcr.io/${{ env.IMAGE_OWNER }}/tunaatlas_pie_map_shiny:${{ github.ref_name }}"

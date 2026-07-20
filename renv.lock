@@ -4565,9 +4565,9 @@
     },
     "sf": {
       "Package": "sf",
-      "Version": "1.0-21",
+      "Version": "1.0-24",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
         "DBI",
         "R",
@@ -4584,7 +4584,7 @@
         "units",
         "utils"
       ],
-      "Hash": "14a8dae2a678fa953907893a9df561c0"
+      "Hash": "7a4756aedf70812aa33fba3d29529424"
     },
     "sfheaders": {
       "Package": "sfheaders",
@@ -5007,17 +5007,15 @@
     },
     "terra": {
       "Package": "terra",
-      "Version": "1.8-50",
-      "Source": "URL",
+      "Version": "1.8-93",
+      "Source": "Repository",
       "Repository": "CRAN",
-      "RemoteType": "url",
-      "RemoteUrl": "https://cran.r-project.org/src/contrib/Archive/terra/terra_1.8-50.tar.gz",
       "Requirements": [
         "R",
         "Rcpp",
         "methods"
       ],
-      "Hash": "9bb1c4f25ec7f7fd650154e42f505804"
+      "Hash": "bb3e2b0e01eeeed8c3e828faaf6c68b5"
     },
     "testthat": {
       "Package": "testthat",

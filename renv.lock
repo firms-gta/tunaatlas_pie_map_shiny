@@ -2004,28 +2004,25 @@
     },
     "ggplot2": {
       "Package": "ggplot2",
-      "Version": "3.5.2",
+      "Version": "4.0.3",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "CRAN",
       "Requirements": [
-        "MASS",
         "R",
+        "S7",
         "cli",
-        "glue",
         "grDevices",
         "grid",
         "gtable",
         "isoband",
         "lifecycle",
-        "mgcv",
         "rlang",
         "scales",
         "stats",
-        "tibble",
         "vctrs",
         "withr"
       ],
-      "Hash": "7ad64861e028a777d7d67ff83231b548"
+      "Hash": "98520fe6b2745c466dca8e46aaa86242"
     },
     "ggplotify": {
       "Package": "ggplotify",
@@ -4565,9 +4562,9 @@
     },
     "sf": {
       "Package": "sf",
-      "Version": "1.0-24",
+      "Version": "1.0-21",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "DBI",
         "R",
@@ -4584,7 +4581,7 @@
         "units",
         "utils"
       ],
-      "Hash": "7a4756aedf70812aa33fba3d29529424"
+      "Hash": "14a8dae2a678fa953907893a9df561c0"
     },
     "sfheaders": {
       "Package": "sfheaders",
@@ -5007,15 +5004,17 @@
     },
     "terra": {
       "Package": "terra",
-      "Version": "1.8-93",
-      "Source": "Repository",
+      "Version": "1.8-50",
+      "Source": "URL",
       "Repository": "CRAN",
+      "RemoteType": "url",
+      "RemoteUrl": "https://cran.r-project.org/src/contrib/Archive/terra/terra_1.8-50.tar.gz",
       "Requirements": [
         "R",
         "Rcpp",
         "methods"
       ],
-      "Hash": "bb3e2b0e01eeeed8c3e828faaf6c68b5"
+      "Hash": "9bb1c4f25ec7f7fd650154e42f505804"
     },
     "testthat": {
       "Package": "testthat",

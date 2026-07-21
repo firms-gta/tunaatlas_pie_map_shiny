@@ -137,6 +137,8 @@ RUN echo "MODE=${MODE}" \
 EXPOSE 3838
 EXPOSE 8787
 
+COPY inst/extdata/default_dataset.rds inst/extdata/default_dataset.rds
+
 COPY entrypoint.sh /entrypoint.sh
 RUN dos2unix /entrypoint.sh \
     && chmod +x /entrypoint.sh

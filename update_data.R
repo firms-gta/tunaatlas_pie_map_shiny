@@ -8,7 +8,7 @@ if (!file.exists(doi_csv_path)) {
   message("DOI.csv not findable : no downloading. ",
           "The app will use minimal default datasets")
 } else {
-
+DOI <- readr::read_csv(doi_csv_path)
 # Set a global timeout for downloads
 options(timeout = 6000)
 

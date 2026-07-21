@@ -3,7 +3,11 @@ require(utils)
 require(downloader)
 
 # Read the DOI file
-DOI <- readr::read_csv("DOI.csv")
+doi_csv_path <- "DOI.csv"
+if (!file.exists(doi_csv_path)) {
+  message("DOI.csv not findable : no downloading. ",
+          "The app will use minimal default datasets")
+} else {
 
 # Set a global timeout for downloads
 options(timeout = 6000)
@@ -116,5 +120,5 @@ if (force_refresh || is_updated_missing(DOI, data_dir)) {
   load_data(DOI, force_refresh = force_refresh)
 }
 
-
+}
 

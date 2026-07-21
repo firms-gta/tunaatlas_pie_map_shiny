@@ -2,6 +2,14 @@
 lapply(c("here", "futile.logger", "readr", "tools", "sf", "dplyr", "data.table", "qs"), require, character.only = TRUE)
 flog.info("Sourced create or load default dataset")
 
+fallback_dataset_path <- here::here("inst", "extdata", "default_dataset.rds")
+
+load_fallback_dataset <- function() {
+  flog.warn("Utilisation du dataset minimal de secours (fallback versionne)")
+  options(app_using_fallback_dataset = TRUE)
+  readRDS(fallback_dataset_path)
+}
+
 variable <- c("species",
               "species_label",
               "fishing_fleet_label",
@@ -38,16 +46,24 @@ variable <- c("species",
 doi_path <- here::here("DOI.csv")
 data_cache_path <- here::here("data", "data.qs")
 
-DOI <- readr::read_csv(
-  doi_path,
-  show_col_types = FALSE,
-  col_types = readr::cols(.default = readr::col_character())
+DOI <- tryCatch(
+  {
+    if (!file.exists(doi_path)) stop("DOI.csv introuvable")
+    d <- readr::read_csv(doi_path, show_col_types = FALSE,
+                         col_types = readr::cols(.default = readr::col_character()))
+    if (nrow(d) == 0) stop("DOI.csv vide")
+    d
+  },
+  error = function(e) {
+    flog.warn("Probleme avec DOI.csv (%s) : bascule sur dataset minimal", e$message)
+    NULL
+  }
 )
 
-if (nrow(DOI) == 0) {
-  stop("DOI.csv does not contain any dataset")
-}
-
+if (is.null(DOI)) {
+  data <- load_fallback_dataset()
+} else {
+  options(app_using_fallback_dataset = FALSE)
 # The first DOI.csv row is always the default dataset
 default_doi <- DOI$DOI[[1]]
 default_filename <- DOI$Filename[[1]]
@@ -183,6 +199,7 @@ read_default_dataset <- function(path) {
 }
 
 if (is.null(data)) {
+  data <- tryCatch({
   source(here::here("R", "data_loading.R"))
   source(
     here::here(
@@ -335,7 +352,12 @@ if (is.null(data)) {
       collapse = ", "
     )
   )
+  data
+  }, error = function(e){
+    flog.warn("Echec du chargement/enrichissement du dataset reel (%s) : bascule sur minimal", e$message)
+    load_fallback_dataset()
+  })
 }
-
 # Compatibility with existing application code
 default_dataset <- data$data_for_filters
+}

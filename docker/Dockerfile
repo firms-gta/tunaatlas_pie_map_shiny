@@ -134,8 +134,6 @@ RUN echo "MODE=${MODE}" \
     && echo "BUILD_BRANCH=${BUILD_BRANCH}" \
     && echo "L'image principale ne contient aucune donnée."
     
-COPY DOI.csv ./
-
 EXPOSE 3838
 EXPOSE 8787
 

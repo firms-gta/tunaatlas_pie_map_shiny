@@ -1,0 +1,35 @@
+name: Build updated data image
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: "Branch to build"
+        required: true
+        default: "main"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_OWNER: firms-gta
+
+jobs:
+  build-updated-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+
+    steps:
+      - name: Determine branch
+        id: branch
+        shell: bash
+        run: |
+          BRANCH_NAME="${{ inputs.base_branch }}"
+
+          BRANCH_TAG=$(echo "$BRANCH_NAME" \
+            | sed 's/[^a-zA-Z0-9_.-]/_/g' \
+            | tr '[:upper:]' '[:lower:]')
+
+          echo "name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag

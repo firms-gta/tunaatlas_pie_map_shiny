@@ -1,4 +1,5 @@
 ui <- tagList(
+  fallback_banner(),
   useShinyjs(),
   div(
     id = "loading_page",

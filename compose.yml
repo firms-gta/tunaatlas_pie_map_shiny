@@ -1,0 +1,28 @@
+services:
+  tunaatlas:
+    image: tunaatlas:${DATASET_TAG:-local}
+
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.imagewithdata
+      args:
+        APP_IMAGE: ${APP_IMAGE:-ghcr.io/firms-gta/tunaatlas-app:main}
+        DATA_IMAGE: ${DATA_IMAGE:-ghcr.io/firms-gta/tunaatlas-data:main}
+        DATASET_FILE: ${DATASET_FILE:?DATASET_FILE must be provided}
+        DOI_CSV: ${DOI_CSV:?DOI_CSV must be provided}
+
+    container_name: tunaatlas-${DATASET_TAG:-local}
+
+    ports:
+      - "${APP_PORT:-3838}:3838"
+
+    restart: unless-stopped
+
+    environment:
+      MODE: prod
+      
+# HOW TO RUN THIS
+# DATASET_FILE=global_catch_tunaatlasird_level2_1950_2023_15496164.qs \
+# DATASET_TAG=level2 \
+# DOI_CSV=$'DOI,Filename\n10.5281/zenodo.15496164,global_catch_tunaatlasird_level2_1950_2023.qs\n' \
+# docker compose up -d --build

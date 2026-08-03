@@ -3,71 +3,49 @@ title: "How to run the application"
 output: html_document
 ---
 
-# Running the application on BlueCloud Infrastructure
+# BlueCloud Infrastructure
 
-The app is a component of the GlobalFisheriesAtlas Virtual Research Environment (VRE), which includes an RStudio server for developers and a Shiny proxy server for hosting applications. The VRE aims to simplify data exploration through analytical indicators without the need for delving into source code. To access this inrastructure you can create an account into https://blue-cloud.d4science.org/group/globalfisheriesatlas and then access the shiny application.
+The application is part of the GlobalFisheriesAtlas Virtual Research
+Environment. Users with access can open the deployed application from the VRE:
+<https://blue-cloud.d4science.org/group/globalfisheriesatlas>.
 
-# Running the application outside the BlueCloud Infrastructure
+# Local R session
 
-## Running from RStudio
+Restore the package environment and launch the app from the repository root:
 
-Run 
-```{r eval=FALSE, include=TRUE}
+```{r eval=FALSE}
+renv::restore()
 shiny::runApp()
 ```
 
-The app uses the `renv` package for package management. Ensure compatibility with the R version specified in the lockfile to avoid loading errors.
+DOI and fallback datasets do not require a database. Database-backed views need
+the read-only connection variables documented in `docs/DOCKER_DEPLOYMENT.md`.
 
-### To access the total available dataset product of the GTA
+# Docker
 
-A connection to a populated database with Global Tuna Atlas data and metadata is required but no mandatory to observe DOI data. Instructions for database creation or connection setup are available on the project's GitHub page. The connection identifiers must be provided through a connection_tunaatlas_inv.txt file copied in the repository (or copied in the docker if using the docker image).
-
-## Running with Docker (recommended)
-
-### Pull and Run
-
-Pullling the image and running it
-
-```sh
-
-docker pull ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest
-docker run -p 3838:3838 -v ghcr.io/firms-gta/tunaatlas_pie_map_shiny:latest 
-
-```
-
-### To run the image passing arguments inside as a DB connection
-
-If you have credential to connect the infrastructure DB or if you have replicated the database and want to access it with the shiny application
-
+The minimal application image contains the source code and a small fallback
+dataset, but no full DOI dataset.
 
 ```bash
-docker run -e DB_HOST=mydbhost -e DB_PORT=5432 -e DB_NAME=mydatabase -e DB_USER_READONLY=myuser -e DB_PASSWORD=mypassword tunaatlas_pie_map_shiny
+docker pull ghcr.io/firms-gta/tunaatlas-app:main
+
+docker run --rm \
+  -p 3838:3838 \
+  ghcr.io/firms-gta/tunaatlas-app:main
 ```
 
-Access the app by navigating to http://localhost:3838 in your browser.
+Open <http://localhost:3838>.
 
-### Build and Run Locally
+# Selected DOI dataset
 
-If you have cloned the github repository in local you can then:
+The deployment architecture uses:
 
-```sh
-cd the_repo_where_you_pulled_the_shiny_app
-docker build -t my-shiny-app .
-docker run -p 3838:3838 -v my-shiny-app
+- `tunaatlas-app` for code and dependencies;
+- `tunaatlas-data` for all rows of `DOI.csv`;
+- `docker/Dockerfile.imagewithdata` to assemble one selected dataset.
 
-```
+The complete commands and the filename/DOI contract are maintained in
+`README.md` and `docs/DOCKER_DEPLOYMENT.md`.
 
-Access the app by navigating to http://localhost:3838.
-
-# Specific dataset to observe
-
-Every dataset need to match the CWP standard.
-
-## Ran on Rstudio or if you build the image locally
-
-Create in you repo the default_dataset.qs file wihch contains your dataset in CWP standard format and in .qs format. Then run the application or create the docker image
-
-## If you pull the docker image
-
-No easy way found yet. We recommend pulling the repository and building the docker image in local (see )
-
+Every supplied dataset must follow the CWP Reference Harmonization structure
+expected by the application.

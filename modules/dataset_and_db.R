@@ -153,8 +153,8 @@ dataset_and_db_server <- function(id,
         shiny::selectInput(
           ns("db_name"),
           "Choose database:",
-          choices = c("tunaatlas_sandbox"),
-          selected = "tunaatlas_sandbox"
+          choices = c("gta","tunaatlas_sandbox"),
+          selected = "gta"
         ),
         
         shiny::selectInput(
